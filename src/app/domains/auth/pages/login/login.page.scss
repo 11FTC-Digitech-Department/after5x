@@ -1,8 +1,4 @@
 ion-content {
-  --padding-start: 16px;
-  --padding-end: 16px;
-  --padding-top: 16px;
-  --padding-bottom: 16px;
   --background: white;
 }
 
@@ -14,6 +10,7 @@ ion-content {
   width: 100%;
   max-width: 400px;
   margin: 0 auto;
+  padding: 0 20px;
 }
 
 .auth-segment {

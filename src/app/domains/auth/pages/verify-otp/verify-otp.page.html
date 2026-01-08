@@ -6,8 +6,8 @@
   </ion-toolbar>
 </ion-header>
 
-<ion-content [fullscreen]="true">
-  <ion-grid fixed>
+<ion-content [fullscreen]="true" scroll-y="false">
+  <ion-grid fixed class="ion-no-padding">
     <ion-row class="full-height ion-align-items-center">
       <ion-col size="12">
         <div class="auth-container">
@@ -20,8 +20,6 @@
 
             <ion-item class="otp-field">
               <ion-input
-                label="Enter Verification Code"
-                label-placement="stacked"
                 type="text"
                 [(ngModel)]="otpCode"
                 placeholder="000000"
