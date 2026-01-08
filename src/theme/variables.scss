@@ -1,2 +1,136 @@
 // For information on how to create your own theme, please refer to:
 // https://ionicframework.com/docs/theming/
+
+// After5 App Theme - Purple-Blue Gradient Color Scheme
+:root {
+  // Primary Colors - Deep Navy to Magenta Gradient
+  --ion-color-primary: #16106A;
+  --ion-color-primary-rgb: 22, 16, 106;
+  --ion-color-primary-contrast: #ffffff;
+  --ion-color-primary-contrast-rgb: 255, 255, 255;
+  --ion-color-primary-shade: #150d5d;
+  --ion-color-primary-tint: #2d2380;
+
+  // Secondary Colors - Rich Blue
+  --ion-color-secondary: #222B9A;
+  --ion-color-secondary-rgb: 34, 43, 154;
+  --ion-color-secondary-contrast: #ffffff;
+  --ion-color-secondary-contrast-rgb: 255, 255, 255;
+  --ion-color-secondary-shade: #1e2588;
+  --ion-color-secondary-tint: #3a41a4;
+
+  // Tertiary Colors - Purple-Blue
+  --ion-color-tertiary: #4B388A;
+  --ion-color-tertiary-rgb: 75, 56, 138;
+  --ion-color-tertiary-contrast: #ffffff;
+  --ion-color-tertiary-contrast-rgb: 255, 255, 255;
+  --ion-color-tertiary-shade: #422f7a;
+  --ion-color-tertiary-tint: #5a4794;
+
+  // Success Colors - Purple-Magenta
+  --ion-color-success: #6B3860;
+  --ion-color-success-rgb: 107, 56, 96;
+  --ion-color-success-contrast: #ffffff;
+  --ion-color-success-contrast-rgb: 255, 255, 255;
+  --ion-color-success-shade: #5e3154;
+  --ion-color-success-tint: #77466e;
+
+  // Accent Colors - Warm Earth Tone
+  --ion-color-accent: #9B412D;
+  --ion-color-accent-rgb: 155, 65, 45;
+  --ion-color-accent-contrast: #ffffff;
+  --ion-color-accent-contrast-rgb: 255, 255, 255;
+  --ion-color-accent-shade: #883927;
+  --ion-color-accent-tint: #a34e40;
+
+  // Warning Colors - Keep default orange but adjust for theme
+  --ion-color-warning: #ffc409;
+  --ion-color-warning-rgb: 255, 196, 9;
+  --ion-color-warning-contrast: #000000;
+  --ion-color-warning-contrast-rgb: 0, 0, 0;
+  --ion-color-warning-shade: #e0ac08;
+  --ion-color-warning-tint: #ffca22;
+
+  // Danger Colors - Keep default red but adjust for theme
+  --ion-color-danger: #eb445a;
+  --ion-color-danger-rgb: 235, 68, 90;
+  --ion-color-danger-contrast: #ffffff;
+  --ion-color-danger-contrast-rgb: 255, 255, 255;
+  --ion-color-danger-shade: #cf3c4f;
+  --ion-color-danger-tint: #ed576c;
+
+  // Light Colors
+  --ion-color-light: #f4f5f8;
+  --ion-color-light-rgb: 244, 245, 248;
+  --ion-color-light-contrast: #000000;
+  --ion-color-light-contrast-rgb: 0, 0, 0;
+  --ion-color-light-shade: #d7d8da;
+  --ion-color-light-tint: #f5f6f9;
+
+  // Medium Colors
+  --ion-color-medium: #92949c;
+  --ion-color-medium-rgb: 146, 148, 156;
+  --ion-color-medium-contrast: #000000;
+  --ion-color-medium-contrast-rgb: 0, 0, 0;
+  --ion-color-medium-shade: #808289;
+  --ion-color-medium-tint: #9d9fa6;
+
+  // Dark Colors
+  --ion-color-dark: #222428;
+  --ion-color-dark-rgb: 34, 36, 40;
+  --ion-color-dark-contrast: #ffffff;
+  --ion-color-dark-contrast-rgb: 255, 255, 255;
+  --ion-color-dark-shade: #1e2023;
+  --ion-color-dark-tint: #383a3e;
+}
+
+// Background and Gradient Variables
+:root {
+  --app-gradient-primary: linear-gradient(135deg, #16106A 0%, #222B9A 25%, #4B388A 50%, #6B3860 100%);
+  --app-gradient-secondary: linear-gradient(135deg, #222B9A 0%, #4B388A 50%, #6B3860 100%);
+  --app-gradient-accent: linear-gradient(135deg, #4B388A 0%, #6B3860 100%);
+  --app-gradient-warm: linear-gradient(135deg, #6B3860 0%, #9B412D 100%);
+}
+
+// Dark Theme Overrides
+@media (prefers-color-scheme: dark) {
+  :root {
+    // Dark theme uses darker versions of the gradient colors
+    --app-gradient-primary: linear-gradient(135deg, #0d0a3d 0%, #16106A 25%, #2a1f5c 50%, #3d1f3a 100%);
+    --app-gradient-secondary: linear-gradient(135deg, #16106A 0%, #2a1f5c 50%, #3d1f3a 100%);
+    --app-gradient-accent: linear-gradient(135deg, #2a1f5c 0%, #3d1f3a 100%);
+    --app-gradient-warm: linear-gradient(135deg, #3d1f3a 0%, #6b2a20 100%);
+
+    // Dark theme background colors
+    --ion-background-color: #0d0a3d;
+    --ion-background-color-rgb: 13, 10, 61;
+
+    --ion-text-color: #ffffff;
+    --ion-text-color-rgb: 255, 255, 255;
+
+    --ion-card-background: rgba(255, 255, 255, 0.08);
+    --ion-item-background: rgba(255, 255, 255, 0.05);
+
+    // Dark theme accent color variants
+    --ion-color-accent: #6b2a20;
+    --ion-color-accent-rgb: 107, 42, 32;
+    --ion-color-accent-contrast: #ffffff;
+    --ion-color-accent-contrast-rgb: 255, 255, 255;
+    --ion-color-accent-shade: #5e241c;
+    --ion-color-accent-tint: #7a3a2f;
+  }
+}
+
+// Toolbar and Header Styles
+:root {
+  --ion-toolbar-background: var(--app-gradient-primary);
+  --ion-toolbar-color: #ffffff;
+}
+
+// Button Styles
+:root {
+  --ion-button-primary-background: var(--app-gradient-secondary);
+  --ion-button-primary-color: #ffffff;
+  --ion-button-secondary-background: var(--app-gradient-accent);
+  --ion-button-secondary-color: #ffffff;
+}

@@ -1,0 +1,81 @@
+ion-content {
+  --padding-start: 0;
+  --padding-end: 0;
+  --padding-top: 0;
+  --padding-bottom: 0;
+}
+
+.welcome-grid {
+
+  .logo-row {
+    .logo-section {
+      text-align: center;
+      margin-bottom: 2rem;
+
+      .app-logo {
+        width: 350px;
+        height: auto;
+        max-width: 90vw;
+
+        @media (max-width: 768px) {
+          width: 250px;
+        }
+
+        @media (max-width: 576px) {
+          width: 200px;
+        }
+      }
+    }
+  }
+
+  .text-row {
+    .welcome-text {
+      text-align: left;
+
+      h1 {
+        color: white;
+        font-size: 2.8rem;
+        font-weight: 700;
+        margin: 0;
+        line-height: 1.2;
+        text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+
+        @media (max-width: 768px) {
+          font-size: 2.2rem;
+        }
+
+        @media (max-width: 576px) {
+          font-size: 2.8rem;
+        }
+      }
+    }
+  }
+
+}
+
+.welcome-footer {
+  --border-width: 0;
+  --background: transparent;
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 10;
+
+  .action-buttons {
+    text-align: center;
+
+    ion-button {
+      font-weight: 700;
+      font-size: 1.1rem;
+      padding: 0.8rem;
+      width: 100%;
+      --background: white;
+      --color: #16106A;
+
+      &:hover {
+        --background: rgba(255, 255, 255, 0.95);
+      }
+    }
+  }
+}
