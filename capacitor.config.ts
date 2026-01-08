@@ -1,8 +1,8 @@
 import type { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
-  appId: 'io.ionic.starter',
-  appName: 'after5-v2',
+  appId: 'com.rockit.after5',
+  appName: 'After5',
   webDir: 'www'
 };
 
