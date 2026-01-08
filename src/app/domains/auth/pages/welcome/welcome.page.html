@@ -1,7 +1,7 @@
 <ion-content [fullscreen]="true">
   <ion-grid fixed class="welcome-grid">
-    <ion-row class="logo-row">
-      <ion-col size="12" size-md="8" offset-md="2" size-lg="6" offset-lg="3">
+    <ion-row class="logo-row ion-align-items-center">
+      <ion-col size="12">
         <div class="logo-section">
           <img
             src="assets/logo/white-logo.svg"
@@ -11,18 +11,13 @@
         </div>
       </ion-col>
     </ion-row>
-
-    <ion-row class="text-row">
-      <ion-col size="12" size-md="8" offset-md="2" size-lg="6" offset-lg="3">
-        <div class="welcome-text">
-          <h1>Your #1 on-demand home service app</h1>
-        </div>
-      </ion-col>
-    </ion-row>
   </ion-grid>
 
   <ion-footer class="welcome-footer ion-no-border">
-    <div class="action-buttons">
+    <div class="welcome-text ion-padding-horizontal">
+      <h1>Your #1 on-demand home service app</h1>
+    </div>
+    <div class="action-buttons">     
       <ion-button
         fill="solid"
         size="large"
