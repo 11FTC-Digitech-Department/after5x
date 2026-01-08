@@ -1,6 +1,5 @@
 import { Component, OnInit, signal, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import {
   IonContent,
@@ -9,15 +8,10 @@ import {
   IonCol,
   IonSegment,
   IonSegmentButton,
-  IonLabel,
-  IonItem,
-  IonInput,
-  IonButton,
-  IonText,
-  IonIcon
+  IonLabel
 } from '@ionic/angular/standalone';
-import { addIcons } from 'ionicons';
-import { logoFacebook, logoGoogle } from 'ionicons/icons';
+import { LoginFormComponent, LoginFormData } from '../../components/login-form/login-form.component';
+import { SignupFormComponent, SignupFormData } from '../../components/signup-form/signup-form.component';
 
 @Component({
   selector: 'app-login',
@@ -32,13 +26,9 @@ import { logoFacebook, logoGoogle } from 'ionicons/icons';
     IonSegment,
     IonSegmentButton,
     IonLabel,
-    IonItem,
-    IonInput,
-    IonButton,
-    IonText,
-    IonIcon,
     CommonModule,
-    FormsModule
+    LoginFormComponent,
+    SignupFormComponent
   ]
 })
 export class LoginPage implements OnInit {
@@ -46,20 +36,7 @@ export class LoginPage implements OnInit {
 
   selectedSegment = signal<'login' | 'signup'>('login');
 
-  loginForm = {
-    email: '',
-    password: ''
-  };
-
-  signupForm = {
-    email: '',
-    password: '',
-    confirmPassword: ''
-  };
-
-  constructor() {
-    addIcons({ logoFacebook, logoGoogle });
-  }
+  constructor() { }
 
   ngOnInit() {
   }
@@ -68,14 +45,17 @@ export class LoginPage implements OnInit {
     this.selectedSegment.set(event.detail.value);
   }
 
-  onLogin() {
+  onLogin(formData: LoginFormData) {
     // Handle login logic
-    console.log('Login with:', this.loginForm);
+    console.log('Login with:', formData);
   }
 
-  onSignup() {
-    // Handle signup logic
-    console.log('Signup with:', this.signupForm);
+  onSignup(formData: SignupFormData) {
+    // Handle signup logic and navigate to OTP verification
+    console.log('Signup with:', formData);
+    this.router.navigate(['/auth/verify-otp'], {
+      state: { formData, type: 'signup' }
+    });
   }
 
   onFacebookLogin() {

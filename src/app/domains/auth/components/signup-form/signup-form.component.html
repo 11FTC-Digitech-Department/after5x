@@ -1,0 +1,98 @@
+<h1 class="welcome-text">Create Account</h1>
+
+          <ion-item class="form-field">
+            <ion-input
+              label="Email"
+              label-placement="stacked"
+              type="email"
+              [(ngModel)]="signupForm.email"
+              placeholder="Enter your email"
+            ></ion-input>
+          </ion-item>
+
+          <ion-item class="form-field">
+            <ion-input
+              label="Mobile Number"
+              label-placement="stacked"
+              type="tel"
+              [(ngModel)]="signupForm.mobile"
+              placeholder="Enter your mobile number"
+            ></ion-input>
+          </ion-item>
+
+          <ion-item class="form-field">
+            <ion-input
+              label="Password"
+              label-placement="stacked"
+              [type]="isPasswordVisible ? 'text' : 'password'"
+              [(ngModel)]="signupForm.password"
+              placeholder="Create a password"
+            ></ion-input>
+            <ion-button
+              fill="clear"
+              slot="end"
+              (click)="togglePasswordVisibility()"
+              class="password-toggle-btn"
+            >
+              <ion-icon
+                [name]="isPasswordVisible ? 'eye-off' : 'eye'"
+                color="medium"
+              ></ion-icon>
+            </ion-button>
+          </ion-item>
+
+          <ion-item class="form-field">
+            <ion-input
+              label="Confirm Password"
+              label-placement="stacked"
+              [type]="isConfirmPasswordVisible ? 'text' : 'password'"
+              [(ngModel)]="signupForm.confirmPassword"
+              placeholder="Confirm your password"
+            ></ion-input>
+            <ion-button
+              fill="clear"
+              slot="end"
+              (click)="toggleConfirmPasswordVisibility()"
+              class="password-toggle-btn"
+            >
+              <ion-icon
+                [name]="isConfirmPasswordVisible ? 'eye-off' : 'eye'"
+                color="medium"
+              ></ion-icon>
+            </ion-button>
+          </ion-item>
+
+<ion-button
+  expand="block"
+  size="large"
+  class="signup-button"
+  (click)="onSignup()"
+>
+  Sign Up
+</ion-button>
+
+<ion-row class="social-login">
+  <ion-col size="6">
+    <ion-button
+      fill="outline"
+      size="large"
+      class="social-button facebook-button"
+      (click)="onFacebookLogin()"
+    >
+      <ion-icon slot="start" name="logo-facebook"></ion-icon>
+      Facebook
+    </ion-button>
+  </ion-col>
+
+  <ion-col size="6">
+    <ion-button
+      fill="outline"
+      size="large"
+      class="social-button google-button"
+      (click)="onGoogleLogin()"
+    >
+      <ion-icon slot="start" name="logo-google"></ion-icon>
+      Google
+    </ion-button>
+  </ion-col>
+</ion-row>

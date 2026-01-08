@@ -4,13 +4,16 @@ import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import {
   IonContent,
+  IonHeader,
+  IonToolbar,
+  IonButtons,
+  IonBackButton,
   IonGrid,
   IonRow,
   IonCol,
   IonItem,
   IonInput,
-  IonButton,
-  IonText
+  IonButton
 } from '@ionic/angular/standalone';
 
 @Component({
@@ -20,13 +23,16 @@ import {
   standalone: true,
   imports: [
     IonContent,
+    IonHeader,
+    IonToolbar,
+    IonButtons,
+    IonBackButton,
     IonGrid,
     IonRow,
     IonCol,
     IonItem,
     IonInput,
     IonButton,
-    IonText,
     CommonModule,
     FormsModule
   ]
@@ -46,10 +52,5 @@ export class ForgotPasswordPage implements OnInit {
   onForgotPassword() {
     // Handle forgot password logic
     console.log('Forgot password for:', this.forgotForm);
-  }
-
-  backToLogin() {
-    // Navigate back to login page
-    this.router.navigate(['/auth/login']);
   }
 }

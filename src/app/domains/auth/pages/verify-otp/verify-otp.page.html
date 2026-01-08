@@ -1,13 +1,59 @@
-<ion-header [translucent]="true">
+<ion-header class="ion-no-border">
   <ion-toolbar>
-    <ion-title>verify-otp</ion-title>
+    <ion-buttons slot="start">
+      <ion-back-button defaultHref="/auth/login" text="Back"></ion-back-button>
+    </ion-buttons>
   </ion-toolbar>
 </ion-header>
 
 <ion-content [fullscreen]="true">
-  <ion-header collapse="condense">
-    <ion-toolbar>
-      <ion-title size="large">verify-otp</ion-title>
-    </ion-toolbar>
-  </ion-header>
+  <ion-grid fixed>
+    <ion-row class="full-height ion-align-items-center">
+      <ion-col size="12">
+        <div class="auth-container">
+          <div class="auth-form">
+            <h1 class="welcome-text">Verify Your Phone</h1>
+            <p class="verify-description">
+              We've sent a 6-digit verification code to<br>
+              <strong>{{ mobileNumber || 'your mobile number' }}</strong>
+            </p>
+
+            <ion-item class="otp-field">
+              <ion-input
+                label="Enter Verification Code"
+                label-placement="stacked"
+                type="text"
+                [(ngModel)]="otpCode"
+                placeholder="000000"
+                maxlength="6"
+                inputmode="numeric"
+              ></ion-input>
+            </ion-item>
+
+            <ion-button
+              expand="block"
+              size="large"
+              class="verify-button"
+              (click)="onVerifyOtp()"
+              [disabled]="otpCode.length !== 6"
+            >
+              Verify & Continue
+            </ion-button>
+
+            <div class="resend-section">
+              <p class="resend-text">Didn't receive the code?</p>
+              <ion-button
+                fill="clear"
+                size="small"
+                (click)="onResendOtp()"
+                class="resend-btn"
+              >
+                Resend Code
+              </ion-button>
+            </div>
+          </div>
+        </div>
+      </ion-col>
+    </ion-row>
+  </ion-grid>
 </ion-content>
