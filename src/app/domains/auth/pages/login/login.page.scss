@@ -6,6 +6,16 @@ ion-content {
   --background: white;
 }
 
+.full-height {
+  height: 100vh;
+}
+
+.auth-container {
+  width: 100%;
+  max-width: 400px;
+  margin: 0 auto;
+}
+
 .auth-segment {
   margin-bottom: 2rem;
   --background: transparent;
@@ -98,6 +108,6 @@ ion-content {
   }
 }
 
-.login-form, .signup-form {
+.auth-form {
   padding: 2rem 0;
 }

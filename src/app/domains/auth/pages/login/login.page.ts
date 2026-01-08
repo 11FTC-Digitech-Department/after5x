@@ -1,4 +1,4 @@
-import { Component, OnInit, signal } from '@angular/core';
+import { Component, OnInit, signal, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
@@ -42,6 +42,8 @@ import { logoFacebook, logoGoogle } from 'ionicons/icons';
   ]
 })
 export class LoginPage implements OnInit {
+  private router = inject(Router);
+
   selectedSegment = signal<'login' | 'signup'>('login');
 
   loginForm = {
@@ -87,7 +89,7 @@ export class LoginPage implements OnInit {
   }
 
   navigateToForgotPassword() {
-    // Handle forgot password navigation
-    console.log('Navigate to forgot password');
+    // Navigate to forgot password page
+    this.router.navigate(['/auth/forgot-password']);
   }
 }

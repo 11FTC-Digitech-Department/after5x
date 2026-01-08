@@ -1,170 +1,164 @@
 <ion-content [fullscreen]="true">
   <ion-grid fixed>
-    <!-- Auth Segment -->
-    <ion-row>
+    <ion-row class="full-height ion-align-items-center">
       <ion-col size="12">
-        <ion-segment
-          mode="ios"
-          [value]="selectedSegment()"
-          (ionChange)="segmentChanged($event)"
-          class="auth-segment"
-        >
-          <ion-segment-button value="login">
-            <ion-label>Login</ion-label>
-          </ion-segment-button>
-          <ion-segment-button value="signup">
-            <ion-label>Sign Up</ion-label>
-          </ion-segment-button>
-        </ion-segment>
-      </ion-col>
-    </ion-row>
+        <div class="auth-container">
+          <!-- Auth Segment -->
+          <ion-segment
+            mode="ios"
+            [value]="selectedSegment()"
+            (ionChange)="segmentChanged($event)"
+            class="auth-segment"
+          >
+            <ion-segment-button value="login">
+              <ion-label>Login</ion-label>
+            </ion-segment-button>
+            <ion-segment-button value="signup">
+              <ion-label>Sign Up</ion-label>
+            </ion-segment-button>
+          </ion-segment>
 
-    <!-- Login Form -->
-    @if (selectedSegment() === 'login') {
-    <ion-row class="ion-justify-content-center">
-      <ion-col size="12" size-md="8" size-lg="6">
-        <div class="login-form">
-          <h1 class="welcome-text">Welcome back!</h1>
+          <!-- Login Form -->
+          @if (selectedSegment() === 'login') {
+          <div class="auth-form">
+            <h1 class="welcome-text">Welcome back!</h1>
 
-          <ion-item class="form-field">
-            <ion-input
-              label="Email"
-              label-placement="stacked"
-              type="email"
-              [(ngModel)]="loginForm.email"
-              placeholder="Enter your email"
-            ></ion-input>
-          </ion-item>
+            <ion-item class="form-field">
+              <ion-input
+                label="Email"
+                label-placement="stacked"
+                type="email"
+                [(ngModel)]="loginForm.email"
+                placeholder="Enter your email"
+              ></ion-input>
+            </ion-item>
 
-          <ion-item class="form-field">
-            <ion-input
-              label="Password"
-              label-placement="stacked"
-              type="password"
-              [(ngModel)]="loginForm.password"
-              placeholder="Enter your password"
-            ></ion-input>
-          </ion-item>
+            <ion-item class="form-field">
+              <ion-input
+                label="Password"
+                label-placement="stacked"
+                type="password"
+                [(ngModel)]="loginForm.password"
+                placeholder="Enter your password"
+              ></ion-input>
+            </ion-item>
 
-          <div class="forgot-password">
-            <ion-text color="primary" (click)="navigateToForgotPassword()">
-              Forgot password?
-            </ion-text>
+            <div class="forgot-password">
+              <ion-text color="primary" (click)="navigateToForgotPassword()">
+                Forgot password?
+              </ion-text>
+            </div>
+
+            <ion-button
+              expand="block"
+              size="large"
+              class="login-button"
+              (click)="onLogin()"
+            >
+              Login
+            </ion-button>
+
+            <ion-row class="social-login">
+              <ion-col size="6">
+                <ion-button
+                  fill="outline"
+                  size="large"
+                  class="social-button facebook-button"
+                  (click)="onFacebookLogin()"
+                >
+                  <ion-icon slot="start" name="logo-facebook"></ion-icon>
+                  Facebook
+                </ion-button>
+              </ion-col>
+
+              <ion-col size="6">
+                <ion-button
+                  fill="outline"
+                  size="large"
+                  class="social-button google-button"
+                  (click)="onGoogleLogin()"
+                >
+                  <ion-icon slot="start" name="logo-google"></ion-icon>
+                  Google
+                </ion-button>
+              </ion-col>
+            </ion-row>
           </div>
+          }
 
-          <ion-button
-            expand="block"
-            size="large"
-            class="login-button"
-            (click)="onLogin()"
-          >
-            Login
-          </ion-button>
+          <!-- Sign Up Form -->
+          @if (selectedSegment() === 'signup') {
+          <div class="auth-form">
+            <h1 class="welcome-text">Create Account</h1>
 
-          <ion-row class="social-login">
-            <ion-col size="6">
-              <ion-button
-                fill="outline"
-                size="large"
-                class="social-button facebook-button"
-                (click)="onFacebookLogin()"
-              >
-                <ion-icon slot="start" name="logo-facebook"></ion-icon>
-                Facebook
-              </ion-button>
-            </ion-col>
+            <ion-item class="form-field">
+              <ion-input
+                label="Email"
+                label-placement="stacked"
+                type="email"
+                [(ngModel)]="signupForm.email"
+                placeholder="Enter your email"
+              ></ion-input>
+            </ion-item>
 
-            <ion-col size="6">
-              <ion-button
-                fill="outline"
-                size="large"
-                class="social-button google-button"
-                (click)="onGoogleLogin()"
-              >
-                <ion-icon slot="start" name="logo-google"></ion-icon>
-                Google
-              </ion-button>
-            </ion-col>
-          </ion-row>
+            <ion-item class="form-field">
+              <ion-input
+                label="Password"
+                label-placement="stacked"
+                type="password"
+                [(ngModel)]="signupForm.password"
+                placeholder="Create a password"
+              ></ion-input>
+            </ion-item>
+
+            <ion-item class="form-field">
+              <ion-input
+                label="Confirm Password"
+                label-placement="stacked"
+                type="password"
+                [(ngModel)]="signupForm.confirmPassword"
+                placeholder="Confirm your password"
+              ></ion-input>
+            </ion-item>
+
+            <ion-button
+              expand="block"
+              size="large"
+              class="signup-button"
+              (click)="onSignup()"
+            >
+              Sign Up
+            </ion-button>
+
+            <ion-row class="social-login">
+              <ion-col size="6">
+                <ion-button
+                  fill="outline"
+                  size="large"
+                  class="social-button facebook-button"
+                  (click)="onFacebookLogin()"
+                >
+                  <ion-icon slot="start" name="logo-facebook"></ion-icon>
+                  Facebook
+                </ion-button>
+              </ion-col>
+
+              <ion-col size="6">
+                <ion-button
+                  fill="outline"
+                  size="large"
+                  class="social-button google-button"
+                  (click)="onGoogleLogin()"
+                >
+                  <ion-icon slot="start" name="logo-google"></ion-icon>
+                  Google
+                </ion-button>
+              </ion-col>
+            </ion-row>
+          </div>
+          }
         </div>
       </ion-col>
     </ion-row>
-    }
-
-    <!-- Sign Up Form -->
-    @if (selectedSegment() === 'signup') {
-    <ion-row class="ion-justify-content-center">
-      <ion-col size="12" size-md="8" size-lg="6">
-        <div class="signup-form">
-          <h1 class="welcome-text">Create Account</h1>
-
-          <ion-item class="form-field">
-            <ion-input
-              label="Email"
-              label-placement="stacked"
-              type="email"
-              [(ngModel)]="signupForm.email"
-              placeholder="Enter your email"
-            ></ion-input>
-          </ion-item>
-
-          <ion-item class="form-field">
-            <ion-input
-              label="Password"
-              label-placement="stacked"
-              type="password"
-              [(ngModel)]="signupForm.password"
-              placeholder="Create a password"
-            ></ion-input>
-          </ion-item>
-
-          <ion-item class="form-field">
-            <ion-input
-              label="Confirm Password"
-              label-placement="stacked"
-              type="password"
-              [(ngModel)]="signupForm.confirmPassword"
-              placeholder="Confirm your password"
-            ></ion-input>
-          </ion-item>
-
-          <ion-button
-            expand="block"
-            size="large"
-            class="signup-button"
-            (click)="onSignup()"
-          >
-            Sign Up
-          </ion-button>
-
-          <ion-row class="social-login">
-            <ion-col size="6">
-              <ion-button
-                fill="outline"
-                size="large"
-                class="social-button facebook-button"
-                (click)="onFacebookLogin()"
-              >
-                <ion-icon slot="start" name="logo-facebook"></ion-icon>
-                Facebook
-              </ion-button>
-            </ion-col>
-
-            <ion-col size="6">
-              <ion-button
-                fill="outline"
-                size="large"
-                class="social-button google-button"
-                (click)="onGoogleLogin()"
-              >
-                <ion-icon slot="start" name="logo-google"></ion-icon>
-                Google
-              </ion-button>
-            </ion-col>
-          </ion-row>
-        </div>
-      </ion-col>
-    </ion-row>
-    }
   </ion-grid>
 </ion-content>
