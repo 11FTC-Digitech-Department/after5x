@@ -1,6 +1,7 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { Router } from '@angular/router';
 import {
   IonContent,
   IonGrid,
@@ -26,10 +27,15 @@ import {
   ]
 })
 export class WelcomePage implements OnInit {
+  private router = inject(Router);
 
   constructor() { }
 
   ngOnInit() {
+  }
+
+  navigateToLogin() {
+    this.router.navigate(['/auth/login']);
   }
 
 }

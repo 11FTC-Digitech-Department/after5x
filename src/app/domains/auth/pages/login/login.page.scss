@@ -1,0 +1,103 @@
+ion-content {
+  --padding-start: 16px;
+  --padding-end: 16px;
+  --padding-top: 16px;
+  --padding-bottom: 16px;
+  --background: white;
+}
+
+.auth-segment {
+  margin-bottom: 2rem;
+  --background: transparent;
+
+  ion-segment-button {
+    --border-color: var(--ion-color-primary);
+    --color: var(--ion-color-primary); // Text color for unselected
+    --background: #f0f0f0; // Medium background for unselected
+    --background-checked: var(--ion-color-primary); // Primary color background for selected
+    --color-checked: white; // White text for selected
+    font-weight: 600;
+  }
+}
+
+.welcome-text {
+  text-align: center;
+  color: var(--ion-color-primary);
+  font-size: 2rem;
+  font-weight: 700;
+  margin: 0 0 2rem 0;
+}
+
+.form-field {
+  margin-bottom: 1rem;
+  --border-radius: 8px;
+  --padding-start: 16px;
+  --inner-padding-end: 16px;
+  --border-color: #e0e0e0;
+  --background: #f8f9fa;
+
+  ion-input {
+    --placeholder-color: #6c757d;
+    --color: var(--ion-color-primary);
+    font-weight: 500;
+  }
+}
+
+.forgot-password {
+  text-align: right;
+  margin-bottom: 2rem;
+
+  ion-text {
+    cursor: pointer;
+    font-weight: 600;
+    text-decoration: underline;
+  }
+}
+
+.login-button, .signup-button {
+  --border-radius: 12px;
+  font-weight: 700;
+  font-size: 1.1rem;
+  margin-bottom: 2rem;
+  height: 56px;
+  --background: linear-gradient(135deg, var(--ion-color-primary) 0%, var(--ion-color-accent) 100%);
+  --color: white;
+  --box-shadow: 0 4px 12px rgba(22, 16, 106, 0.3);
+}
+
+.social-login {
+  margin-top: 1rem;
+
+  ion-col {
+    padding: 0 0.25rem; // Small padding on left/right to prevent overlap
+  }
+
+  .social-button {
+    --border-radius: 12px;
+    font-weight: 600;
+    height: 48px;
+    width: 100%; // Ensure buttons fill their column width
+
+    &.facebook-button {
+      --border-color: #1877f2;
+      --color: #1877f2;
+
+      ion-icon {
+        color: #1877f2;
+      }
+    }
+
+    &.google-button {
+      --border-color: #4285f4;
+      --color: #4285f4;
+
+      ion-icon {
+        color: #4285f4;
+      }
+    }
+  }
+}
+
+.login-form, .signup-form {
+  padding: 2rem 0;
+}
