@@ -21,6 +21,7 @@ export class SessionService {
   private _session = signal<Session | null>(null);
   private _profile = signal<UserProfile | null>(null);
   private _loading = signal<boolean>(true);
+  private _initialized = signal<boolean>(false);
 
   // --- COMPUTED (Read-only) ---
   readonly session = this._session.asReadonly();
@@ -36,38 +37,65 @@ export class SessionService {
 
   private async initSession() {
     this._loading.set(true);
-    
-    // 1. Check current session
-    const { data } = await this.supabase.auth.getSession();
-    this._session.set(data.session);
 
-    if (data.session) {
-      await this.fetchProfile(data.session.user.id);
+    try {
+      // 1. Check current session
+      const { data, error } = await this.supabase.auth.getSession();
+      if (error) {
+        console.error('Error getting session:', error);
+      }
+
+      this._session.set(data.session);
+
+      if (data.session) {
+        await this.fetchProfile(data.session.user.id);
+      }
+    } catch (error) {
+      console.error('Error during session initialization:', error);
     }
-    
+
     this._loading.set(false);
+    this._initialized.set(true);
 
     // 2. Listen for changes (Login/Logout)
     this.supabase.auth.onAuthStateChange(async (event, session) => {
+      const wasAuthenticated = !!this._session();
       this._session.set(session);
+
       if (session) {
         await this.fetchProfile(session.user.id);
       } else {
         this._profile.set(null);
-        this.router.navigateByUrl('/auth/welcome');
+        // Only navigate to welcome if user was previously authenticated (logout)
+        // and not during initial app load
+        if (wasAuthenticated && this._initialized()) {
+          this.router.navigateByUrl('/auth/welcome');
+        }
       }
     });
   }
 
   private async fetchProfile(userId: string) {
-    const { data, error } = await this.supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', userId)
-      .single();
+    try {
+      const { data, error } = await this.supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', userId)
+        .maybeSingle();
 
-    if (data) {
-      this._profile.set(data as UserProfile);
+      if (error) {
+        console.error('Error fetching profile:', error);
+        return;
+      }
+
+      if (data) {
+        this._profile.set(data as UserProfile);
+      } else {
+        console.warn('Profile not found for user:', userId);
+        // Profile should be created by trigger, but if not, it will be created on next login
+      }
+    } catch (error) {
+      console.error('Unexpected error fetching profile:', error);
     }
   }
 

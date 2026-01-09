@@ -8,10 +8,13 @@ import {
   IonCol,
   IonSegment,
   IonSegmentButton,
-  IonLabel
+  IonLabel,
+  ToastController
 } from '@ionic/angular/standalone';
 import { LoginFormComponent, LoginFormData } from '../../components/login-form/login-form.component';
 import { SignupFormComponent, SignupFormData } from '../../components/signup-form/signup-form.component';
+import { SupabaseService } from '../../../../core/supabase/supabase';
+import { SessionService } from '../../../../core/auth/session';
 
 @Component({
   selector: 'app-login',
@@ -33,43 +36,216 @@ import { SignupFormComponent, SignupFormData } from '../../components/signup-for
 })
 export class LoginPage implements OnInit {
   private router = inject(Router);
+  private supabaseService = inject(SupabaseService);
+  private sessionService = inject(SessionService);
+  private toastController = inject(ToastController);
 
   selectedSegment = signal<'login' | 'signup'>('login');
+  isLoginLoading = signal<boolean>(false);
+  isSignupLoading = signal<boolean>(false);
 
   constructor() { }
 
   ngOnInit() {
+    // Check if user is already authenticated
+    if (this.sessionService.isAuthenticated()) {
+      this.navigateBasedOnRole();
+    }
   }
 
   segmentChanged(event: any) {
     this.selectedSegment.set(event.detail.value);
   }
 
-  onLogin(formData: LoginFormData) {
-    // Handle login logic
-    console.log('Login with:', formData);
+  async onLogin(formData: LoginFormData) {
+    if (!formData.email || !formData.password) {
+      await this.showToast('Please fill in all fields', 'warning');
+      return;
+    }
+
+    this.isLoginLoading.set(true);
+
+    try {
+      const result = await this.supabaseService.signInWithEmail(formData.email, formData.password);
+
+      if (result.success) {
+        await this.showToast('Login successful!', 'success');
+        this.navigateBasedOnRole();
+      } else {
+        await this.showToast(result.error || 'Login failed', 'danger');
+      }
+    } catch (error) {
+      console.error('Login error:', error);
+      await this.showToast('An unexpected error occurred', 'danger');
+    } finally {
+      this.isLoginLoading.set(false);
+    }
   }
 
-  onSignup(formData: SignupFormData) {
-    // Handle signup logic and navigate to OTP verification
-    console.log('Signup with:', formData);
-    this.router.navigate(['/auth/verify-otp'], {
-      state: { formData, type: 'signup' }
-    });
+  async onSignup(formData: SignupFormData) {
+    if (!this.validateSignupForm(formData)) {
+      return;
+    }
+
+    this.isSignupLoading.set(true);
+
+    try {
+      const result = await this.supabaseService.signUpWithEmail(
+        formData.email,
+        formData.password,
+        {
+          phone: formData.mobile,
+          role: 'customer' // Default role, can be changed later
+        }
+      );
+
+      if (result.success && result.user) {
+        // Create profile after successful signup
+        try {
+          await this.createUserProfile(result.user.id, formData);
+        } catch (profileError) {
+          console.error('Profile creation failed:', profileError);
+          // Don't fail signup if profile creation fails
+        }
+
+        await this.showToast('Please check your email for verification code', 'success');
+        this.router.navigate(['/auth/verify-otp'], {
+          state: {
+            email: formData.email,
+            type: 'signup'
+          }
+        });
+      } else {
+        await this.showToast(result.error || 'Signup failed', 'danger');
+      }
+    } catch (error) {
+      console.error('Signup error:', error);
+      await this.showToast('An unexpected error occurred', 'danger');
+    } finally {
+      this.isSignupLoading.set(false);
+    }
   }
 
-  onFacebookLogin() {
-    // Handle Facebook login
-    console.log('Facebook login');
+  async onFacebookLogin() {
+    this.isLoginLoading.set(true);
+
+    try {
+      const result = await this.supabaseService.signInWithProvider('facebook');
+
+      if (!result.success) {
+        await this.showToast(result.error || 'Facebook login failed', 'danger');
+      }
+      // OAuth redirect will handle the success case
+    } catch (error) {
+      console.error('Facebook login error:', error);
+      await this.showToast('An unexpected error occurred', 'danger');
+    } finally {
+      this.isLoginLoading.set(false);
+    }
   }
 
-  onGoogleLogin() {
-    // Handle Google login
-    console.log('Google login');
+  async onGoogleLogin() {
+    this.isLoginLoading.set(true);
+
+    try {
+      const result = await this.supabaseService.signInWithProvider('google');
+
+      if (!result.success) {
+        await this.showToast(result.error || 'Google login failed', 'danger');
+      }
+      // OAuth redirect will handle the success case
+    } catch (error) {
+      console.error('Google login error:', error);
+      await this.showToast('An unexpected error occurred', 'danger');
+    } finally {
+      this.isLoginLoading.set(false);
+    }
   }
 
   navigateToForgotPassword() {
     // Navigate to forgot password page
     this.router.navigate(['/auth/forgot-password']);
+  }
+
+  private validateSignupForm(formData: SignupFormData): boolean {
+    if (!formData.email || !formData.password || !formData.confirmPassword || !formData.mobile) {
+      this.showToast('Please fill in all fields', 'warning');
+      return false;
+    }
+
+    if (formData.password !== formData.confirmPassword) {
+      this.showToast('Passwords do not match', 'warning');
+      return false;
+    }
+
+    if (formData.password.length < 6) {
+      this.showToast('Password must be at least 6 characters long', 'warning');
+      return false;
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(formData.email)) {
+      this.showToast('Please enter a valid email address', 'warning');
+      return false;
+    }
+
+    const phoneRegex = /^[\+]?[1-9][\d]{0,15}$/;
+    if (!phoneRegex.test(formData.mobile.replace(/\s+/g, ''))) {
+      this.showToast('Please enter a valid mobile number', 'warning');
+      return false;
+    }
+
+    return true;
+  }
+
+  private async showToast(message: string, color: 'success' | 'danger' | 'warning' = 'success') {
+    const toast = await this.toastController.create({
+      message,
+      duration: 3000,
+      color,
+      position: 'top'
+    });
+    await toast.present();
+  }
+
+  private async createUserProfile(userId: string, formData: SignupFormData) {
+    try {
+      const { error } = await this.supabaseService.client
+        .from('profiles')
+        .insert({
+          id: userId,
+          email: formData.email,
+          full_name: formData.email.split('@')[0], // Use email username as default full name
+          role: 'customer',
+          phone_number: formData.mobile
+        });
+
+      if (error) {
+        console.error('Error creating profile:', error);
+        throw error;
+      }
+
+      console.log('Profile created successfully for user:', userId);
+    } catch (error) {
+      console.error('Failed to create user profile:', error);
+      throw error;
+    }
+  }
+
+  private navigateBasedOnRole() {
+    const role = this.sessionService.userRole();
+    switch (role) {
+      case 'customer':
+        this.router.navigate(['/customer']);
+        break;
+      case 'provider':
+        this.router.navigate(['/provider']);
+        break;
+      case 'admin':
+        this.router.navigate(['/admin']);
+        break;
+      default:
+        this.router.navigate(['/customer']); // Default to customer
+    }
   }
 }

@@ -1,4 +1,4 @@
-import { Component, output } from '@angular/core';
+import { Component, output, input } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import {
@@ -7,7 +7,8 @@ import {
   IonButton,
   IonRow,
   IonCol,
-  IonIcon
+  IonIcon,
+  IonSpinner
 } from '@ionic/angular/standalone';
 import { addIcons } from 'ionicons';
 import { logoFacebook, logoGoogle, eye, eyeOff } from 'ionicons/icons';
@@ -32,13 +33,16 @@ export interface SignupFormData {
     IonButton,
     IonRow,
     IonCol,
-    IonIcon
+    IonIcon,
+    IonSpinner
   ]
 })
 export class SignupFormComponent {
   signup = output<SignupFormData>();
   facebookLogin = output<void>();
   googleLogin = output<void>();
+
+  isLoading = input<boolean>(false);
 
   signupForm: SignupFormData = {
     email: '',

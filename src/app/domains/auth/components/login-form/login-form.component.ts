@@ -1,4 +1,4 @@
-import { Component, output } from '@angular/core';
+import { Component, output, input } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import {
@@ -8,7 +8,8 @@ import {
   IonText,
   IonRow,
   IonCol,
-  IonIcon
+  IonIcon,
+  IonSpinner
 } from '@ionic/angular/standalone';
 import { addIcons } from 'ionicons';
 import { logoFacebook, logoGoogle, eye, eyeOff } from 'ionicons/icons';
@@ -32,7 +33,8 @@ export interface LoginFormData {
     IonText,
     IonRow,
     IonCol,
-    IonIcon
+    IonIcon,
+    IonSpinner
   ]
 })
 export class LoginFormComponent {
@@ -40,6 +42,8 @@ export class LoginFormComponent {
   facebookLogin = output<void>();
   googleLogin = output<void>();
   forgotPassword = output<void>();
+
+  isLoading = input<boolean>(false);
 
   loginForm: LoginFormData = {
     email: '',

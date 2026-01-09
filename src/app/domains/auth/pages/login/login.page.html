@@ -20,6 +20,7 @@
           <!-- Login Form -->
           @if (selectedSegment() === 'login') {
           <app-login-form
+            [isLoading]="isLoginLoading()"
             (login)="onLogin($event)"
             (facebookLogin)="onFacebookLogin()"
             (googleLogin)="onGoogleLogin()"
@@ -30,6 +31,7 @@
           <!-- Sign Up Form -->
           @if (selectedSegment() === 'signup') {
           <app-signup-form
+            [isLoading]="isSignupLoading()"
             (signup)="onSignup($event)"
             (facebookLogin)="onFacebookLogin()"
             (googleLogin)="onGoogleLogin()"

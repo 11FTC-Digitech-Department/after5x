@@ -12,10 +12,10 @@
       <ion-col size="12">
         <div class="auth-container">
           <div class="auth-form">
-            <h1 class="welcome-text">Verify Your Phone</h1>
+            <h1 class="welcome-text">Verify Your Email</h1>
             <p class="verify-description">
               We've sent a 6-digit verification code to<br>
-              <strong>{{ mobileNumber || 'your mobile number' }}</strong>
+              <strong>{{ email || 'your email address' }}</strong>
             </p>
 
             <ion-item class="otp-field">
@@ -33,9 +33,14 @@
               size="large"
               class="verify-button"
               (click)="onVerifyOtp()"
-              [disabled]="otpCode.length !== 6"
+              [disabled]="otpCode.length !== 6 || isVerifying()"
             >
-              Verify & Continue
+              @if (isVerifying()) {
+                <ion-spinner name="crescent" slot="start"></ion-spinner>
+                Verifying...
+              } @else {
+                Verify & Continue
+              }
             </ion-button>
 
             <div class="resend-section">
@@ -44,9 +49,15 @@
                 fill="clear"
                 size="small"
                 (click)="onResendOtp()"
+                [disabled]="isResending()"
                 class="resend-btn"
               >
-                Resend Code
+                @if (isResending()) {
+                  <ion-spinner name="crescent" slot="start"></ion-spinner>
+                  Sending...
+                } @else {
+                  Resend Code
+                }
               </ion-button>
             </div>
           </div>

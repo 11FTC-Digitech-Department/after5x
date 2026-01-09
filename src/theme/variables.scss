@@ -84,4 +84,10 @@
   --ion-color-dark-tint: #383a3e;
 }
 
+
 // Background and Gradient Variables
+:root {
+  --app-gradient-primary: linear-gradient(135deg, var(--ion-color-primary) 0%, var(--ion-color-accent) 100%);
+  --app-gradient-secondary: linear-gradient(135deg, var(--ion-color-secondary) 0%, var(--ion-color-tertiary) 100%);
+  --app-gradient-tertiary: linear-gradient(135deg, var(--ion-color-primary) 0%, var(--ion-color-secondary) 50%, var(--ion-color-accent) 100%);
+}

@@ -41,9 +41,15 @@
   expand="block"
   size="large"
   class="login-button"
+  [disabled]="isLoading()"
   (click)="onLogin()"
 >
-  Login
+  @if (isLoading()) {
+    <ion-spinner name="crescent" slot="start"></ion-spinner>
+    Signing in...
+  } @else {
+    Login
+  }
 </ion-button>
 
 <ion-row class="social-login">
@@ -52,9 +58,14 @@
       fill="outline"
       size="large"
       class="social-button facebook-button"
+      [disabled]="isLoading()"
       (click)="onFacebookLogin()"
     >
-      <ion-icon slot="start" name="logo-facebook"></ion-icon>
+      @if (isLoading()) {
+        <ion-spinner name="crescent" slot="start"></ion-spinner>
+      } @else {
+        <ion-icon slot="start" name="logo-facebook"></ion-icon>
+      }
       Facebook
     </ion-button>
   </ion-col>
@@ -64,9 +75,14 @@
       fill="outline"
       size="large"
       class="social-button google-button"
+      [disabled]="isLoading()"
       (click)="onGoogleLogin()"
     >
-      <ion-icon slot="start" name="logo-google"></ion-icon>
+      @if (isLoading()) {
+        <ion-spinner name="crescent" slot="start"></ion-spinner>
+      } @else {
+        <ion-icon slot="start" name="logo-google"></ion-icon>
+      }
       Google
     </ion-button>
   </ion-col>
