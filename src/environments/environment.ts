@@ -4,10 +4,19 @@
 
 export const environment = {
   production: false,
+  appUrl: 'http://localhost:8100',
   supabase: {
     url: 'http://127.0.0.1:54321/',
     key: '625729a08b95bf1b7ff351a663f3a23c',
   },
+  oauth: {
+    google: {
+      clientId: 'your_dev_google_client_id' // Set via supabase/.env
+    },
+    facebook: {
+      appId: 'your_dev_facebook_app_id' // Set via supabase/.env
+    }
+  }
 };
 
 /*

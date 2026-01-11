@@ -115,23 +115,54 @@ export class SupabaseService {
   // Social Authentication
   async signInWithProvider(provider: 'google' | 'facebook'): Promise<AuthResult> {
     try {
+      console.log(`Starting OAuth flow for ${provider}`);
+
+      // Determine if we're running on a mobile platform
+      const isMobile = this.isMobilePlatform();
+      const redirectTo = isMobile
+        ? this.getMobileRedirectUrl()
+        : `${window.location.origin}/auth/callback`;
+
+      console.log('Redirect URL:', redirectTo);
+      console.log('Is mobile:', isMobile);
+
       const { data, error } = await this._client.auth.signInWithOAuth({
         provider,
         options: {
-          redirectTo: `${window.location.origin}/auth/callback`,
+          redirectTo,
+          queryParams: {
+            access_type: 'offline',
+            prompt: 'consent'
+          },
+          // Skip nonce check for local development (required for some OAuth providers)
+          skipBrowserRedirect: false
         },
       });
 
       if (error) {
+        console.error(`OAuth error for ${provider}:`, error);
         return this.handleAuthError(error);
       }
 
+      console.log(`OAuth initiated successfully for ${provider}`);
       return {
         success: true,
       };
     } catch (error) {
+      console.error(`OAuth exception for ${provider}:`, error);
       return this.handleAuthError(error as AuthError);
     }
+  }
+
+  private isMobilePlatform(): boolean {
+    // Check if Capacitor is available and we're on a native platform
+    return !!(window as any).Capacitor?.isNativePlatform?.();
+  }
+
+  private getMobileRedirectUrl(): string {
+    // For mobile apps, use the app scheme for deep linking
+    const appScheme = 'com.rockit.after5'; // This should match your Capacitor appId
+    return `${appScheme}://auth/callback`;
   }
 
   // Password Reset
@@ -242,9 +273,21 @@ export class SupabaseService {
       case 'Too many requests':
         errorMessage = 'Too many attempts. Please wait a few minutes before trying again.';
         break;
+      // OAuth-specific errors
+      case 'OAuth provider not configured':
+        errorMessage = 'Social login is not properly configured. Please contact support.';
+        break;
+      case 'OAuth callback error':
+        errorMessage = 'There was an issue with the social login. Please try again.';
+        break;
+      case 'Invalid OAuth state':
+        errorMessage = 'Social login session expired. Please try again.';
+        break;
       default:
         if (error.message.includes('Network request failed')) {
           errorMessage = 'Network error. Please check your internet connection and try again.';
+        } else if (error.message.includes('OAuth')) {
+          errorMessage = 'Social login failed. Please try again or use email/password login.';
         }
     }
 

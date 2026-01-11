@@ -127,10 +127,12 @@ export class LoginPage implements OnInit {
   }
 
   async onFacebookLogin() {
+    console.log('Facebook login button clicked');
     this.isLoginLoading.set(true);
 
     try {
       const result = await this.supabaseService.signInWithProvider('facebook');
+      console.log('Facebook login result:', result);
 
       if (!result.success) {
         await this.showToast(result.error || 'Facebook login failed', 'danger');
@@ -145,10 +147,12 @@ export class LoginPage implements OnInit {
   }
 
   async onGoogleLogin() {
+    console.log('Google login button clicked');
     this.isLoginLoading.set(true);
 
     try {
       const result = await this.supabaseService.signInWithProvider('google');
+      console.log('Google login result:', result);
 
       if (!result.success) {
         await this.showToast(result.error || 'Google login failed', 'danger');
