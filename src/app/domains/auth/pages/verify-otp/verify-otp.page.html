@@ -18,6 +18,14 @@
               <strong>{{ email || 'your email address' }}</strong>
             </p>
 
+            <div class="timer-display" [class.expired]="timerDisplay() === 'Expired'">
+              @if (timerDisplay() === 'Expired') {
+                <span class="expired-text">Code expired</span>
+              } @else {
+                <span>Code expires in: {{ timerDisplay() }}</span>
+              }
+            </div>
+
             <ion-item class="otp-field">
               <ion-input
                 type="text"

@@ -1,20 +1,103 @@
-<ion-header>
+<ion-header class="ion-no-border">
+  <ion-toolbar class="main-header">
+    <ion-buttons slot="start">
+      <ion-button fill="clear" routerLink="/c/home">
+        <ion-icon name="business" class="logo-icon"></ion-icon>
+      </ion-button>
+    </ion-buttons>
+    <ion-title>Welcome, {{ userName() }}!</ion-title>
+    <ion-buttons slot="end">
+      <ion-button fill="clear">
+        <ion-icon name="notifications" class="notification-icon"></ion-icon>
+      </ion-button>
+    </ion-buttons>
+  </ion-toolbar>
   <ion-toolbar>
-    <ion-title>Home</ion-title>
+    <!-- Location Header -->
+    <div class="location-header" (click)="navigateToAddresses()">
+      <ion-icon name="location" class="location-icon"></ion-icon>
+      <div class="location-info">
+        <ion-text class="location-text">{{ currentLocation() }}</ion-text>
+        <ion-text class="location-subtitle">Tap to change location</ion-text>
+      </div>
+      <ion-button fill="clear" class="chevron-button">
+        <ion-icon name="chevron-forward" class="chevron-icon"></ion-icon>
+      </ion-button>
+    </div>
   </ion-toolbar>
 </ion-header>
 
-<ion-content [fullscreen]="true">
-  <ion-grid fixed class="ion-no-padding">
+<ion-content [fullscreen]="true" >
+  <ion-grid>
+    <!-- Categories Section -->
     <ion-row>
       <ion-col size="12">
-        <div style="padding: 20px;">
-          <h2>Welcome to After5</h2>
-          <p>Your one-stop solution for home services</p>
+        <div class="section-container">
+          <h3 class="section-title">Categories</h3>
+          <ion-grid fixed class="categories-grid">
+            <ion-row>
+              @for (category of categories; track category.id) {
+                <ion-col size="4" class="category-col">
+                  <ion-card class="category-card" (click)="navigateToCategory(category)">
+                    <ion-card-content class="category-content">
+                      <ion-icon [name]="category.icon" class="category-icon"></ion-icon>
+                      <ion-text class="category-name">{{ category.name }}</ion-text>
+                    </ion-card-content>
+                  </ion-card>
+                </ion-col>
+              }
+            </ion-row>
+          </ion-grid>
+        </div>
+      </ion-col>
+    </ion-row>
 
-          <ion-button expand="block" routerLink="/c/catalog">
-            Browse Services
-          </ion-button>
+    <!-- Popular Services Section -->
+    <ion-row>
+      <ion-col size="12">
+        <div class="section-container">
+          <div class="section-header">
+            <h3 class="section-title">Popular Services</h3>
+            <ion-button fill="clear" class="see-all-btn">See All</ion-button>
+          </div>
+          <div class="horizontal-scroll">
+            @for (service of popularServices; track service.id) {
+              <ion-card class="service-card" (click)="navigateToService(service)">
+                <img [src]="service.image" alt="{{ service.title }}" class="service-image" />
+                <ion-card-content class="service-content">
+                  <ion-card-title class="service-title">{{ service.title }}</ion-card-title>
+                  <div class="service-details">
+                    <div class="rating-container">
+                      <ion-icon name="star" class="star-icon"></ion-icon>
+                      <ion-text class="rating">{{ service.rating }}</ion-text>
+                    </div>
+                    <ion-text class="provider">{{ service.provider }}</ion-text>
+                  </div>
+                  <div class="price-container">
+                    <ion-text class="price">₱{{ service.price }}</ion-text>
+                  </div>
+                </ion-card-content>
+              </ion-card>
+            }
+          </div>
+        </div>
+      </ion-col>
+    </ion-row>
+
+    <!-- Special Promos Section -->
+    <ion-row>
+      <ion-col size="12">
+        <div class="section-container">
+          <h3 class="section-title">Special Offers</h3>
+          <ion-card class="promo-card">
+            <img src="assets/splash/main-splash.png" alt="Special Promo" class="promo-image" />
+            <ion-card-content class="promo-content">
+              <ion-badge class="promo-badge">Limited Time</ion-badge>
+              <h4 class="promo-title">50% Off First Service</h4>
+              <p class="promo-description">Get 50% discount on your first booking with After5</p>
+              <ion-button class="promo-btn">Claim Now</ion-button>
+            </ion-card-content>
+          </ion-card>
         </div>
       </ion-col>
     </ion-row>

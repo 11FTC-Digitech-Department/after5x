@@ -38,4 +38,8 @@ export const CUSTOMER_ROUTES: Routes = [
     path: 'book/:id',
     loadComponent: () => import('./pages/booking-form/booking-form.page').then(m => m.BookingFormPage),
   },
+  {
+    path: 'profile/addresses',
+    loadComponent: () => import('./pages/profile/addresses/addresses.page').then(m => m.AddressesPage),
+  },
 ];

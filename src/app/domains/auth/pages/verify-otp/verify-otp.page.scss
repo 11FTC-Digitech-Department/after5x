@@ -39,6 +39,23 @@ ion-content {
   }
 }
 
+.timer-display {
+  text-align: center;
+  margin: 0 0 1.5rem 0;
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: var(--ion-color-primary);
+
+  &.expired {
+    color: var(--ion-color-danger);
+    font-weight: 600;
+
+    .expired-text {
+      color: var(--ion-color-danger);
+    }
+  }
+}
+
 .otp-field {
   margin-bottom: 1.5rem;
   --border-radius: 8px;

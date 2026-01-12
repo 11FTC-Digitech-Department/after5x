@@ -1,5 +1,6 @@
 import { Injectable, inject } from '@angular/core';
 import { createClient, SupabaseClient, AuthError, AuthResponse, OAuthResponse, User, Session } from '@supabase/supabase-js';
+import { Platform } from '@ionic/angular';
 import { ConfigService } from '../config/config.service';
 
 export interface AuthResult {
@@ -21,6 +22,7 @@ export interface SignUpMetadata {
 export class SupabaseService {
   private _client: SupabaseClient;
   private configService = inject(ConfigService);
+  private platform = inject(Platform);
 
   constructor() {
     const config = this.configService.supabase;
@@ -133,10 +135,16 @@ export class SupabaseService {
 
       console.log('Redirect URL:', redirectTo);
       console.log('Is mobile:', isMobile);
-      console.log('Capacitor available:', !!(window as any).Capacitor);
-      console.log('Is native platform:', (window as any).Capacitor?.isNativePlatform?.());
+      console.log('Platform details:', {
+        allPlatforms: this.platform.platforms(),
+        isCapacitor: this.platform.is('capacitor'),
+        isHybrid: this.platform.is('hybrid'),
+        isIOS: this.platform.is('ios'),
+        isAndroid: this.platform.is('android'),
+        isMobile: this.platform.is('mobile')
+      });
 
-      const { data, error } = await this._client.auth.signInWithOAuth({
+      const oauthOptions = {
         provider,
         options: {
           redirectTo,
@@ -147,7 +155,11 @@ export class SupabaseService {
           // Skip nonce check for local development (required for some OAuth providers)
           skipBrowserRedirect: false
         },
-      });
+      };
+
+      console.log(`OAuth options for ${provider}:`, oauthOptions);
+
+      const { data, error } = await this._client.auth.signInWithOAuth(oauthOptions);
 
       if (error) {
         console.error(`OAuth error for ${provider}:`, error);
@@ -165,8 +177,8 @@ export class SupabaseService {
   }
 
   private isMobilePlatform(): boolean {
-    // Check if Capacitor is available and we're on a native platform
-    return !!(window as any).Capacitor?.isNativePlatform?.();
+    // Check if running in Capacitor (native mobile app)
+    return this.platform.is('capacitor');
   }
 
   private getMobileRedirectUrl(): string {

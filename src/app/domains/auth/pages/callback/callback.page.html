@@ -1,10 +1,14 @@
 <ion-content class="callback-content">
   <div class="callback-container">
     <div class="loading-section">
-      <ion-spinner name="crescent" color="primary"></ion-spinner>
+      @if (isProcessing()) {
+        <ion-spinner name="crescent" color="primary"></ion-spinner>
+      }
       <ion-text>
-        <h2>Completing Authentication</h2>
-        <p>Please wait while we finish logging you in...</p>
+        <h2>{{ statusMessage() }}</h2>
+        @if (isProcessing()) {
+          <p>Please wait while we process your authentication...</p>
+        }
       </ion-text>
     </div>
   </div>

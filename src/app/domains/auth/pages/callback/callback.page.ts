@@ -1,4 +1,4 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnInit, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import {
@@ -28,6 +28,9 @@ export class CallbackPage implements OnInit {
   private sessionService = inject(SessionService);
   private toastController = inject(ToastController);
 
+  isProcessing = signal<boolean>(true);
+  statusMessage = signal<string>('Processing authentication...');
+
   ngOnInit() {
     this.handleAuthCallback();
   }
@@ -36,40 +39,106 @@ export class CallbackPage implements OnInit {
     try {
       console.log('OAuth callback initiated');
       console.log('Current URL:', window.location.href);
+      console.log('URL hash:', window.location.hash);
+      console.log('URL search:', window.location.search);
 
-      // Get the current session from Supabase
-      const { data, error } = await this.supabaseService.client.auth.getSession();
+      // Check if we have OAuth parameters in the URL
+      const hasAuthParams = window.location.hash.includes('access_token') ||
+                           window.location.hash.includes('error') ||
+                           window.location.search.includes('code') ||
+                           window.location.search.includes('error');
 
-      if (error) {
-        console.error('Auth callback error:', error);
-        console.error('Error details:', {
-          message: error.message,
-          status: error.status,
-          name: error.name
-        });
-        await this.showToast(`Authentication failed: ${error.message}`, 'danger');
+      if (!hasAuthParams) {
+        console.log('No OAuth parameters found in URL');
+        // Try to get existing session in case user refreshed the page
+        const { data, error } = await this.supabaseService.client.auth.getSession();
+
+        if (data.session && !error) {
+          console.log('Found existing session');
+          this.statusMessage.set('Authentication successful!');
+          setTimeout(() => {
+            this.navigateBasedOnRole();
+          }, 500);
+          return;
+        }
+
+        console.log('No OAuth parameters and no existing session, redirecting to login');
+        await this.showToast('Authentication failed: Invalid callback URL', 'danger');
         this.router.navigate(['/auth/login']);
         return;
       }
 
-      console.log('Session data:', data);
+      this.statusMessage.set('Completing authentication...');
+
+      // Check for OAuth errors in URL
+      const urlParams = new URLSearchParams(window.location.search);
+      const hashParams = new URLSearchParams(window.location.hash.substring(1));
+      const error = urlParams.get('error') || hashParams.get('error');
+      const errorDescription = urlParams.get('error_description') || hashParams.get('error_description');
+
+      if (error) {
+        console.error('OAuth error:', error, errorDescription);
+        this.isProcessing.set(false);
+        await this.showToast(`Authentication failed: ${errorDescription || error}`, 'danger');
+        this.router.navigate(['/auth/login']);
+        return;
+      }
+
+      // Listen for auth state changes
+      let authStateHandled = false;
+      const { data: { subscription } } = this.supabaseService.client.auth.onAuthStateChange(async (event, session) => {
+        if (authStateHandled) return; // Prevent duplicate handling
+        authStateHandled = true;
+
+        console.log('Auth state change:', event, session);
+
+        // Clean up the listener
+        subscription.unsubscribe();
+
+        if (event === 'SIGNED_IN' && session) {
+          console.log('User signed in via OAuth');
+          this.statusMessage.set('Authentication successful!');
+          this.isProcessing.set(false);
+
+          // Wait a moment for session to be fully established
+          setTimeout(() => {
+            this.navigateBasedOnRole();
+          }, 500);
+        } else {
+          console.log('OAuth authentication failed or no session');
+          this.isProcessing.set(false);
+          await this.showToast('Authentication failed. Please try again.', 'danger');
+          this.router.navigate(['/auth/login']);
+        }
+      });
+
+      // Also try to get session immediately in case it's already available
+      const { data, error: sessionError } = await this.supabaseService.client.auth.getSession();
+
+      if (sessionError) {
+        console.error('Error getting session:', sessionError);
+        this.isProcessing.set(false);
+        await this.showToast(`Authentication failed: ${sessionError.message}`, 'danger');
+        this.router.navigate(['/auth/login']);
+        return;
+      }
 
       if (data.session) {
-        console.log('Session found, setting session');
-        // Set the session in our session service
-        await this.sessionService.setSession(data.session);
-
-        // Navigate based on user role
-        this.navigateBasedOnRole();
-      } else {
-        console.log('No session found');
-        // No session found, redirect to login
-        await this.showToast('Authentication failed: No session created.', 'danger');
-        this.router.navigate(['/auth/login']);
+        console.log('Session already available');
+        this.statusMessage.set('Authentication successful!');
+        this.isProcessing.set(false);
+        setTimeout(() => {
+          this.navigateBasedOnRole();
+        }, 500);
+        return;
       }
+
+      // If no immediate session, wait for auth state change
+      console.log('Waiting for OAuth session to be established...');
+
     } catch (error) {
       console.error('Callback handling error:', error);
-      console.error('Error details:', error);
+      this.isProcessing.set(false);
       await this.showToast('An unexpected error occurred. Please try again.', 'danger');
       this.router.navigate(['/auth/login']);
     }

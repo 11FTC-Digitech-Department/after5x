@@ -9,7 +9,8 @@ import {
   IonSegment,
   IonSegmentButton,
   IonLabel,
-  ToastController
+  ToastController,
+  Platform
 } from '@ionic/angular/standalone';
 import { LoginFormComponent, LoginFormData } from '../../components/login-form/login-form.component';
 import { SignupFormComponent, SignupFormData } from '../../components/signup-form/signup-form.component';
@@ -39,6 +40,7 @@ export class LoginPage implements OnInit {
   private supabaseService = inject(SupabaseService);
   private sessionService = inject(SessionService);
   private toastController = inject(ToastController);
+  private platform = inject(Platform);
 
   selectedSegment = signal<'login' | 'signup'>('login');
   isLoginLoading = signal<boolean>(false);
@@ -128,6 +130,14 @@ export class LoginPage implements OnInit {
 
   async onFacebookLogin() {
     console.log('Facebook login button clicked');
+    console.log('Current platform detection:', {
+      allPlatforms: this.platform.platforms(),
+      isCapacitor: this.platform.is('capacitor'),
+      isHybrid: this.platform.is('hybrid'),
+      isMobile: this.platform.is('mobile'),
+      userAgent: navigator.userAgent
+    });
+
     this.isLoginLoading.set(true);
 
     try {
@@ -135,7 +145,10 @@ export class LoginPage implements OnInit {
       console.log('Facebook login result:', result);
 
       if (!result.success) {
+        console.error('Facebook login failed:', result.error);
         await this.showToast(result.error || 'Facebook login failed', 'danger');
+      } else {
+        console.log('Facebook OAuth initiated successfully');
       }
       // OAuth redirect will handle the success case
     } catch (error) {
@@ -148,6 +161,14 @@ export class LoginPage implements OnInit {
 
   async onGoogleLogin() {
     console.log('Google login button clicked');
+    console.log('Current platform detection:', {
+      allPlatforms: this.platform.platforms(),
+      isCapacitor: this.platform.is('capacitor'),
+      isHybrid: this.platform.is('hybrid'),
+      isMobile: this.platform.is('mobile'),
+      userAgent: navigator.userAgent
+    });
+
     this.isLoginLoading.set(true);
 
     try {
@@ -155,7 +176,10 @@ export class LoginPage implements OnInit {
       console.log('Google login result:', result);
 
       if (!result.success) {
+        console.error('Google login failed:', result.error);
         await this.showToast(result.error || 'Google login failed', 'danger');
+      } else {
+        console.log('Google OAuth initiated successfully');
       }
       // OAuth redirect will handle the success case
     } catch (error) {
@@ -169,6 +193,31 @@ export class LoginPage implements OnInit {
   navigateToForgotPassword() {
     // Navigate to forgot password page
     this.router.navigate(['/auth/forgot-password']);
+  }
+
+  // Debug method for OAuth setup (can be called from console)
+  debugOAuthSetup() {
+    console.log('=== OAUTH DEBUG INFO ===');
+    console.log('Platform detection:', {
+      allPlatforms: this.platform.platforms(),
+      isCapacitor: this.platform.is('capacitor'),
+      isHybrid: this.platform.is('hybrid'),
+      isIOS: this.platform.is('ios'),
+      isAndroid: this.platform.is('android'),
+      isMobile: this.platform.is('mobile'),
+      isDesktop: this.platform.is('desktop'),
+      isPWA: this.platform.is('pwa'),
+      userAgent: navigator.userAgent
+    });
+
+    console.log('Redirect URLs:', {
+      web: `${window.location.origin}/auth/callback`,
+      mobile: 'com.rockit.after5://auth/callback'
+    });
+
+    console.log('Supabase config available:', !!this.supabaseService.client);
+    console.log('Current URL:', window.location.href);
+    console.log('=======================');
   }
 
   private validateSignupForm(formData: SignupFormData): boolean {
@@ -240,16 +289,16 @@ export class LoginPage implements OnInit {
     const role = this.sessionService.userRole();
     switch (role) {
       case 'customer':
-        this.router.navigate(['/customer']);
+        this.router.navigate(['/c']);
         break;
       case 'provider':
-        this.router.navigate(['/provider']);
+        this.router.navigate(['/p']);
         break;
       case 'admin':
-        this.router.navigate(['/admin']);
+        this.router.navigate(['/a']);
         break;
       default:
-        this.router.navigate(['/customer']); // Default to customer
+        this.router.navigate(['/c']); // Default to customer
     }
   }
 }

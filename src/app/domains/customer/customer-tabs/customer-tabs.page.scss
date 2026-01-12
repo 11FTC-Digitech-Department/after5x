@@ -1,3 +1,39 @@
 ion-content {
   --background: white;
 }
+
+// Custom tab bar styling with gradient
+ion-tab-bar {
+  --background: white;
+  --border: 1px solid #e9ecef;
+  --color-selected: var(--ion-color-primary);
+
+  ion-tab-button {
+    --color: #6c757d;
+    --color-selected: var(--ion-color-primary);
+    --background-focused: transparent;
+    --background-hover: rgba(22, 16, 106, 0.05);
+
+    ion-icon {
+      font-size: 20px;
+      margin-bottom: 4px;
+    }
+
+    ion-label {
+      font-size: 11px;
+      font-weight: 500;
+    }
+
+    // Selected state with gradient
+    &.tab-selected {
+      --color: var(--ion-color-primary);
+
+      ion-icon {
+        background: var(--app-gradient-primary);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+      }
+    }
+  }
+}
