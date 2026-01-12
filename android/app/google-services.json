@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "your_project_number",
+    "project_id": "your_project_id",
+    "storage_bucket": "your_project_id.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:your_project_number:android:your_app_id",
+        "android_client_info": {
+          "package_name": "com.rockit.after5"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyC6UXRkbdChigjhccoNb4WOWptb6IWLLg4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

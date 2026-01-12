@@ -5,12 +5,17 @@ const config: CapacitorConfig = {
   appName: 'After5',
   webDir: 'www',
   server: {
-    url: 'http://localhost:8100',
+    url: 'http://172.16.100.235:8100',
     cleartext: true
   },
   plugins: {
     CapacitorHttp: {
       enabled: true,
+    },
+    GoogleMaps: {
+      // Uncomment when you have the API key configured
+      // Add your Google Maps configuration here
+      apiKey: 'AIzaSyC6UXRkbdChigjhccoNb4WOWptb6IWLLg4'
     },
   },
 };

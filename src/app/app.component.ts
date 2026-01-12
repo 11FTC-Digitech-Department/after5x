@@ -2,6 +2,7 @@ import { Component, OnInit, inject } from '@angular/core';
 import { IonApp, IonRouterOutlet } from '@ionic/angular/standalone';
 import { Router } from '@angular/router';
 import { App } from '@capacitor/app';
+import { SupabaseService } from './core/supabase/supabase';
 
 @Component({
   selector: 'app-root',
@@ -9,7 +10,8 @@ import { App } from '@capacitor/app';
   imports: [IonApp, IonRouterOutlet],
 })
 export class AppComponent implements OnInit {
-  private router = inject(Router);
+  // Ensure SupabaseService is not tree-shaken
+  constructor(private router: Router, private supabaseService: SupabaseService) {}
 
   ngOnInit() {
     this.setupDeepLinking();

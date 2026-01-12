@@ -1,6 +1,6 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { createClient, SupabaseClient, AuthError, AuthResponse, OAuthResponse, User, Session } from '@supabase/supabase-js';
-import { environment } from 'src/environments/environment';
+import { ConfigService } from '../config/config.service';
 
 export interface AuthResult {
   success: boolean;
@@ -20,9 +20,12 @@ export interface SignUpMetadata {
 })
 export class SupabaseService {
   private _client: SupabaseClient;
+  private configService = inject(ConfigService);
 
   constructor() {
-    this._client = createClient(environment.supabase.url, environment.supabase.key, {
+    const config = this.configService.supabase;
+    console.log('SupabaseService initializing with config:', config);
+    this._client = createClient(config.url, config.key, {
       auth: {
         autoRefreshToken: true,
         persistSession: true,
@@ -119,12 +122,19 @@ export class SupabaseService {
 
       // Determine if we're running on a mobile platform
       const isMobile = this.isMobilePlatform();
-      const redirectTo = isMobile
+      const config = this.configService.getConfig();
+
+      // Force mobile detection for production builds to ensure proper redirect
+      const forceMobile = config.production || isMobile;
+
+      const redirectTo = forceMobile
         ? this.getMobileRedirectUrl()
         : `${window.location.origin}/auth/callback`;
 
       console.log('Redirect URL:', redirectTo);
       console.log('Is mobile:', isMobile);
+      console.log('Capacitor available:', !!(window as any).Capacitor);
+      console.log('Is native platform:', (window as any).Capacitor?.isNativePlatform?.());
 
       const { data, error } = await this._client.auth.signInWithOAuth({
         provider,
