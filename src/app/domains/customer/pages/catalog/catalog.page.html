@@ -1,44 +1,112 @@
 <ion-header>
   <ion-toolbar>
-    <ion-title>Services</ion-title>
+    <ion-buttons slot="start">
+      <ion-back-button defaultHref="/c/home"></ion-back-button>
+    </ion-buttons>
+    <ion-title>{{ categoryData()?.name || 'Services' }}</ion-title>
   </ion-toolbar>
 </ion-header>
 
 <ion-content [fullscreen]="true">
+  <ion-refresher slot="fixed" (ionRefresh)="doRefresh($event)">
+    <ion-refresher-content></ion-refresher-content>
+  </ion-refresher>
+
   <ion-grid fixed class="ion-no-padding">
+    <!-- Category Header -->
     <ion-row>
       <ion-col size="12">
-        <div style="padding: 20px;">
-          <h2>Our Services</h2>
-          <p>Browse our comprehensive range of home services</p>
-
-          <ion-list>
-            <ion-item button routerLink="/c/service-details/1">
-              <ion-label>
-                <h3>Plumbing Services</h3>
-                <p>Professional plumbing repairs and installations</p>
-              </ion-label>
-              <ion-icon name="chevron-forward" slot="end"></ion-icon>
-            </ion-item>
-
-            <ion-item button routerLink="/c/service-details/2">
-              <ion-label>
-                <h3>Electrical Services</h3>
-                <p>Safe and reliable electrical work</p>
-              </ion-label>
-              <ion-icon name="chevron-forward" slot="end"></ion-icon>
-            </ion-item>
-
-            <ion-item button routerLink="/c/service-details/3">
-              <ion-label>
-                <h3>Cleaning Services</h3>
-                <p>Professional cleaning for your home</p>
-              </ion-label>
-              <ion-icon name="chevron-forward" slot="end"></ion-icon>
-            </ion-item>
-          </ion-list>
+        <div class="category-header">
+          @if (isLoading()) {
+            <ion-skeleton-text animated style="height: 32px; width: 200px; margin-bottom: 8px;"></ion-skeleton-text>
+            <ion-skeleton-text animated style="height: 20px; width: 300px;"></ion-skeleton-text>
+          } @else {
+            <h2>{{ categoryData()?.name }}</h2>
+            <p>Browse our comprehensive range of {{ categoryData()?.name?.toLowerCase() }} services</p>
+          }
         </div>
       </ion-col>
+    </ion-row>
+
+    <!-- Services Grid -->
+    <ion-row>
+      @if (isLoading()) {
+        @for (i of [1,2,3,4,5,6]; track i) {
+          <ion-col size="12" size-md="6">
+            <ion-card class="service-card">
+              <ion-skeleton-text animated style="height: 200px;"></ion-skeleton-text>
+              <ion-card-content>
+                <ion-skeleton-text animated style="height: 24px; width: 80%; margin-bottom: 8px;"></ion-skeleton-text>
+                <ion-skeleton-text animated style="height: 16px; width: 100%; margin-bottom: 4px;"></ion-skeleton-text>
+                <ion-skeleton-text animated style="height: 16px; width: 60%;"></ion-skeleton-text>
+              </ion-card-content>
+            </ion-card>
+          </ion-col>
+        }
+      } @else if (categoryData()?.serviceVariants?.length) {
+        @for (serviceVariant of categoryData()!.serviceVariants; track serviceVariant.id) {
+          <ion-col size="12" size-md="6">
+            <ion-card class="service-card" (click)="navigateToService(serviceVariant.id)">
+              <img
+                [src]="serviceVariant.service?.image_url || 'assets/splash/main-splash.png'"
+                alt="{{ serviceVariant.name }}"
+                class="service-image"
+                loading="lazy"
+              />
+              <ion-card-content>
+                <ion-card-title class="service-title">{{ serviceVariant.name }}</ion-card-title>
+                <ion-card-subtitle class="service-description">
+                  {{ serviceVariant.description || serviceVariant.service?.description || 'No description available' }}
+                </ion-card-subtitle>
+
+                <div class="service-details">
+                  <div class="price-info">
+                    <ion-chip color="primary" class="price-chip">
+                      ₱{{ serviceVariant.price_min }} - ₱{{ serviceVariant.price_max }}
+                    </ion-chip>
+                  </div>
+
+                  <div class="service-meta">
+                    <ion-chip color="secondary" outline class="duration-chip">
+                      {{ serviceVariant.duration_minutes }} min
+                    </ion-chip>
+                  </div>
+                </div>
+
+                <!-- Provider Info -->
+                @if (serviceVariant.provider_offerings?.[0]?.provider) {
+                  <div class="provider-info">
+                    <ion-avatar class="provider-avatar">
+                      <img
+                        [src]="serviceVariant.provider_offerings[0].provider.profiles?.avatar_url || 'assets/logo/main-logo.png'"
+                        alt="Provider avatar"
+                      />
+                    </ion-avatar>
+                    <div class="provider-details">
+                      <ion-text class="provider-name">
+                        {{ serviceVariant.provider_offerings[0].provider.profiles?.full_name }}
+                      </ion-text>
+                      <div class="provider-rating">
+                        <ion-icon name="star" color="warning"></ion-icon>
+                        <ion-text>{{ (serviceVariant.provider_offerings[0].provider.rating_avg || 0) | number:'1.1-1' }}</ion-text>
+                        <ion-text color="medium">({{ serviceVariant.provider_offerings[0].provider.rating_count || 0 }})</ion-text>
+                      </div>
+                    </div>
+                  </div>
+                }
+              </ion-card-content>
+            </ion-card>
+          </ion-col>
+        }
+      } @else {
+        <ion-col size="12">
+          <div class="no-services">
+            <ion-icon name="construct-outline" size="large" color="medium"></ion-icon>
+            <h3>No services available</h3>
+            <p>Check back later for services in this category.</p>
+          </div>
+        </ion-col>
+      }
     </ion-row>
   </ion-grid>
 </ion-content>

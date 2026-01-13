@@ -85,6 +85,9 @@ export class HomePage implements OnInit {
     { id: '5', name: 'Plumbing', slug: 'plumbing', icon: 'water' }
   ];
 
+  // Note: These popular services are hardcoded for demo.
+  // In production, these would come from a "featured" or "popular" query
+
   popularServices: PopularService[] = [
     {
       id: '1',
@@ -158,7 +161,8 @@ export class HomePage implements OnInit {
   }
 
   navigateToService(service: PopularService) {
-    // Navigate to service details or booking
-    this.router.navigate(['/c/book', service.id]);
+    // For now, navigate to catalog with a default category
+    // In production, this would navigate to specific service details
+    this.router.navigate(['/c/catalog', 'plumbing']); // Default to first category
   }
 }

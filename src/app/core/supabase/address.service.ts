@@ -31,9 +31,19 @@ export class AddressService {
       }
 
       // Transform the location from PostGIS geography to lat/lng
-      const addresses = data?.map(address => ({
-        ...address,
-        location: this.parseGeographyPoint(address.location)
+      const addresses: UserAddress[] = data?.map(address => ({
+        id: address.id,
+        user_id: address.user_id,
+        label: address.label || 'Home',
+        is_default: address.is_default || false,
+        full_address: address.full_address,
+        unit_details: address.unit_details || undefined,
+        access_instructions: address.access_instructions || undefined,
+        has_parking: address.has_parking || false,
+        parking_instructions: address.parking_instructions || undefined,
+        location: this.parseGeographyPoint(address.location),
+        created_at: address.created_at || '',
+        updated_at: address.updated_at || ''
       })) || [];
 
       return { data: addresses, error: null };
@@ -68,13 +78,22 @@ export class AddressService {
         return { data: null, error: 'Address not found' };
       }
 
-      return {
-        data: {
-          ...data,
-          location: this.parseGeographyPoint(data.location)
-        },
-        error: null
+      const address: UserAddress = {
+        id: data.id,
+        user_id: data.user_id,
+        label: data.label || 'Home',
+        is_default: data.is_default || false,
+        full_address: data.full_address,
+        unit_details: data.unit_details || undefined,
+        access_instructions: data.access_instructions || undefined,
+        has_parking: data.has_parking || false,
+        parking_instructions: data.parking_instructions || undefined,
+        location: this.parseGeographyPoint(data.location),
+        created_at: data.created_at || '',
+        updated_at: data.updated_at || ''
       };
+
+      return { data: address, error: null };
     } catch (error) {
       return { data: null, error: 'Failed to fetch address' };
     }
@@ -116,13 +135,22 @@ export class AddressService {
         return { data: null, error: error.message };
       }
 
-      return {
-        data: {
-          ...data,
-          location: this.parseGeographyPoint(data.location)
-        },
-        error: null
+      const address: UserAddress = {
+        id: data.id,
+        user_id: data.user_id,
+        label: data.label || 'Home',
+        is_default: data.is_default || false,
+        full_address: data.full_address,
+        unit_details: data.unit_details || undefined,
+        access_instructions: data.access_instructions || undefined,
+        has_parking: data.has_parking || false,
+        parking_instructions: data.parking_instructions || undefined,
+        location: this.parseGeographyPoint(data.location),
+        created_at: data.created_at || '',
+        updated_at: data.updated_at || ''
       };
+
+      return { data: address, error: null };
     } catch (error) {
       return { data: null, error: 'Failed to create address' };
     }
@@ -171,13 +199,22 @@ export class AddressService {
         return { data: null, error: error.message };
       }
 
-      return {
-        data: {
-          ...data,
-          location: this.parseGeographyPoint(data.location)
-        },
-        error: null
+      const address: UserAddress = {
+        id: data.id,
+        user_id: data.user_id,
+        label: data.label || 'Home',
+        is_default: data.is_default || false,
+        full_address: data.full_address,
+        unit_details: data.unit_details || undefined,
+        access_instructions: data.access_instructions || undefined,
+        has_parking: data.has_parking || false,
+        parking_instructions: data.parking_instructions || undefined,
+        location: this.parseGeographyPoint(data.location),
+        created_at: data.created_at || '',
+        updated_at: data.updated_at || ''
       };
+
+      return { data: address, error: null };
     } catch (error) {
       return { data: null, error: 'Failed to update address' };
     }
@@ -268,13 +305,26 @@ export class AddressService {
         return { data: null, error: error.message };
       }
 
-      return {
-        data: {
-          ...data,
-          location: this.parseGeographyPoint(data.location)
-        },
-        error: null
+      if (!data) {
+        return { data: null, error: null };
+      }
+
+      const address: UserAddress = {
+        id: data.id,
+        user_id: data.user_id,
+        label: data.label || 'Home',
+        is_default: data.is_default || false,
+        full_address: data.full_address,
+        unit_details: data.unit_details || undefined,
+        access_instructions: data.access_instructions || undefined,
+        has_parking: data.has_parking || false,
+        parking_instructions: data.parking_instructions || undefined,
+        location: this.parseGeographyPoint(data.location),
+        created_at: data.created_at || '',
+        updated_at: data.updated_at || ''
       };
+
+      return { data: address, error: null };
     } catch (error) {
       return { data: null, error: 'Failed to fetch default address' };
     }

@@ -1,0 +1,283 @@
+.hero-image-container {
+  padding: 0;
+  position: relative;
+
+  .hero-image {
+    width: 100%;
+    height: 250px;
+    object-fit: cover;
+    border-radius: 0 0 16px 16px;
+  }
+
+  .hero-skeleton {
+    width: 100%;
+    height: 250px;
+    border-radius: 0 0 16px 16px;
+  }
+}
+
+.service-info-card {
+  margin: 16px;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+
+  .service-title {
+    font-size: 24px;
+    font-weight: 700;
+    margin-bottom: 4px;
+    color: var(--ion-color-dark);
+  }
+
+  .service-subtitle {
+    font-size: 16px;
+    color: var(--ion-color-primary);
+    font-weight: 500;
+    margin-bottom: 16px;
+  }
+
+  .service-details-row {
+    margin-bottom: 16px;
+
+    .detail-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+
+      .price-text, .duration-text {
+        font-size: 18px;
+        font-weight: 600;
+        margin-bottom: 4px;
+      }
+
+      .detail-label {
+        font-size: 12px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
+    }
+  }
+
+  .provider-info {
+    display: flex;
+    align-items: center;
+    padding: 12px;
+    background: var(--ion-color-light);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+
+    &:hover {
+      background: var(--ion-color-light-shade);
+    }
+
+    .provider-avatar {
+      width: 50px;
+      height: 50px;
+      margin-right: 12px;
+    }
+
+    .provider-details {
+      flex: 1;
+
+      .provider-name {
+        display: block;
+        font-size: 16px;
+        font-weight: 600;
+        margin-bottom: 4px;
+        color: var(--ion-color-dark);
+      }
+
+      .provider-rating {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+
+        ion-icon {
+          font-size: 14px;
+        }
+
+        ion-text {
+          font-size: 14px;
+          color: var(--ion-color-medium);
+        }
+      }
+    }
+  }
+}
+
+.service-segment {
+  --background: transparent;
+  margin: 0 16px;
+
+  ion-segment-button {
+    --border-radius: 8px;
+    --color-checked: var(--ion-color-primary);
+    font-weight: 500;
+  }
+}
+
+.content-card {
+  margin: 16px;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+
+  ion-card-title {
+    font-size: 18px;
+    font-weight: 600;
+    margin-bottom: 12px;
+    color: var(--ion-color-dark);
+  }
+
+  .service-description {
+    line-height: 1.6;
+    color: var(--ion-color-dark-tint);
+  }
+
+  .provider-about {
+    .provider-bio {
+      display: block;
+      line-height: 1.6;
+      margin-bottom: 16px;
+      color: var(--ion-color-dark-tint);
+    }
+
+    .provider-stats {
+      .stat-item {
+        text-align: center;
+        padding: 12px;
+
+        .stat-value {
+          display: block;
+          font-size: 24px;
+          font-weight: 700;
+          color: var(--ion-color-primary);
+          margin-bottom: 4px;
+        }
+
+        .stat-label {
+          font-size: 12px;
+          color: var(--ion-color-medium);
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
+        }
+      }
+    }
+  }
+}
+
+.other-services-list {
+  padding: 0;
+
+  .other-service-item {
+    --border-radius: 8px;
+    --padding-start: 0;
+    --inner-padding-end: 0;
+    margin-bottom: 8px;
+
+    ion-label {
+      h3 {
+        font-size: 16px;
+        font-weight: 600;
+        margin-bottom: 4px;
+        color: var(--ion-color-dark);
+      }
+
+      p {
+        font-size: 14px;
+        color: var(--ion-color-medium);
+        margin-bottom: 8px;
+      }
+
+      .service-price-duration {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+
+        .price-chip, .duration-chip {
+          font-size: 12px;
+          height: 24px;
+        }
+      }
+    }
+
+    ion-icon {
+      color: var(--ion-color-medium);
+    }
+  }
+}
+
+.book-now-button {
+  --border-radius: 0;
+  font-weight: 600;
+  font-size: 16px;
+  height: 56px;
+}
+
+.review-item {
+  padding: 16px 0;
+  border-bottom: 1px solid var(--ion-color-light-shade);
+
+  &:last-child {
+    border-bottom: none;
+  }
+
+  .review-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+
+    .rating-stars {
+      display: flex;
+      gap: 2px;
+
+      ion-icon {
+        font-size: 16px;
+      }
+    }
+
+    .review-date {
+      font-size: 12px;
+      color: var(--ion-color-medium);
+    }
+  }
+
+  .review-comment {
+    display: block;
+    margin-bottom: 8px;
+    line-height: 1.5;
+    color: var(--ion-color-dark-tint);
+  }
+
+  .review-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+}
+
+// Loading states
+ion-skeleton-text {
+  --background: rgba(var(--ion-color-light-rgb), 0.8);
+  --background-rgb: var(--ion-color-light-rgb);
+}
+
+// Responsive adjustments
+@media (max-width: 576px) {
+  .hero-image-container .hero-image {
+    height: 200px;
+  }
+
+  .service-info-card {
+    margin: 12px;
+
+    .service-title {
+      font-size: 20px;
+    }
+  }
+
+  .content-card {
+    margin: 12px;
+  }
+}

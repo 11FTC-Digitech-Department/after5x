@@ -2,6 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { createClient, SupabaseClient, AuthError, AuthResponse, OAuthResponse, User, Session } from '@supabase/supabase-js';
 import { Platform } from '@ionic/angular';
 import { ConfigService } from '../config/config.service';
+import { Database } from './database.types';
 
 export interface AuthResult {
   success: boolean;
@@ -20,7 +21,7 @@ export interface SignUpMetadata {
   providedIn: 'root',
 })
 export class SupabaseService {
-  private _client: SupabaseClient;
+  private _client: SupabaseClient<Database>;
   private configService = inject(ConfigService);
   private platform = inject(Platform);
 
@@ -43,7 +44,7 @@ export class SupabaseService {
     });
   }
 
-  get client(): SupabaseClient {
+  get client(): SupabaseClient<Database> {
     return this._client;
   }
 

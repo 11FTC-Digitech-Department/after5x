@@ -42,4 +42,8 @@ export const CUSTOMER_ROUTES: Routes = [
     path: 'profile/addresses',
     loadComponent: () => import('./pages/profile/addresses/addresses.page').then(m => m.AddressesPage),
   },
+  {
+    path: 'service-details/:serviceVariantId',
+    loadComponent: () => import('./pages/service-details/service-details.page').then(m => m.ServiceDetailsPage),
+  },
 ];

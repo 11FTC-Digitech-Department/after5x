@@ -1,13 +1,281 @@
-<ion-header [translucent]="true">
+<ion-header class="ion-no-border">
   <ion-toolbar>
-    <ion-title>service-details</ion-title>
+    <ion-buttons slot="start">
+      <ion-back-button defaultHref="/c/home"></ion-back-button>
+    </ion-buttons>
+    <ion-buttons slot="end">
+      <ion-button fill="clear" (click)="toggleFavorite()">
+        <ion-icon
+          [name]="isFavorite() ? 'heart' : 'heart-outline'"
+          [color]="isFavorite() ? 'danger' : 'medium'">
+        </ion-icon>
+      </ion-button>
+    </ion-buttons>
   </ion-toolbar>
 </ion-header>
 
 <ion-content [fullscreen]="true">
-  <ion-header collapse="condense">
-    <ion-toolbar>
-      <ion-title size="large">service-details</ion-title>
-    </ion-toolbar>
-  </ion-header>
+  <ion-grid fixed class="ion-no-padding">
+    <!-- Hero Image -->
+    <ion-row>
+      <ion-col size="12" class="hero-image-container">
+        @if (isLoading()) {
+          <ion-skeleton-text animated class="hero-skeleton"></ion-skeleton-text>
+        } @else {
+          <img
+            [src]="serviceData()?.service?.image_url || 'assets/splash/main-splash.png'"
+            alt="Service hero image"
+            class="hero-image"
+            loading="lazy"
+          />
+        }
+      </ion-col>
+    </ion-row>
+
+    <!-- Service Info Card -->
+    <ion-row>
+      <ion-col size="12">
+        <ion-card class="service-info-card">
+          <ion-card-content>
+            <ion-grid>
+              <ion-row>
+                <ion-col size="12">
+                  @if (isLoading()) {
+                    <ion-skeleton-text animated style="height: 28px; width: 80%; margin-bottom: 8px;"></ion-skeleton-text>
+                    <ion-skeleton-text animated style="height: 20px; width: 60%;"></ion-skeleton-text>
+                  } @else {
+                    <ion-card-title class="service-title">{{ serviceTitle() }}</ion-card-title>
+                    <ion-card-subtitle class="service-subtitle">{{ serviceData()?.category?.name }}</ion-card-subtitle>
+                  }
+                </ion-col>
+              </ion-row>
+
+              <ion-row class="service-details-row">
+                <ion-col size="6">
+                  @if (isLoading()) {
+                    <ion-skeleton-text animated style="height: 20px; width: 100%;"></ion-skeleton-text>
+                  } @else {
+                    <div class="detail-item">
+                      <ion-text color="primary" class="price-text">{{ servicePrice() }}</ion-text>
+                      <ion-text color="medium" class="detail-label">Price Range</ion-text>
+                    </div>
+                  }
+                </ion-col>
+
+                <ion-col size="6">
+                  @if (isLoading()) {
+                    <ion-skeleton-text animated style="height: 20px; width: 100%;"></ion-skeleton-text>
+                  } @else {
+                    <div class="detail-item">
+                      <ion-text color="primary" class="duration-text">{{ serviceDuration() }}</ion-text>
+                      <ion-text color="medium" class="detail-label">Duration</ion-text>
+                    </div>
+                  }
+                </ion-col>
+              </ion-row>
+
+              <!-- Provider Info -->
+              <ion-row>
+                <ion-col size="12">
+                  @if (isLoading()) {
+                    <ion-skeleton-text animated style="height: 20px; width: 70%;"></ion-skeleton-text>
+                  } @else {
+                    <div class="provider-info" (click)="navigateToProvider()">
+                      <ion-avatar slot="start" class="provider-avatar">
+                        <img [src]="serviceData()?.provider?.profile?.avatar_url || 'assets/logo/main-logo.png'" alt="Provider avatar" />
+                      </ion-avatar>
+                      <div class="provider-details">
+                        <ion-text class="provider-name">{{ providerName() }}</ion-text>
+                        <div class="provider-rating">
+                          <ion-icon name="star" color="warning"></ion-icon>
+                          <ion-text>{{ providerRating() | number:'1.1-1' }}</ion-text>
+                          <ion-text color="medium">({{ serviceData()?.provider?.rating_count || 0 }} reviews)</ion-text>
+                        </div>
+                      </div>
+                    </div>
+                  }
+                </ion-col>
+              </ion-row>
+            </ion-grid>
+          </ion-card-content>
+        </ion-card>
+      </ion-col>
+    </ion-row>
+
+    <!-- Segment Tabs -->
+    <ion-row>
+      <ion-col size="12">
+        <ion-segment
+          [(ngModel)]="selectedSegment"
+          (ionChange)="onSegmentChange($event)"
+          class="service-segment">
+          <ion-segment-button value="services">
+            <ion-label>Services</ion-label>
+          </ion-segment-button>
+          <ion-segment-button value="provider">
+            <ion-label>About Provider</ion-label>
+          </ion-segment-button>
+          <ion-segment-button value="reviews">
+            <ion-label>Reviews</ion-label>
+          </ion-segment-button>
+        </ion-segment>
+      </ion-col>
+    </ion-row>
+
+    <!-- Services Tab Content -->
+    @if (selectedSegment() === 'services') {
+      <ion-row>
+        <ion-col size="12">
+          <!-- Service Description -->
+          <ion-card class="content-card">
+            <ion-card-content>
+              <ion-card-title>Description</ion-card-title>
+              @if (isLoading()) {
+                <ion-skeleton-text animated style="height: 16px; width: 100%; margin-bottom: 8px;"></ion-skeleton-text>
+                <ion-skeleton-text animated style="height: 16px; width: 90%; margin-bottom: 8px;"></ion-skeleton-text>
+                <ion-skeleton-text animated style="height: 16px; width: 80%;"></ion-skeleton-text>
+              } @else {
+                <ion-text class="service-description">
+                  {{ serviceData()?.description || serviceData()?.service?.description || 'No description available.' }}
+                </ion-text>
+              }
+            </ion-card-content>
+          </ion-card>
+
+          <!-- Other Services by Provider -->
+          @if (providerServices().length > 0) {
+            <ion-card class="content-card">
+              <ion-card-content>
+                <ion-card-title>Other Services by {{ providerName() }}</ion-card-title>
+
+                <ion-list class="other-services-list">
+                  @for (service of providerServices(); track service.id) {
+                    <ion-item
+                      button
+                      (click)="navigateToService(service.id)"
+                      class="other-service-item">
+                      <ion-label>
+                        <h3>{{ service.name }}</h3>
+                        <p>{{ service.description || 'No description available' }}</p>
+                        <div class="service-price-duration">
+                          <ion-chip color="primary" class="price-chip">
+                            ₱{{ service.price_min }} - ₱{{ service.price_max }}
+                          </ion-chip>
+                          <ion-chip color="secondary" outline class="duration-chip">
+                            {{ service.duration_minutes }} min
+                          </ion-chip>
+                        </div>
+                      </ion-label>
+                      <ion-icon name="chevron-forward" slot="end"></ion-icon>
+                    </ion-item>
+                  }
+                </ion-list>
+              </ion-card-content>
+            </ion-card>
+          }
+        </ion-col>
+      </ion-row>
+    }
+
+    <!-- About Provider Tab Content -->
+    @if (selectedSegment() === 'provider') {
+      <ion-row>
+        <ion-col size="12">
+          <ion-card class="content-card">
+            <ion-card-content>
+              <ion-card-title>About {{ providerName() }}</ion-card-title>
+              @if (isLoading()) {
+                <ion-skeleton-text animated style="height: 16px; width: 100%; margin-bottom: 8px;"></ion-skeleton-text>
+                <ion-skeleton-text animated style="height: 16px; width: 95%; margin-bottom: 8px;"></ion-skeleton-text>
+                <ion-skeleton-text animated style="height: 16px; width: 85%;"></ion-skeleton-text>
+              } @else {
+                <div class="provider-about">
+                  <ion-text class="provider-bio">
+                    {{ serviceData()?.provider?.bio || 'No bio available.' }}
+                  </ion-text>
+
+                  <ion-grid class="provider-stats">
+                    <ion-row>
+                      <ion-col size="6">
+                        <div class="stat-item">
+                          <ion-text class="stat-value">{{ serviceData()?.provider?.years_of_experience || 0 }}</ion-text>
+                          <ion-text class="stat-label">Years Experience</ion-text>
+                        </div>
+                      </ion-col>
+                      <ion-col size="6">
+                        <div class="stat-item">
+                          <ion-text class="stat-value">{{ serviceData()?.provider?.service_radius_km || 10 }}</ion-text>
+                          <ion-text class="stat-label">Service Radius (km)</ion-text>
+                        </div>
+                      </ion-col>
+                    </ion-row>
+                  </ion-grid>
+                </div>
+              }
+            </ion-card-content>
+          </ion-card>
+        </ion-col>
+      </ion-row>
+    }
+
+    <!-- Reviews Tab Content -->
+    @if (selectedSegment() === 'reviews') {
+      <ion-row>
+        <ion-col size="12">
+          <ion-card class="content-card">
+            <ion-card-content>
+              <ion-card-title>Reviews ({{ providerReviews().length }})</ion-card-title>
+
+              @if (providerReviews().length === 0) {
+                <ion-text color="medium">No reviews yet.</ion-text>
+              } @else {
+                @for (review of providerReviews(); track review.id) {
+                  <div class="review-item">
+                    <div class="review-header">
+                      <div class="rating-stars">
+                        @for (star of [1,2,3,4,5]; track star) {
+                          <ion-icon
+                            [name]="star <= review.rating ? 'star' : 'star-outline'"
+                            color="warning">
+                          </ion-icon>
+                        }
+                      </div>
+                      <ion-text class="review-date">
+                        {{ review.created_at | date:'short' }}
+                      </ion-text>
+                    </div>
+
+                    @if (review.comment) {
+                      <ion-text class="review-comment">{{ review.comment }}</ion-text>
+                    }
+
+                    @if (review.tags && review.tags.length > 0) {
+                      <div class="review-tags">
+                        @for (tag of review.tags; track tag) {
+                          <ion-chip size="small" color="primary" outline>{{ tag }}</ion-chip>
+                        }
+                      </div>
+                    }
+                  </div>
+                }
+              }
+            </ion-card-content>
+          </ion-card>
+        </ion-col>
+      </ion-row>
+    }
+  </ion-grid>
 </ion-content>
+
+<!-- Footer with Book Now Button -->
+<ion-footer class="ion-no-border">
+  <ion-toolbar>
+    <ion-button
+      expand="full"
+      size="large"
+      (click)="bookNow()"
+      class="book-now-button">
+      Book Now
+    </ion-button>
+  </ion-toolbar>
+</ion-footer>
