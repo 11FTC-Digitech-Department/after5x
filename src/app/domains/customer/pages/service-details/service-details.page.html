@@ -107,6 +107,7 @@
       <ion-col size="12">
         <ion-segment
           [(ngModel)]="selectedSegment"
+          [scrollable]="true"
           (ionChange)="onSegmentChange($event)"
           class="service-segment">
           <ion-segment-button value="services">

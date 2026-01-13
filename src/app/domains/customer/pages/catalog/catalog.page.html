@@ -1,9 +1,8 @@
-<ion-header>
-  <ion-toolbar>
+<ion-header class="ion-no-border">
+  <ion-toolbar class="category-header-toolbar">
     <ion-buttons slot="start">
       <ion-back-button defaultHref="/c/home"></ion-back-button>
     </ion-buttons>
-    <ion-title>{{ categoryData()?.name || 'Services' }}</ion-title>
   </ion-toolbar>
 </ion-header>
 
@@ -31,73 +30,55 @@
     <!-- Services Grid -->
     <ion-row>
       @if (isLoading()) {
-        @for (i of [1,2,3,4,5,6]; track i) {
-          <ion-col size="12" size-md="6">
-            <ion-card class="service-card">
-              <ion-skeleton-text animated style="height: 200px;"></ion-skeleton-text>
-              <ion-card-content>
-                <ion-skeleton-text animated style="height: 24px; width: 80%; margin-bottom: 8px;"></ion-skeleton-text>
-                <ion-skeleton-text animated style="height: 16px; width: 100%; margin-bottom: 4px;"></ion-skeleton-text>
-                <ion-skeleton-text animated style="height: 16px; width: 60%;"></ion-skeleton-text>
-              </ion-card-content>
-            </ion-card>
-          </ion-col>
-        }
-      } @else if (categoryData()?.serviceVariants?.length) {
-        @for (serviceVariant of categoryData()!.serviceVariants; track serviceVariant.id) {
-          <ion-col size="12" size-md="6">
-            <ion-card class="service-card" (click)="navigateToService(serviceVariant.id)">
-              <img
-                [src]="serviceVariant.service?.image_url || 'assets/splash/main-splash.png'"
-                alt="{{ serviceVariant.name }}"
-                class="service-image"
-                loading="lazy"
-              />
-              <ion-card-content>
-                <ion-card-title class="service-title">{{ serviceVariant.name }}</ion-card-title>
-                <ion-card-subtitle class="service-description">
-                  {{ serviceVariant.description || serviceVariant.service?.description || 'No description available' }}
-                </ion-card-subtitle>
-
-                <div class="service-details">
-                  <div class="price-info">
-                    <ion-chip color="primary" class="price-chip">
-                      ₱{{ serviceVariant.price_min }} - ₱{{ serviceVariant.price_max }}
-                    </ion-chip>
-                  </div>
-
-                  <div class="service-meta">
-                    <ion-chip color="secondary" outline class="duration-chip">
-                      {{ serviceVariant.duration_minutes }} min
-                    </ion-chip>
-                  </div>
+        <ion-col size="12">
+          <ion-list class="service-list">
+            @for (i of [1,2,3,4,5,6]; track i) {
+              <ion-item class="service-item skeleton-item">
+                <ion-thumbnail slot="start">
+                  <ion-skeleton-text animated style="width: 80px; height: 80px; border-radius: 8px;"></ion-skeleton-text>
+                </ion-thumbnail>
+                <ion-label>
+                  <ion-skeleton-text animated style="height: 16px; width: 70%; margin-bottom: 8px;"></ion-skeleton-text>
+                  <ion-skeleton-text animated style="height: 14px; width: 90%; margin-bottom: 8px;"></ion-skeleton-text>
+                  <ion-skeleton-text animated style="height: 12px; width: 50%;"></ion-skeleton-text>
+                </ion-label>
+                <div slot="end" class="badges-container">
+                  <ion-skeleton-text animated style="height: 20px; width: 60px; border-radius: 12px;"></ion-skeleton-text>
+                  <ion-skeleton-text animated style="height: 20px; width: 50px; border-radius: 12px;"></ion-skeleton-text>
                 </div>
-
-                <!-- Provider Info -->
-                @if (serviceVariant.provider_offerings?.[0]?.provider) {
-                  <div class="provider-info">
-                    <ion-avatar class="provider-avatar">
-                      <img
-                        [src]="serviceVariant.provider_offerings[0].provider.profiles?.avatar_url || 'assets/logo/main-logo.png'"
-                        alt="Provider avatar"
-                      />
-                    </ion-avatar>
-                    <div class="provider-details">
-                      <ion-text class="provider-name">
-                        {{ serviceVariant.provider_offerings[0].provider.profiles?.full_name }}
-                      </ion-text>
-                      <div class="provider-rating">
-                        <ion-icon name="star" color="warning"></ion-icon>
-                        <ion-text>{{ (serviceVariant.provider_offerings[0].provider.rating_avg || 0) | number:'1.1-1' }}</ion-text>
-                        <ion-text color="medium">({{ serviceVariant.provider_offerings[0].provider.rating_count || 0 }})</ion-text>
-                      </div>
-                    </div>
-                  </div>
-                }
-              </ion-card-content>
-            </ion-card>
-          </ion-col>
-        }
+              </ion-item>
+            }
+          </ion-list>
+        </ion-col>
+      } @else if (categoryData()?.serviceVariants?.length) {
+        <ion-col size="12">
+          <ion-list class="service-list">
+            @for (serviceVariant of categoryData()!.serviceVariants; track serviceVariant.id) {
+              <ion-item class="service-item" (click)="navigateToService(serviceVariant.id)" detail="true" button>
+                <ion-thumbnail slot="start">
+                  <img
+                    [src]="serviceVariant.service?.image_url || 'assets/splash/main-splash.png'"
+                    alt="{{ serviceVariant.name }}"
+                    loading="lazy"
+                  />
+                </ion-thumbnail>
+                <ion-label>
+                  <h2>{{ serviceVariant.name }}</h2>
+                  <p>{{ serviceVariant.description || serviceVariant.service?.description || 'No description available' }} • {{ serviceVariant.duration_minutes }} min</p>
+                </ion-label>
+                <div slot="end" class="badges-container">
+                  <ion-badge color="primary">
+                    ₱{{ serviceVariant.price_min }} - ₱{{ serviceVariant.price_max }}
+                  </ion-badge>
+                  <ion-badge color="warning">
+                    <ion-icon name="star"></ion-icon>
+                    {{ (serviceVariant.provider_offerings?.[0]?.provider?.rating_avg || 0) | number:'1.1-1' }}
+                  </ion-badge>
+                </div>
+              </ion-item>
+            }
+          </ion-list>
+        </ion-col>
       } @else {
         <ion-col size="12">
           <div class="no-services">

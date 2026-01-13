@@ -111,7 +111,8 @@ export class ServiceService {
       }
 
       // Then get the provider offering for this service variant
-      const { data: offeringData, error: offeringError } = await client
+      // Get all active offerings for this service variant, then pick the best one
+      const { data: offeringsData, error: offeringError } = await client
         .from('provider_offerings')
         .select(`
           *,
@@ -122,13 +123,27 @@ export class ServiceService {
           )
         `)
         .eq('service_variant_id', serviceVariantId)
-        .eq('is_active', true)
-        .single();
+        .eq('is_active', true);
 
-      if (offeringError || !offeringData) {
-        console.error('Error fetching provider offering:', offeringError);
+      if (offeringError) {
+        console.error('Error fetching provider offerings:', offeringError);
         return null;
       }
+
+      if (!offeringsData || offeringsData.length === 0) {
+        console.error('No provider offerings found for service variant:', serviceVariantId);
+        return null;
+      }
+
+      // Sort by rating (highest first), then by creation date (oldest first)
+      const sortedOfferings = offeringsData.sort((a: any, b: any) => {
+        const ratingA = a.provider?.rating_avg || 0;
+        const ratingB = b.provider?.rating_avg || 0;
+        if (ratingB !== ratingA) return ratingB - ratingA;
+        return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+      });
+
+      const offeringData = sortedOfferings[0];
 
       // Combine the data
       return {
