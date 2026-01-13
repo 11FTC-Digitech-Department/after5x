@@ -4,10 +4,6 @@ const config: CapacitorConfig = {
   appId: 'com.rockit.after5',
   appName: 'After5',
   webDir: 'www',
-  server: {
-    url: 'http://172.16.100.235:8100',
-    cleartext: true
-  },
   plugins: {
     CapacitorHttp: {
       enabled: true,

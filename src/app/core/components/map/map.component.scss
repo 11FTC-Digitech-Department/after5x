@@ -1,0 +1,66 @@
+.map-container {
+  position: relative;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.map-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  background: var(--ion-color-light);
+
+  ion-text {
+    margin-top: 8px;
+    font-size: 14px;
+    color: var(--ion-color-medium);
+  }
+}
+
+.map-unavailable {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  background: var(--ion-color-light);
+  border-radius: 8px;
+  padding: 20px;
+  text-align: center;
+
+  .map-icon {
+    font-size: 48px;
+    color: var(--ion-color-medium);
+    margin-bottom: 16px;
+  }
+
+  .map-message {
+    color: var(--ion-color-medium);
+    font-size: 14px;
+    line-height: 1.4;
+
+    p {
+      margin: 4px 0;
+    }
+  }
+}
+
+capacitor-google-map {
+  display: inline-block;
+  width: 100%;
+  height: 100%;
+}
+
+// Dark mode support
+@media (prefers-color-scheme: dark) {
+  .map-loading {
+    background: var(--ion-color-dark);
+  }
+
+  .map-unavailable {
+    background: var(--ion-color-dark);
+  }
+}

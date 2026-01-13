@@ -1,0 +1,124 @@
+<ion-header>
+  <ion-toolbar>
+    <ion-title>{{ isEditMode() ? 'Edit Address' : 'Add New Address' }}</ion-title>
+    <ion-buttons slot="end">
+      <ion-button fill="clear" (click)="onCancel()">
+        <ion-icon name="close" slot="icon-only"></ion-icon>
+      </ion-button>
+    </ion-buttons>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content>
+  <form [formGroup]="addressForm" (ngSubmit)="onSubmit()">
+    <ion-list>
+      <!-- Address Label -->
+      <ion-item>
+        <ion-label position="stacked">Address Label *</ion-label>
+        <ion-select formControlName="label" placeholder="Select a label">
+          @for (label of addressLabels; track label) {
+            <ion-select-option [value]="label">{{ label }}</ion-select-option>
+          }
+        </ion-select>
+      </ion-item>
+
+      <!-- Set as Default Toggle -->
+      <ion-item>
+        <ion-label>Set as Default Address</ion-label>
+        <ion-toggle formControlName="is_default" slot="end"></ion-toggle>
+      </ion-item>
+
+      <!-- Map Selector -->
+      <ion-item>
+        <ion-label position="stacked">Location *</ion-label>
+        <div class="map-container">
+          <app-map-selector
+            [initialLocation]="selectedLocation()"
+            height="250px"
+            (locationSelected)="onLocationSelected($event)">
+          </app-map-selector>
+        </div>
+      </ion-item>
+
+      <!-- Full Address (auto-filled from map) -->
+      <ion-item [class.invalid]="isFieldInvalid('full_address')">
+        <ion-label position="stacked">Full Address *</ion-label>
+        <ion-textarea
+          formControlName="full_address"
+          placeholder="Address will be auto-filled when you select a location on the map"
+          rows="3"
+          [autoGrow]="true">
+        </ion-textarea>
+        @if (getFieldError('full_address')) {
+          <ion-text color="danger" class="error-text">
+            {{ getFieldError('full_address') }}
+          </ion-text>
+        }
+      </ion-item>
+
+      <!-- Unit Details -->
+      <ion-item>
+        <ion-label position="stacked">Unit Details</ion-label>
+        <ion-input
+          formControlName="unit_details"
+          placeholder="e.g., Unit 123, Floor 5, Building A">
+        </ion-input>
+      </ion-item>
+
+      <!-- Access Instructions -->
+      <ion-item>
+        <ion-label position="stacked">Access Instructions</ion-label>
+        <ion-textarea
+          formControlName="access_instructions"
+          placeholder="e.g., Ring doorbell, ask for John, use back entrance"
+          rows="2"
+          [autoGrow]="true">
+        </ion-textarea>
+      </ion-item>
+
+      <!-- Parking Information -->
+      <ion-item>
+        <ion-label position="stacked">Parking Available</ion-label>
+        <ion-toggle formControlName="has_parking" slot="end"></ion-toggle>
+      </ion-item>
+
+      @if (addressForm.get('has_parking')?.value) {
+        <ion-item>
+          <ion-label position="stacked">Parking Instructions</ion-label>
+          <ion-textarea
+            formControlName="parking_instructions"
+            placeholder="e.g., Free street parking, Building garage - Level 2"
+            rows="2"
+            [autoGrow]="true">
+          </ion-textarea>
+        </ion-item>
+      }
+    </ion-list>
+
+    <!-- Submit Button -->
+    <div class="form-actions">
+      <ion-button
+        expand="block"
+        type="submit"
+        [disabled]="isSubmitting() || !selectedLocation()"
+        class="submit-btn">
+        @if (isSubmitting()) {
+          <ion-spinner name="crescent" slot="start"></ion-spinner>
+          {{ isEditMode() ? 'Updating...' : 'Creating...' }}
+        } @else {
+          <ion-icon name="checkmark" slot="start"></ion-icon>
+          {{ isEditMode() ? 'Update Address' : 'Save Address' }}
+        }
+      </ion-button>
+
+      <ion-button
+        expand="block"
+        fill="clear"
+        type="button"
+        (click)="onCancel()"
+        [disabled]="isSubmitting()">
+        Cancel
+      </ion-button>
+    </div>
+  </form>
+</ion-content>

@@ -26,7 +26,6 @@ export class SupabaseService {
 
   constructor() {
     const config = this.configService.supabase;
-    console.log('SupabaseService initializing with config:', config);
     this._client = createClient(config.url, config.key, {
       auth: {
         autoRefreshToken: true,

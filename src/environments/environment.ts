@@ -6,7 +6,7 @@ export const environment = {
   production: false,
   appUrl: 'http://localhost:8100',
   supabase: {
-    url: 'http://127.0.0.1:54321/',
+    url: 'https://344a134aeec4.ngrok-free.app/',
     key: 'sb_publishable_ACJWlzQHlZjBrEguHvfOxg_3BJgxAaH',
   },
   oauth: {

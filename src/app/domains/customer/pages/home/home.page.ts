@@ -19,7 +19,8 @@ import {
   IonText,
   IonBadge
 } from '@ionic/angular/standalone';
-import { SupabaseService } from '../../../../core/supabase/supabase';
+import { SupabaseService } from '@core/supabase/supabase';
+import { AddressService } from '@core/supabase/address.service';
 import { User } from '@supabase/supabase-js';
 
 interface ServiceCategory {
@@ -65,6 +66,7 @@ interface PopularService {
 })
 export class HomePage implements OnInit {
   private supabaseService = inject(SupabaseService);
+  private addressService = inject(AddressService);
   private router = inject(Router);
 
   currentUser = signal<User | null>(null);
@@ -73,7 +75,7 @@ export class HomePage implements OnInit {
     return user?.user_metadata?.['full_name'] || user?.email?.split('@')[0] || 'User';
   });
 
-  currentLocation = signal('Makati City, Philippines');
+  currentLocation = signal('Select your location');
 
   categories: ServiceCategory[] = [
     { id: '1', name: 'Locksmithing', slug: 'locksmithing', icon: 'key' },
@@ -114,6 +116,7 @@ export class HomePage implements OnInit {
 
   async ngOnInit() {
     await this.loadUser();
+    await this.loadDefaultAddress();
   }
 
   async loadUser() {
@@ -122,6 +125,27 @@ export class HomePage implements OnInit {
       this.currentUser.set(user);
     } catch (error) {
       console.error('Error loading user:', error);
+    }
+  }
+
+  async loadDefaultAddress() {
+    try {
+      const result = await this.addressService.getDefaultAddress();
+      if (result.data) {
+        // Show a shortened version of the address
+        const address = result.data.full_address;
+        const maxLength = 35;
+        const displayAddress = address.length > maxLength
+          ? address.substring(0, maxLength) + '...'
+          : address;
+        this.currentLocation.set(displayAddress);
+      } else {
+        // No default address set, keep the prompt
+        this.currentLocation.set('Select your location');
+      }
+    } catch (error) {
+      console.error('Error loading default address:', error);
+      this.currentLocation.set('Select your location');
     }
   }
 

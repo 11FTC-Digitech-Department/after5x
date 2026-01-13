@@ -12,19 +12,21 @@
       </ion-button>
     </ion-buttons>
   </ion-toolbar>
-  <ion-toolbar>
-    <!-- Location Header -->
-    <div class="location-header" (click)="navigateToAddresses()">
-      <ion-icon name="location" class="location-icon"></ion-icon>
-      <div class="location-info">
-        <ion-text class="location-text">{{ currentLocation() }}</ion-text>
-        <ion-text class="location-subtitle">Tap to change location</ion-text>
+    <ion-toolbar>
+      <!-- Location Header -->
+      <div class="location-header" (click)="navigateToAddresses()">
+        <ion-icon name="location" class="location-icon"></ion-icon>
+        <div class="location-info">
+          <ion-text class="location-text">{{ currentLocation() }}</ion-text>
+          <ion-text class="location-subtitle">
+            {{ currentLocation() === 'Select your location' ? 'Tap to add your first address' : 'Tap to change location' }}
+          </ion-text>
+        </div>
+        <ion-button fill="clear" class="chevron-button">
+          <ion-icon name="chevron-forward" class="chevron-icon"></ion-icon>
+        </ion-button>
       </div>
-      <ion-button fill="clear" class="chevron-button">
-        <ion-icon name="chevron-forward" class="chevron-icon"></ion-icon>
-      </ion-button>
-    </div>
-  </ion-toolbar>
+    </ion-toolbar>
 </ion-header>
 
 <ion-content [fullscreen]="true" >

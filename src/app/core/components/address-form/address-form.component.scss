@@ -1,0 +1,31 @@
+.map-container {
+  width: 100%;
+  margin-top: 8px;
+}
+
+.invalid {
+  --border-color: var(--ion-color-danger);
+}
+
+.error-text {
+  font-size: 12px;
+  margin-top: 4px;
+  display: block;
+}
+
+.form-actions {
+  padding: 16px;
+
+  .submit-btn {
+    margin-bottom: 8px;
+    --background: var(--ion-color-primary);
+    --color: white;
+  }
+}
+
+// Dark mode support
+@media (prefers-color-scheme: dark) {
+  .error-text {
+    color: var(--ion-color-danger-light);
+  }
+}

@@ -1,0 +1,138 @@
+.loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 200px;
+
+  ion-text {
+    margin-top: 16px;
+    color: var(--ion-color-medium);
+  }
+}
+
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 40px 20px;
+  min-height: 300px;
+
+  .empty-icon {
+    font-size: 64px;
+    color: var(--ion-color-medium);
+    margin-bottom: 16px;
+  }
+
+  h3 {
+    margin: 0 0 8px 0;
+    color: var(--ion-color-dark);
+    font-weight: 600;
+  }
+
+  p {
+    margin: 0 0 24px 0;
+    color: var(--ion-color-medium);
+    max-width: 280px;
+  }
+
+  .add-first-btn {
+    --background: var(--ion-color-primary);
+    --color: white;
+  }
+}
+
+.address-item {
+  --border-radius: 8px;
+  --margin-bottom: 8px;
+  --padding-start: 16px;
+  --padding-end: 8px;
+  --padding-top: 16px;
+  --padding-bottom: 16px;
+  --background: var(--ion-color-light);
+
+  .address-icon {
+    font-size: 24px;
+    color: var(--ion-color-primary);
+    margin-right: 12px;
+  }
+
+  .address-label {
+    display: flex;
+    align-items: center;
+    margin: 0 0 4px 0;
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--ion-color-dark);
+
+    .default-badge {
+      margin-left: 8px;
+      font-size: 10px;
+    }
+  }
+
+  .address-text {
+    margin: 0 0 4px 0;
+    color: var(--ion-color-dark);
+    line-height: 1.4;
+  }
+
+  .unit-details {
+    margin: 0 0 4px 0;
+    color: var(--ion-color-medium);
+    font-size: 14px;
+    font-style: italic;
+  }
+
+  .parking-info {
+    display: flex;
+    align-items: center;
+    margin: 0;
+    color: var(--ion-color-success);
+    font-size: 14px;
+
+    .parking-icon {
+      font-size: 14px;
+      margin-right: 4px;
+    }
+  }
+
+  ion-buttons {
+    ion-button {
+      --padding-start: 8px;
+      --padding-end: 8px;
+
+      ion-icon {
+        font-size: 18px;
+      }
+    }
+  }
+}
+
+.help-text {
+  padding: 16px;
+  text-align: center;
+
+  ion-text {
+    font-size: 12px;
+  }
+}
+
+// Dark mode support
+@media (prefers-color-scheme: dark) {
+  .address-item {
+    --background: var(--ion-color-dark);
+  }
+
+  .empty-state {
+    h3 {
+      color: var(--ion-color-light);
+    }
+
+    p {
+      color: var(--ion-color-medium);
+    }
+  }
+}

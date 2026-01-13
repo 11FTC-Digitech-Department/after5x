@@ -1,0 +1,62 @@
+<div class="map-selector-container">
+  <!-- Search Bar -->
+  <div class="search-container">
+    <ion-searchbar
+      [value]="searchQuery()"
+      (ionInput)="onSearchInput($event)"
+      placeholder="Search for an address..."
+      [showClearButton]="'always'"
+      (ionClear)="clearSearch()">
+    </ion-searchbar>
+
+    <!-- Search Results -->
+    @if (searchResults().length > 0) {
+      <ion-list class="search-results">
+        @for (result of searchResults(); track result.place_id) {
+          <ion-item button (click)="selectPlace(result)">
+            <ion-label>
+              <h3>{{ result.structured_formatting.main_text }}</h3>
+              <p>{{ result.structured_formatting.secondary_text }}</p>
+            </ion-label>
+          </ion-item>
+        }
+      </ion-list>
+    }
+
+    @if (isSearching()) {
+      <div class="search-loading">
+        <ion-spinner name="crescent"></ion-spinner>
+        <ion-text>Searching...</ion-text>
+      </div>
+    }
+  </div>
+
+  <!-- Map Container -->
+  <app-map
+    [height]="height()"
+    [center]="getMapCenter()"
+    [markers]="getMapMarkers()"
+    (mapReady)="onMapReady()">
+  </app-map>
+
+    <!-- Current Location Button -->
+    <ion-button
+      fill="clear"
+      class="current-location-btn"
+      (click)="useCurrentLocation()">
+      <ion-icon name="locate" slot="icon-only"></ion-icon>
+    </ion-button>
+  </div>
+
+  <!-- Selected Address Display -->
+  @if (selectedLocation()) {
+    <div class="selected-address">
+      <ion-icon name="location" class="address-icon"></ion-icon>
+      <div class="address-info">
+        <ion-text class="address-text">{{ selectedLocation()!.address }}</ion-text>
+        <ion-text class="coordinates-text">
+          {{ selectedLocation()!.lat.toFixed(6) }}, {{ selectedLocation()!.lng.toFixed(6) }}
+        </ion-text>
+      </div>
+    </div>
+  }
