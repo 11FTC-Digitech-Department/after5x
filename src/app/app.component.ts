@@ -19,21 +19,53 @@ export class AppComponent implements OnInit {
 
   private setupDeepLinking() {
     // Handle deep links when app is opened from OAuth redirects
-    App.addListener('appUrlOpen', (data) => {
-      const url = new URL(data.url);
+    App.addListener('appUrlOpen', async (data) => {
+      console.log('Deep link received:', data.url);
 
-      // Handle OAuth callback deep links
-      if (url.pathname.includes('/auth/callback')) {
-        // Navigate to callback page with query parameters
-        const queryParams: { [key: string]: string } = {};
-        url.searchParams.forEach((value, key) => {
-          queryParams[key] = value;
-        });
+      try {
+        const url = new URL(data.url);
 
-        this.router.navigate(['/auth/callback'], {
-          queryParams,
-          replaceUrl: true // Replace current URL to avoid back button issues
-        });
+        // Handle OAuth callback deep links
+        if (url.pathname.includes('/auth/callback')) {
+          // Extract BOTH query params AND hash params
+          const queryParams: { [key: string]: string } = {};
+
+          // Get query parameters (PKCE code)
+          url.searchParams.forEach((value, key) => {
+            queryParams[key] = value;
+          });
+
+          // Get hash parameters (access_token, refresh_token)
+          if (url.hash) {
+            const hashParams = new URLSearchParams(url.hash.substring(1));
+            hashParams.forEach((value, key) => {
+              queryParams[key] = value;
+            });
+          }
+
+          console.log('OAuth parameters extracted:', {
+            hasQuery: url.search ? true : false,
+            hash: url.hash ? 'present' : 'none',
+            paramCount: Object.keys(queryParams).length
+          });
+
+          // Close in-app browser if still open
+          try {
+            const Browser = (await import('@capacitor/browser')).Browser;
+            await Browser.close();
+          } catch (e) {
+            console.log('Browser already closed');
+          }
+
+          // Navigate with ALL parameters and hash fragment
+          this.router.navigate(['/auth/callback'], {
+            queryParams,
+            replaceUrl: true,
+            fragment: url.hash.substring(1)
+          });
+        }
+      } catch (error) {
+        console.error('Deep link processing error:', error);
       }
     });
   }

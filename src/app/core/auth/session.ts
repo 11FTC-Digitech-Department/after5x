@@ -38,17 +38,26 @@ export class SessionService {
   private async initSession() {
     this._loading.set(true);
 
+    // Check if we're on the OAuth callback page
+    const isCallbackPage = window.location.pathname.includes('/auth/callback');
+
     try {
-      // 1. Check current session
-      const { data, error } = await this.supabase.auth.getSession();
-      if (error) {
-        console.error('Error getting session:', error);
-      }
+      // Skip initial session check if we're on the callback page to avoid lock contention
+      // The callback page will handle setting the session
+      if (!isCallbackPage) {
+        console.log('SessionService: Getting initial session');
+        const { data, error } = await this.supabase.auth.getSession();
+        if (error) {
+          console.error('Error getting session:', error);
+        }
 
-      this._session.set(data.session);
+        this._session.set(data.session);
 
-      if (data.session) {
-        await this.fetchProfile(data.session.user.id);
+        if (data.session) {
+          await this.fetchProfile(data.session.user.id);
+        }
+      } else {
+        console.log('SessionService: Skipping initial session check (on callback page)');
       }
     } catch (error) {
       console.error('Error during session initialization:', error);
@@ -59,6 +68,7 @@ export class SessionService {
 
     // 2. Listen for changes (Login/Logout)
     this.supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log('SessionService: Auth state changed:', event);
       const wasAuthenticated = !!this._session();
       this._session.set(session);
 

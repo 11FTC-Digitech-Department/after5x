@@ -16,6 +16,7 @@ import {
   IonAvatar,
   IonIcon
 } from '@ionic/angular/standalone';
+import { SessionService } from '../../../../core/auth/session';
 
 @Component({
   selector: 'app-profile',
@@ -41,15 +42,16 @@ import {
 })
 export class ProfilePage implements OnInit {
   private router = inject(Router);
+  private sessionService = inject(SessionService);
 
   constructor() { }
 
   ngOnInit() {
   }
 
-  logout() {
-    // Handle logout logic
+  async logout() {
+    // Handle logout logic using SessionService
     console.log('Logging out...');
-    this.router.navigate(['/auth/login']);
+    await this.sessionService.signOut();
   }
 }

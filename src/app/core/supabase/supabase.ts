@@ -3,6 +3,8 @@ import { createClient, SupabaseClient, AuthError, AuthResponse, OAuthResponse, U
 import { Platform } from '@ionic/angular';
 import { ConfigService } from '../config/config.service';
 import { Database } from './database.types';
+import { CapacitorStorageAdapter } from '../storage/capacitor-storage.adapter';
+import { OAuthHelperService } from '../auth/oauth-helper.service';
 
 export interface AuthResult {
   success: boolean;
@@ -24,14 +26,19 @@ export class SupabaseService {
   private _client: SupabaseClient<Database>;
   private configService = inject(ConfigService);
   private platform = inject(Platform);
+  private oauthHelper = inject(OAuthHelperService);
 
   constructor() {
     const config = this.configService.supabase;
+    const storage = new CapacitorStorageAdapter(this.platform);
+
     this._client = createClient(config.url, config.key, {
       auth: {
+        storage: storage,
         autoRefreshToken: true,
         persistSession: true,
-        detectSessionInUrl: true
+        detectSessionInUrl: false,  // Manually handle OAuth callback to avoid race conditions
+        flowType: 'pkce'
       },
       db: {
         schema: 'public'
@@ -122,29 +129,15 @@ export class SupabaseService {
     try {
       console.log(`Starting OAuth flow for ${provider}`);
 
-      // Determine if we're running on a mobile platform
-      const isMobile = this.isMobilePlatform();
-      const config = this.configService.getConfig();
-
-      // Force mobile detection for production builds to ensure proper redirect
-      const forceMobile = config.production || isMobile;
-
-      const redirectTo = forceMobile
+      const isMobile = this.platform.is('capacitor');
+      const redirectTo = isMobile
         ? this.getMobileRedirectUrl()
         : `${window.location.origin}/auth/callback`;
 
-      console.log('Redirect URL:', redirectTo);
-      console.log('Is mobile:', isMobile);
-      console.log('Platform details:', {
-        allPlatforms: this.platform.platforms(),
-        isCapacitor: this.platform.is('capacitor'),
-        isHybrid: this.platform.is('hybrid'),
-        isIOS: this.platform.is('ios'),
-        isAndroid: this.platform.is('android'),
-        isMobile: this.platform.is('mobile')
-      });
+      console.log('OAuth redirect URL:', redirectTo);
 
-      const oauthOptions = {
+      // Get OAuth URL from Supabase
+      const { data, error } = await this._client.auth.signInWithOAuth({
         provider,
         options: {
           redirectTo,
@@ -152,24 +145,41 @@ export class SupabaseService {
             access_type: 'offline',
             prompt: 'consent'
           },
-          // Skip nonce check for local development (required for some OAuth providers)
-          skipBrowserRedirect: false
-        },
-      };
-
-      console.log(`OAuth options for ${provider}:`, oauthOptions);
-
-      const { data, error } = await this._client.auth.signInWithOAuth(oauthOptions);
+          skipBrowserRedirect: true  // We handle browser manually
+        }
+      });
 
       if (error) {
         console.error(`OAuth error for ${provider}:`, error);
         return this.handleAuthError(error);
       }
 
-      console.log(`OAuth initiated successfully for ${provider}`);
-      return {
-        success: true,
-      };
+      if (!data.url) {
+        return {
+          success: false,
+          error: 'Failed to get OAuth URL from provider'
+        };
+      }
+
+      // On mobile, use in-app browser with fallback
+      if (isMobile) {
+        const result = await this.oauthHelper.initiateOAuth(data.url, provider);
+
+        if (!result.success) {
+          return {
+            success: false,
+            error: result.error || 'OAuth authentication failed'
+          };
+        }
+
+        console.log(`OAuth completed via ${result.method} browser`);
+        return { success: true };
+      }
+
+      // On web, open in same window
+      window.location.href = data.url;
+      return { success: true };
+
     } catch (error) {
       console.error(`OAuth exception for ${provider}:`, error);
       return this.handleAuthError(error as AuthError);
@@ -304,6 +314,15 @@ export class SupabaseService {
         break;
       case 'Invalid OAuth state':
         errorMessage = 'Social login session expired. Please try again.';
+        break;
+      case 'OAuth in-app browser failed':
+        errorMessage = 'Failed to open login browser. Please check your internet connection and try again.';
+        break;
+      case 'OAuth timeout - user may have closed browser':
+        errorMessage = 'Login timed out or was cancelled. Please try again.';
+        break;
+      case 'OAuth already in progress':
+        errorMessage = 'Please complete the current login before trying again.';
         break;
       default:
         if (error.message.includes('Network request failed')) {

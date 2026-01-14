@@ -102,14 +102,7 @@ export class LoginPage implements OnInit {
       );
 
       if (result.success && result.user) {
-        // Create profile after successful signup
-        try {
-          await this.createUserProfile(result.user.id, formData);
-        } catch (profileError) {
-          console.error('Profile creation failed:', profileError);
-          // Don't fail signup if profile creation fails
-        }
-
+        // Profile is automatically created by database trigger
         await this.showToast('Please check your email for verification code', 'success');
         this.router.navigate(['/auth/verify-otp'], {
           state: {
@@ -261,29 +254,6 @@ export class LoginPage implements OnInit {
     await toast.present();
   }
 
-  private async createUserProfile(userId: string, formData: SignupFormData) {
-    try {
-      const { error } = await this.supabaseService.client
-        .from('profiles')
-        .insert({
-          id: userId,
-          email: formData.email,
-          full_name: formData.email.split('@')[0], // Use email username as default full name
-          role: 'customer',
-          phone_number: formData.mobile
-        });
-
-      if (error) {
-        console.error('Error creating profile:', error);
-        throw error;
-      }
-
-      console.log('Profile created successfully for user:', userId);
-    } catch (error) {
-      console.error('Failed to create user profile:', error);
-      throw error;
-    }
-  }
 
   private navigateBasedOnRole() {
     const role = this.sessionService.userRole();
