@@ -8,6 +8,9 @@ export const environment = {
   supabase: {
     url: 'https://344a134aeec4.ngrok-free.app/',
     key: 'sb_publishable_ACJWlzQHlZjBrEguHvfOxg_3BJgxAaH',
+  },
+  googleMaps: {
+    apiKey: 'AIzaSyC6UXRkbdChigjhccoNb4WOWptb6IWLLg4',
   }
 };
 

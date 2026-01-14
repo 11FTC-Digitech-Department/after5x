@@ -1,6 +1,23 @@
 <div class="map-container" [style.height]="height()">
     <capacitor-google-map
-      #mapContainer
-      id="map">
+        #mapContainer
+        id="map"
+        (enableTouch)="true"
+        >
     </capacitor-google-map>
+
+    @if (isLoading()) {
+        <div class="map-loading">
+            <ion-spinner name="crescent"></ion-spinner>
+            <ion-text>Loading map...</ion-text>
+        </div>
+    } @else if (hasError()) {
+        <div class="map-error">
+            <ion-icon name="map" class="map-icon"></ion-icon>
+            <div class="map-message">
+                <p><strong>Map unavailable</strong></p>
+                <p>{{ errorMessage() }}</p>
+            </div>
+        </div>
+    }
 </div>

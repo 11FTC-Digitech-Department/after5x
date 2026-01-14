@@ -1,10 +1,10 @@
-import { Component, OnInit, OnDestroy, input, output, effect, signal, ViewChild } from '@angular/core';
+import { Component, OnInit, OnDestroy, input, output, effect, signal, computed, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { IonSearchbar, IonList, IonItem, IonLabel, IonSpinner, IonText, IonIcon, IonButton } from '@ionic/angular/standalone';
 import { GoogleMapsService } from '../../services/google-maps.service';
 import { GooglePlaceResult, GeocodeResult } from '../../models/address.model';
-import { MapComponent, MapMarker, MapCamera } from '../map/map.component';
+import { MapComponent } from '../map/map.component';
 import { debounceTime, distinctUntilChanged, Subject } from 'rxjs';
 
 @Component({
@@ -23,7 +23,6 @@ import { debounceTime, distinctUntilChanged, Subject } from 'rxjs';
     IonText,
     IonIcon,
     IonButton,
-    MapComponent
   ]
 })
 export class MapSelectorComponent implements OnInit, OnDestroy {
@@ -42,6 +41,15 @@ export class MapSelectorComponent implements OnInit, OnDestroy {
   selectedLocation = signal<GeocodeResult | null>(null);
   isSearching = signal(false);
   isLoading = signal(true);
+
+  // Computed signals
+  mapCenter = computed(() => {
+    const location = this.selectedLocation();
+    if (location) {
+      return { lat: location.lat, lng: location.lng, zoom: 15 };
+    }
+    return { lat: 14.5995, lng: 120.9842, zoom: 15 }; // Manila default
+  });
 
   // Private properties
   private currentMarkerId = 'selected-location';
@@ -97,6 +105,7 @@ export class MapSelectorComponent implements OnInit, OnDestroy {
       const geocodeResult = await this.googleMapsService.reverseGeocode(center.lat, center.lng);
       if (geocodeResult) {
         this.selectedLocation.set(geocodeResult);
+
       }
     } catch (error) {
       console.error('Error initializing map:', error);
@@ -113,10 +122,11 @@ export class MapSelectorComponent implements OnInit, OnDestroy {
         this.selectedLocation.set(geocodeResult);
         this.locationSelected.emit(geocodeResult);
 
-        // Update marker and camera (MapComponent will react to selectedLocation changes)
+        // Update marker and camera imperatively
         if (this.mapComponent) {
-          await this.mapComponent.updateMarker(this.currentMarkerId, { lat, lng });
-          await this.mapComponent.moveCamera({ lat, lng, zoom: 15 });
+
+
+
         }
       }
     } catch (error) {
@@ -188,27 +198,6 @@ export class MapSelectorComponent implements OnInit, OnDestroy {
     this.searchResults.set([]);
   }
 
-  // Template methods
-  getMapCenter(): MapCamera {
-    const location = this.selectedLocation();
-    if (location) {
-      return { lat: location.lat, lng: location.lng, zoom: 15 };
-    }
-    return { lat: 14.5995, lng: 120.9842, zoom: 15 }; // Manila default
-  }
-
-  getMapMarkers(): MapMarker[] {
-    const location = this.selectedLocation();
-    if (location) {
-      return [{
-        id: this.currentMarkerId,
-        position: { lat: location.lat, lng: location.lng },
-        title: 'Selected Location',
-        draggable: true
-      }];
-    }
-    return [];
-  }
 
   async onMapReady() {
     // Map is now ready, initialize the location

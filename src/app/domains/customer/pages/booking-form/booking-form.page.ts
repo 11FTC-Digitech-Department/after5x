@@ -35,6 +35,7 @@ import { SessionService } from '@core/auth/session';
 import { AddressService } from '@core/supabase/address.service';
 import { UserAddress, GeocodeResult } from '@core/models/address.model';
 import { MapSelectorComponent } from '@core/components/map-selector/map-selector.component';
+import { MapComponent } from "@app/core/components/map";
 
 interface BookingDetails {
   serviceType: string;
@@ -100,8 +101,7 @@ interface PriceBreakdown {
     IonBadge,
     MapSelectorComponent,
     CommonModule,
-    ReactiveFormsModule
-  ]
+    ReactiveFormsModule, MapComponent]
 })
 export class BookingFormPage implements OnInit {
   private formBuilder = inject(FormBuilder);

@@ -298,6 +298,8 @@
                     [initialLocation]="getInitialMapLocation()"
                     (locationSelected)="onLocationSelected($event)">
                   </app-map-selector>
+
+                  <app-map [height]="'300px'" (locationSelected)="onLocationSelected($event)"></app-map>
                 </div>
 
 

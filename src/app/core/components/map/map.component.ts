@@ -1,14 +1,11 @@
-import { Component, ElementRef, ViewChild, OnInit, OnDestroy, input, output, signal, effect } from '@angular/core';
+import { Component, ElementRef, ViewChild, OnInit, OnDestroy, AfterViewInit, input, output, signal, viewChild, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { CUSTOM_ELEMENTS_SCHEMA } from '@angular/core';
-import { GoogleMap } from '@capacitor/google-maps';
-
-export interface MapMarker {
-  id: string;
-  position: { lat: number; lng: number };
-  title?: string;
-  draggable?: boolean;
-}
+import { IonSpinner, IonText, IonIcon } from '@ionic/angular/standalone';
+import { GoogleMap, Marker } from '@capacitor/google-maps';
+import { environment } from 'src/environments/environment';
+import { GoogleMapsService } from '@core/services/google-maps.service';
+import { GeocodeResult } from '@core/models/address.model';
 
 export interface MapCamera {
   lat: number;
@@ -22,246 +19,108 @@ export interface MapCamera {
   styleUrls: ['./map.component.scss'],
   standalone: true,
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
-  imports: [CommonModule, ]
+  imports: [CommonModule, IonSpinner, IonText, IonIcon]
 })
-export class MapComponent implements OnInit, OnDestroy {
-  @ViewChild('mapContainer', { static: true }) mapContainer!: ElementRef;
-
+export class MapComponent implements OnInit, OnDestroy, AfterViewInit {
   // Inputs
   center = input<MapCamera>({ lat: 14.5995, lng: 120.9842, zoom: 15 });
-  markers = input<MapMarker[]>([]);
   height = input<string>('300px');
 
   // Outputs
   mapReady = output<void>();
-  mapClick = output<{ lat: number; lng: number }>();
-  markerDragEnd = output<{ markerId: string; position: { lat: number; lng: number } }>();
+  locationSelected = output<GeocodeResult>();
 
   // Signals
   isLoading = signal(true);
-
+  hasError = signal(false);
+  errorMessage = signal('');
+  mapInstance = signal<GoogleMap | null>(null);
+  currentMarkerId = signal<string | null>(null);
+  mapContainerRef = viewChild<ElementRef>('mapContainer');
 
   // Private properties
-  private mapInstance: GoogleMap | null = null;
-  private markerIds = new Map<string, string>(); // Maps our marker IDs to Google Maps marker IDs
+  private googleMapsService = inject(GoogleMapsService);
 
-  // Getter for template access
-  get hasMapInstance(): boolean {
-    return this.mapInstance !== null;
-  }
-
-  constructor() {
-    // React to marker changes
-  }
+  constructor() {}
 
   async ngOnInit() {
-    await this.initializeMap();
+    // Component initialization - map creation moved to AfterViewInit
+  }
+
+  async ngAfterViewInit() {
+    this.initializeMap();
   }
 
   async ngOnDestroy() {
-
+    // Clean up map instance
+    if (this.mapInstance()) {
+      try {
+        await this.mapInstance()?.destroy();
+        this.mapInstance.set(null);
+      } catch (error) {
+        console.error('Error destroying map:', error);
+      }
+    }
   }
 
   private async initializeMap() {
     try {
       this.isLoading.set(true);
-
-      const center = this.center();
-      const mapInstance = await GoogleMap.create({
+    
+      this.mapInstance.set(await GoogleMap.create({
         id: 'map',
-        element: this.mapContainer?.nativeElement,
-        apiKey: 'AIzaSyC6UXRkbdChigjhccoNb4WOWptb6IWLLg4',
+        element: this.mapContainerRef()?.nativeElement ?? undefined,
+        apiKey: environment.googleMaps.apiKey,
         config: {
-          center: { lat: center.lat, lng: center.lng },
-          zoom: center.zoom || 15,
-          // Disable map controls for cleaner UI (works on web platform)
-          ...(typeof window !== 'undefined' && {
-            zoomControl: false,
-            mapTypeControl: false,
-            streetViewControl: false,
-            rotateControl: false,
-            scaleControl: false,
-            fullscreenControl: false,
-          }),
-        } as any,
+          center: { lat: this.center().lat, lng: this.center().lng },
+          zoom: this.center()?.zoom ?? 15,  
+        }, 
+      }));
+
+      console.log(this.mapInstance());
+      
+      await this.mapInstance()?.setOnMapClickListener(async (event) => {
+        const lat = event.latitude;
+        const lng = event.longitude;
+
+        // Remove the current marker if it exists
+        if (this.currentMarkerId()) {
+          await this.mapInstance()?.removeMarker(this.currentMarkerId()!);
+        }
+
+        // Add a new marker at the clicked position
+        const newMarkerId = await this.mapInstance()?.addMarker({
+          coordinate: { lat, lng },
+          draggable: true,
+        });
+
+        // Store the new marker ID for future removal
+        this.currentMarkerId.set(newMarkerId ?? null);
+
+        // Reverse geocode the coordinates to get the address
+        try {
+          const geocodeResult = await this.googleMapsService.reverseGeocode(lat, lng);
+          if (geocodeResult) {
+            this.locationSelected.emit(geocodeResult);
+          }
+        } catch (error) {
+          console.error('Error reverse geocoding location:', error);
+        }
+
+        // Center the camera on the clicked position
+        await this.mapInstance()?.setCamera({
+          coordinate: { lat, lng },
+          zoom: 15,
+        });
       });
 
-      if (mapInstance) {
-        this.mapInstance = mapInstance;
-        await this.mapInstance.addMarker({
-          coordinate: { lat: center.lat, lng: center.lng },
-          draggable: false
-        });
-
-        // Add map click listener
-        await this.mapInstance.setOnMapClickListener((event) => {
-          this.mapClick.emit({ lat: event.latitude, lng: event.longitude });
-        });
-
-        this.mapReady.emit();
-      }
     } catch (error) {
       console.error('Error initializing map:', error);
+      this.hasError.set(true);
+      this.errorMessage.set(error instanceof Error ? error.message : 'Failed to initialize map');
+      this.mapReady.emit();
     } finally {
       this.isLoading.set(false);
-    }
-  }
-
-  private async addMarkers(markers: MapMarker[]) {
-    if (!this.mapInstance) return;
-
-    // Clear existing markers
-    await this.clearMarkers();
-
-    // Add new markers using Capacitor's addMarker method
-    for (const marker of markers) {
-      try {
-        const markerId = await this.mapInstance.addMarker({
-          coordinate: marker.position,
-          title: marker.title,
-          draggable: marker.draggable ?? true
-        });
-
-        if (markerId) {
-          this.markerIds.set(marker.id, markerId);
-        }
-      } catch (error) {
-        console.error('Error adding marker:', error);
-      }
-    }
-  }
-
-  private async clearMarkers() {
-    if (!this.mapInstance) return;
-
-    for (const googleMarkerId of this.markerIds.values()) {
-      try {
-        await this.mapInstance.removeMarker(googleMarkerId);
-      } catch (error) {
-        console.error('Error removing marker:', error);
-      }
-    }
-    this.markerIds.clear();
-  }
-
-  async moveCamera(camera: MapCamera) {
-    if (this.mapInstance) {
-      try {
-        await this.mapInstance.setCamera({
-          coordinate: { lat: camera.lat, lng: camera.lng },
-          zoom: camera.zoom
-        });
-      } catch (error) {
-        console.error('Error moving camera:', error);
-      }
-    }
-  }
-
-  async addMarker(marker: MapMarker) {
-    if (this.mapInstance) {
-      try {
-        const markerId = await this.mapInstance.addMarker({
-          coordinate: marker.position,
-          title: marker.title,
-          draggable: marker.draggable ?? true
-        });
-
-        if (markerId) {
-          this.markerIds.set(marker.id, markerId);
-        }
-      } catch (error) {
-        console.error('Error adding marker:', error);
-      }
-    }
-  }
-
-  async removeMarker(markerId: string) {
-    if (this.mapInstance && this.markerIds.has(markerId)) {
-      const googleMarkerId = this.markerIds.get(markerId)!;
-      try {
-        await this.mapInstance.removeMarker(googleMarkerId);
-        this.markerIds.delete(markerId);
-      } catch (error) {
-        console.error('Error removing marker:', error);
-      }
-    }
-  }
-
-  async updateMarker(markerId: string, position: { lat: number; lng: number }) {
-    if (this.mapInstance && this.markerIds.has(markerId)) {
-      const googleMarkerId = this.markerIds.get(markerId)!;
-
-      try {
-        // Remove old marker
-        await this.mapInstance.removeMarker(googleMarkerId);
-
-        // Add new marker at updated position
-        const newGoogleMarkerId = await this.mapInstance.addMarker({
-          coordinate: position,
-          draggable: true // Keep draggable for updated markers
-        });
-
-        if (newGoogleMarkerId) {
-          this.markerIds.set(markerId, newGoogleMarkerId);
-        }
-      } catch (error) {
-        console.error('Error updating marker:', error);
-      }
-    }
-  }
-
-  private async updateMarkers(newMarkers: MapMarker[]) {
-    if (!this.mapInstance) return;
-
-    const currentMarkerIds = new Set(this.markerIds.keys());
-    const newMarkerIds = new Set(newMarkers.map(m => m.id));
-
-    // Remove markers that are no longer needed
-    for (const markerId of currentMarkerIds) {
-      if (!newMarkerIds.has(markerId)) {
-        const googleMarkerId = this.markerIds.get(markerId)!;
-        try {
-          await this.mapInstance.removeMarker(googleMarkerId);
-          this.markerIds.delete(markerId);
-        } catch (error) {
-          console.error('Error removing marker:', error);
-        }
-      }
-    }
-
-    // Add or update markers
-    for (const marker of newMarkers) {
-      if (this.markerIds.has(marker.id)) {
-        // Update existing marker position
-        const googleMarkerId = this.markerIds.get(marker.id)!;
-        try {
-          await this.mapInstance.removeMarker(googleMarkerId);
-          const newGoogleMarkerId = await this.mapInstance.addMarker({
-            coordinate: marker.position,
-            title: marker.title,
-            draggable: marker.draggable ?? true
-          });
-          if (newGoogleMarkerId) {
-            this.markerIds.set(marker.id, newGoogleMarkerId);
-          }
-        } catch (error) {
-          console.error('Error updating marker:', error);
-        }
-      } else {
-        // Add new marker
-        try {
-          const googleMarkerId = await this.mapInstance.addMarker({
-            coordinate: marker.position,
-            title: marker.title,
-            draggable: marker.draggable ?? true
-          });
-          if (googleMarkerId) {
-            this.markerIds.set(marker.id, googleMarkerId);
-          }
-        } catch (error) {
-          console.error('Error adding marker:', error);
-        }
-      }
     }
   }
 }

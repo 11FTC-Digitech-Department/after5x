@@ -3,6 +3,7 @@ import { GoogleMap } from '@capacitor/google-maps';
 import { Geolocation } from '@capacitor/geolocation';
 import { Platform } from '@ionic/angular';
 import { GooglePlaceResult, GeocodeResult } from '../models/address.model';
+import { environment } from '../../../environments/environment';
 
 @Injectable({
   providedIn: 'root',
@@ -151,7 +152,7 @@ export class GoogleMapsService {
   async reverseGeocode(lat: number, lng: number): Promise<GeocodeResult | null> {
     try {
       // Using Google Maps Geocoding API
-      const apiKey = 'AIzaSyC6UXRkbdChigjhccoNb4WOWptb6IWLLg4';
+      const apiKey = environment.googleMaps.apiKey;
       const response = await fetch(
         `https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lng}&key=${apiKey}`
       );
@@ -178,27 +179,8 @@ export class GoogleMapsService {
    * Search for places using Google Places API
    */
   async searchPlaces(query: string, location?: { lat: number; lng: number }): Promise<GooglePlaceResult[]> {
-    // Check if running in Capacitor (where Google APIs work)
-    if (!this.platform.is('capacitor')) {
-      console.warn('Places API search is only available in Capacitor apps due to CORS restrictions');
-      // Return mock results for development
-      if (query.length >= 3) {
-        return [
-          {
-            place_id: 'mock_' + query,
-            description: `${query} (Mock Result - Only works in Capacitor)`,
-            structured_formatting: {
-              main_text: query,
-              secondary_text: 'Mock Location'
-            }
-          }
-        ];
-      }
-      return [];
-    }
-
     try {
-      const apiKey = 'AIzaSyC6UXRkbdChigjhccoNb4WOWptb6IWLLg4';
+      const apiKey = environment.googleMaps.apiKey;
       let url = `https://maps.googleapis.com/maps/api/place/autocomplete/json?input=${encodeURIComponent(query)}&key=${apiKey}&types=address`;
 
       if (location) {
@@ -239,7 +221,7 @@ export class GoogleMapsService {
     }
 
     try {
-      const apiKey = 'AIzaSyC6UXRkbdChigjhccoNb4WOWptb6IWLLg4';
+      const apiKey = environment.googleMaps.apiKey;
       const response = await fetch(
         `https://maps.googleapis.com/maps/api/place/details/json?place_id=${placeId}&key=${apiKey}&fields=geometry,formatted_address`
       );
