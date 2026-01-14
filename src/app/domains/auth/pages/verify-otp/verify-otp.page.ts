@@ -19,6 +19,7 @@ import {
 } from '@ionic/angular/standalone';
 import { SupabaseService } from '../../../../core/supabase/supabase';
 import { SessionService } from '../../../../core/auth/session';
+import { AuthFlowService } from '../../../../core/auth/auth-flow.service';
 
 @Component({
   selector: 'app-verify-otp',
@@ -46,6 +47,7 @@ export class VerifyOtpPage implements OnInit, OnDestroy {
   private router = inject(Router);
   private supabaseService = inject(SupabaseService);
   private sessionService = inject(SessionService);
+  private authFlowService = inject(AuthFlowService);
   private toastController = inject(ToastController);
 
   otpCode = '';
@@ -96,8 +98,8 @@ export class VerifyOtpPage implements OnInit, OnDestroy {
         await this.showToast('Verification successful!', 'success');
 
         if (this.verificationType === 'signup') {
-          // Navigate to appropriate page based on user role
-          this.navigateBasedOnRole();
+          // Navigate to appropriate page based on user role after signup verification
+          await this.authFlowService.navigateAfterAuthentication(this.sessionService.userRole());
         } else if (this.verificationType === 'recovery') {
           // Navigate to reset password page
           this.router.navigate(['/auth/reset-password']);
@@ -167,22 +169,6 @@ export class VerifyOtpPage implements OnInit, OnDestroy {
     await toast.present();
   }
 
-  private navigateBasedOnRole() {
-    const role = this.sessionService.userRole();
-    switch (role) {
-      case 'customer':
-        this.router.navigate(['/c']);
-        break;
-      case 'provider':
-        this.router.navigate(['/p']);
-        break;
-      case 'admin':
-        this.router.navigate(['/a']);
-        break;
-      default:
-        this.router.navigate(['/c']); // Default to customer
-    }
-  }
 
   private startCountdownTimer() {
     this.updateTimerDisplay();

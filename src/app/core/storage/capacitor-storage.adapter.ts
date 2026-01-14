@@ -1,8 +1,12 @@
+import { Injectable, inject } from '@angular/core';
 import { Preferences } from '@capacitor/preferences';
 import { Platform } from '@ionic/angular';
 
+@Injectable({
+  providedIn: 'root',
+})
 export class CapacitorStorageAdapter {
-  constructor(private platform: Platform) {}
+  private platform = inject(Platform);
 
   async getItem(key: string): Promise<string | null> {
     if (this.platform.is('capacitor')) {

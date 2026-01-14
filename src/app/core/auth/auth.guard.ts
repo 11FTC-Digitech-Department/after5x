@@ -1,6 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { Router } from '@angular/router';
 import { SessionService } from './session';
+import { AuthFlowService } from './auth-flow.service';
 
 /**
  * Authentication guard service that ensures proper authentication state
@@ -12,6 +13,7 @@ import { SessionService } from './session';
 export class AuthGuard {
   private sessionService = inject(SessionService);
   private router = inject(Router);
+  private authFlowService = inject(AuthFlowService);
 
   /**
    * Ensure user is authenticated before proceeding
@@ -36,9 +38,10 @@ export class AuthGuard {
       return true;
     }
 
-    // If still not authenticated, redirect to login
+    // If still not authenticated, redirect to login with state preservation
     console.warn('AuthGuard: Authentication not available, redirecting to login');
-    await this.router.navigate(['/auth/login']);
+    const currentUrl = this.router.url;
+    await this.authFlowService.handleAuthRequired(currentUrl, 'authentication_required');
     return false;
   }
 
@@ -65,9 +68,10 @@ export class AuthGuard {
       return true;
     }
 
-    // If still not fully authenticated, redirect to login
+    // If still not fully authenticated, redirect to login with state preservation
     console.warn('AuthGuard: Full authentication not available, redirecting to login');
-    await this.router.navigate(['/auth/login']);
+    const currentUrl = this.router.url;
+    await this.authFlowService.handleAuthRequired(currentUrl, 'authentication_required');
     return false;
   }
 

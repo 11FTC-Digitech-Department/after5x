@@ -25,14 +25,14 @@ export class SupabaseService {
   private _client: SupabaseClient<Database>;
   private configService = inject(ConfigService);
   private platform = inject(Platform);
+  private storage = inject(CapacitorStorageAdapter);
 
   constructor() {
     const config = this.configService.supabase;
-    const storage = new CapacitorStorageAdapter(this.platform);
 
     this._client = createClient(config.url, config.key, {
       auth: {
-        storage: storage,
+        storage: this.storage,
         autoRefreshToken: true,
         persistSession: true,
         detectSessionInUrl: false,  // Disable automatic session detection from URL

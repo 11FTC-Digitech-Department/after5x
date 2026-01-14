@@ -223,17 +223,43 @@
                 </ion-card-title>
               </ion-card-header>
               <ion-card-content>
+                <!-- Date Selection -->
                 <ion-list>
                   <ion-item button="false" lines="none">
-                    <ion-label position="stacked">Select Date & Time *</ion-label>
+                    <ion-label position="stacked">Select Date *</ion-label>
                     <ion-datetime
-                      formControlName="preferredDateTime"
-                      presentation="date-time"
+                      formControlName="preferredDate"
+                      presentation="date"
                       locale="en-PH"
-                      placeholder="Tap to select date and time"
+                      placeholder="Tap to select date"
+                      [min]="getMinDate()"
                     ></ion-datetime>
                   </ion-item>
                 </ion-list>
+
+                <!-- Timeslot Selection -->
+                <div class="timeslot-section">
+                  <ion-text class="section-subtitle" color="medium">
+                    <small>Choose your preferred time slot</small>
+                  </ion-text>
+                  <div class="timeslot-options">
+                    @for (timeslot of timeslots; track timeslot.value) {
+                      <ion-chip
+                        [color]="timeslot.value === bookingForm.get('preferredTimeslot')?.value ? 'primary' : 'light'"
+                        [outline]="timeslot.value !== bookingForm.get('preferredTimeslot')?.value"
+                        (click)="bookingForm.get('preferredTimeslot')?.setValue(timeslot.value)"
+                        class="timeslot-chip"
+                      >
+                        <ion-icon [name]="timeslot.icon" class="timeslot-icon"></ion-icon>
+                        <ion-label>{{ timeslot.label }}</ion-label>
+                        <ion-text class="timeslot-range">{{ timeslot.range }}</ion-text>
+                        @if (timeslot.after5) {
+                          <ion-badge color="tertiary" class="after5-badge">After5</ion-badge>
+                        }
+                      </ion-chip>
+                    }
+                  </div>
+                </div>
               </ion-card-content>
             </ion-card>
           </ion-col>
@@ -418,10 +444,22 @@
               </div>
 
               <div class="summary-item">
-                <ion-text class="summary-label">Date & Time:</ion-text>
+                <ion-text class="summary-label">Date:</ion-text>
                 <ion-text class="summary-value">
-                  {{ bookingForm.get('preferredDateTime')?.value | date:'medium' }}
+                  {{ bookingForm.get('preferredDate')?.value | date:'mediumDate' }}
                 </ion-text>
+              </div>
+
+              <div class="summary-item">
+                <ion-text class="summary-label">Time Slot:</ion-text>
+                <ion-chip [color]="selectedUrgencyColor()" class="timeslot-chip-small">
+                  <ion-icon [name]="selectedTimeslotIcon()"></ion-icon>
+                  <ion-label>{{ selectedTimeslotLabel() }}</ion-label>
+                  <ion-text class="timeslot-range-small">{{ selectedTimeslotRange() }}</ion-text>
+                  @if (selectedTimeslotAfter5()) {
+                    <ion-badge color="tertiary" class="after5-badge-small">After5</ion-badge>
+                  }
+                </ion-chip>
               </div>
 
               <div class="summary-item">

@@ -20,6 +20,7 @@ import { SignupFormComponent, SignupFormData } from '../../components/signup-for
 import { SupabaseService } from '../../../../core/supabase/supabase';
 import { SessionService } from '../../../../core/auth/session';
 import { BiometricService } from '../../../../core/auth/biometric.service';
+import { AuthFlowService } from '../../../../core/auth/auth-flow.service';
 import { App } from '@capacitor/app';
 import { environment } from '../../../../../environments/environment';
 
@@ -47,6 +48,7 @@ export class LoginPage implements OnInit {
   private router = inject(Router);
   private supabaseService = inject(SupabaseService);
   private sessionService = inject(SessionService);
+  private authFlowService = inject(AuthFlowService);
   private toastController = inject(ToastController);
   biometricService = inject(BiometricService);
 
@@ -62,10 +64,18 @@ export class LoginPage implements OnInit {
     addIcons({ fingerPrintOutline, eyeOutline });
   }
 
-  ngOnInit() {
+  async ngOnInit() {
     // Check if user is already authenticated
     if (this.sessionService.isAuthenticated()) {
-      this.navigateBasedOnRole();
+      await this.authFlowService.navigateAfterAuthentication(this.sessionService.userRole());
+      return;
+    }
+
+    // Check for preserved navigation state and show appropriate message
+    const navigationState = await this.authFlowService.consumeNavigationState();
+    if (navigationState?.reason) {
+      const message = this.authFlowService.getRedirectReasonMessage(navigationState.reason);
+      await this.showToast(message, 'warning');
     }
 
     // Get app version and build info
@@ -105,7 +115,7 @@ export class LoginPage implements OnInit {
 
       if (result.success) {
         await this.showToast('Login successful!', 'success');
-        this.navigateBasedOnRole();
+        await this.authFlowService.navigateAfterAuthentication(this.sessionService.userRole());
       } else {
         await this.showToast(result.error || 'Login failed', 'danger');
       }
@@ -166,7 +176,7 @@ export class LoginPage implements OnInit {
 
       if (result.success) {
         await this.showToast('Welcome back!', 'success');
-        this.navigateBasedOnRole();
+        await this.authFlowService.navigateAfterAuthentication(this.sessionService.userRole());
       } else {
         await this.showToast(result.error || 'Biometric login failed', 'danger');
       }
@@ -233,20 +243,4 @@ export class LoginPage implements OnInit {
   }
 
 
-  private navigateBasedOnRole() {
-    const role = this.sessionService.userRole();
-    switch (role) {
-      case 'customer':
-        this.router.navigate(['/c']);
-        break;
-      case 'provider':
-        this.router.navigate(['/p']);
-        break;
-      case 'admin':
-        this.router.navigate(['/a']);
-        break;
-      default:
-        this.router.navigate(['/c']); // Default to customer
-    }
-  }
 }

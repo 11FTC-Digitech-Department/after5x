@@ -41,7 +41,8 @@ interface BookingDetails {
   serviceType: string;
   description: string;
   urgency: 'low' | 'medium' | 'high' | 'emergency';
-  preferredDateTime: string;
+  preferredDate: string;
+  preferredTimeslot: string;
   address: string;
   contactNumber: string;
   contactPerson: string;
@@ -165,6 +166,26 @@ export class BookingFormPage implements OnInit {
     return this.urgencyLevels.find(u => u.value === urgency)?.color || 'primary';
   });
 
+  selectedTimeslotLabel = computed(() => {
+    const timeslot = this.bookingForm?.get('preferredTimeslot')?.value;
+    return this.timeslots.find(t => t.value === timeslot)?.label || '';
+  });
+
+  selectedTimeslotRange = computed(() => {
+    const timeslot = this.bookingForm?.get('preferredTimeslot')?.value;
+    return this.timeslots.find(t => t.value === timeslot)?.range || '';
+  });
+
+  selectedTimeslotIcon = computed(() => {
+    const timeslot = this.bookingForm?.get('preferredTimeslot')?.value;
+    return this.timeslots.find(t => t.value === timeslot)?.icon || 'time-outline';
+  });
+
+  selectedTimeslotAfter5 = computed(() => {
+    const timeslot = this.bookingForm?.get('preferredTimeslot')?.value;
+    return this.timeslots.find(t => t.value === timeslot)?.after5 || false;
+  });
+
   // Step state computations
   step1State = computed(() => {
     const currentStep = this.currentStep();
@@ -199,6 +220,17 @@ export class BookingFormPage implements OnInit {
     { value: 'medium', label: 'Medium - Within 12 hours', color: 'warning' },
     { value: 'high', label: 'High - Within 6 hours', color: 'danger' },
     { value: 'emergency', label: 'Emergency - ASAP', color: 'danger' }
+  ];
+
+  // Timeslots
+  timeslots = [
+    { value: 'morning', label: 'Morning', range: '8:00 AM - 12:00 PM', icon: 'sunny-outline', after5: false },
+    { value: 'noon', label: 'Noon', range: '12:00 PM - 3:00 PM', icon: 'sunny', after5: false },
+    { value: 'afternoon', label: 'Afternoon', range: '3:00 PM - 5:00 PM', icon: 'partly-sunny', after5: false },
+    { value: 'evening', label: 'Evening', range: '5:00 PM - 9:00 PM', icon: 'moon-outline', after5: true },
+    { value: 'late-night', label: 'Late Night', range: '9:00 PM - 12:00 AM', icon: 'moon', after5: true },
+    { value: 'overnight', label: 'Overnight', range: '12:00 AM - 3:00 AM', icon: 'cloudy-night', after5: true },
+    { value: 'dawn', label: 'Dawn', range: '3:00 AM - 6:00 AM', icon: 'sunrise', after5: true }
   ];
 
   // Common service descriptions by service type
@@ -349,7 +381,8 @@ export class BookingFormPage implements OnInit {
       serviceType: ['', Validators.required],
       description: ['', [Validators.required, Validators.minLength(10)]],
       urgency: ['low', Validators.required],
-      preferredDateTime: ['', Validators.required],
+      preferredDate: ['', Validators.required],
+      preferredTimeslot: ['', Validators.required],
       address: ['', Validators.required],
       contactNumber: ['', [Validators.pattern(/^(\+63|0)[9]\d{9}$/)]],
       contactPerson: ['', Validators.required],
@@ -491,8 +524,16 @@ export class BookingFormPage implements OnInit {
       this.isLoading.set(true);
 
       try {
+        // Combine date and timeslot into a single datetime for submission
+        const formValue = this.bookingForm.value;
+        const preferredDateTime = this.combineDateAndTimeslot(
+          formValue.preferredDate,
+          formValue.preferredTimeslot
+        );
+
         const bookingData = {
-          ...this.bookingForm.value,
+          ...formValue,
+          preferredDateTime, // Combined datetime for backend
           mediaFiles: this.mediaFiles(),
           priceBreakdown: this.priceBreakdown()
         };
@@ -607,5 +648,27 @@ export class BookingFormPage implements OnInit {
       'Other': 'location'
     };
     return iconMap[label] || 'location';
+  }
+
+  getMinDate(): string {
+    // Return today's date in YYYY-MM-DD format to prevent selecting past dates
+    const today = new Date();
+    return today.toISOString().split('T')[0];
+  }
+
+  combineDateAndTimeslot(date: string, timeslot: string): string {
+    // Combine the selected date with the start time of the selected timeslot
+    const timeslotStartTimes: { [key: string]: string } = {
+      'morning': '08:00',
+      'noon': '12:00',
+      'afternoon': '15:00',
+      'evening': '17:00',
+      'late-night': '21:00',
+      'overnight': '00:00',
+      'dawn': '03:00'
+    };
+
+    const startTime = timeslotStartTimes[timeslot] || '09:00';
+    return `${date}T${startTime}:00`;
   }
 }

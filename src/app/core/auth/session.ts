@@ -3,6 +3,8 @@ import { Router } from '@angular/router';
 import { SupabaseService } from '../supabase/supabase';
 import { User, Session } from '@supabase/supabase-js';
 import { BiometricService } from './biometric.service';
+import { AuthFlowService } from './auth-flow.service';
+import { ToastController } from '@ionic/angular/standalone';
 
 export interface UserProfile {
   id: string;
@@ -18,6 +20,8 @@ export class SessionService {
   private supabase = inject(SupabaseService).client;
   private router = inject(Router);
   private biometricService = inject(BiometricService);
+  private authFlowService = inject(AuthFlowService);
+  private toastController = inject(ToastController);
 
   // --- STATE (Signals) ---
   private _session = signal<Session | null>(null);
@@ -70,11 +74,17 @@ export class SessionService {
         await this.fetchProfile(session.user.id);
       } else {
         this._profile.set(null);
-        // Only navigate to welcome if user was previously authenticated (logout)
-        // and not during initial app load
+        // Handle different logout scenarios
         if (wasAuthenticated && this._initialized()) {
-          console.log('SessionService: Navigating to welcome page after logout');
-          this.router.navigateByUrl('/auth/welcome');
+          if (event === 'SIGNED_OUT') {
+            // Manual logout - navigate to welcome
+            console.log('SessionService: Manual logout - navigating to welcome page');
+            this.router.navigateByUrl('/auth/welcome');
+          } else {
+            // Session expired or token became invalid
+            console.log('SessionService: Session expired - handling redirect');
+            await this.handleSessionExpiry();
+          }
         }
       }
     });
@@ -205,8 +215,8 @@ export class SessionService {
 
       // Navigate to welcome page if user was authenticated
       if (wasAuthenticated && this._initialized()) {
-        console.log('SessionService: Navigating to welcome page after logout');
-        this.router.navigateByUrl('/auth/welcome');
+        console.log('SessionService: Manual logout - navigating to welcome page');
+        await this.authFlowService.handleAuthRequired('', 'manual_logout');
       }
 
     } catch (error) {
@@ -218,9 +228,35 @@ export class SessionService {
 
       // Force navigation as fallback
       if (this._initialized()) {
-        this.router.navigateByUrl('/auth/welcome');
+        await this.authFlowService.handleAuthRequired('', 'manual_logout');
       }
     }
+  }
+
+  /**
+   * Handle session expiry by showing notification and preserving current URL.
+   */
+  private async handleSessionExpiry(): Promise<void> {
+    const currentUrl = this.router.url;
+
+    // Show session expiry notification
+    const toast = await this.toastController.create({
+      message: 'Your session has expired. Please log in again.',
+      duration: 4000,
+      color: 'warning',
+      position: 'top',
+      buttons: [
+        {
+          text: 'OK',
+          role: 'cancel'
+        }
+      ]
+    });
+
+    await toast.present();
+
+    // Preserve current location and redirect to login
+    await this.authFlowService.handleAuthRequired(currentUrl, 'session_expired');
   }
 
   // --- BIOMETRIC AUTHENTICATION ---
@@ -257,6 +293,9 @@ export class SessionService {
       if (data.session) {
         this._session.set(data.session);
         await this.fetchProfile(data.session.user.id);
+
+        // Navigate to preserved URL or role-based default
+        await this.authFlowService.navigateAfterAuthentication(this.userRole());
       }
     }
 
