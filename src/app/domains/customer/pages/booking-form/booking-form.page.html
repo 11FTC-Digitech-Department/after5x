@@ -20,7 +20,7 @@
   </ion-toolbar>
 </ion-header>
 
-<ion-content [fullscreen]="true">
+<ion-content [fullscreen]="true" class="transparent-for-maps">
   <!-- Step 1: Booking Details -->
   @if (currentStep() === 1) {
     <form [formGroup]="bookingForm" class="booking-form">

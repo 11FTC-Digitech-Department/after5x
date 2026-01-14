@@ -3,6 +3,47 @@ ion-content {
   --background: #f8f9fa;
 }
 
+// Android Google Maps transparency fix
+// On Android, the map renders beneath the webview, so we need transparency
+:host-context(.plt-android) {
+  ion-content.transparent-for-maps {
+    --background: transparent !important;
+    background: transparent !important;
+  }
+}
+
+// Map visibility - ensure transparency for Android Google Maps
+.map-selection-section {
+  position: relative;
+  background: transparent !important;
+}
+
+// Android-specific: Make the card containing the map transparent
+// This targets the parent ion-card when it contains .map-selection-section
+:host-context(.plt-android) {
+  // Grid elements need transparency
+  ion-grid,
+  ion-row,
+  ion-col {
+    background: transparent !important;
+  }
+
+  // The form-section card containing the map needs special handling
+  .form-section:has(.map-selection-section) {
+    background: transparent !important;
+    --background: transparent !important;
+    box-shadow: none !important;
+
+    ion-card-content {
+      background: transparent !important;
+    }
+  }
+
+  .map-selection-section {
+    background: transparent !important;
+  }
+}
+
 // Header Styles
 .booking-header {
   --color: #2c3e50;
