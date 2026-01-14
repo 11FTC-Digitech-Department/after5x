@@ -2,6 +2,7 @@ import { Injectable, computed, inject, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import { SupabaseService } from '../supabase/supabase';
 import { User, Session } from '@supabase/supabase-js';
+import { BiometricService } from './biometric.service';
 
 export interface UserProfile {
   id: string;
@@ -16,6 +17,7 @@ export interface UserProfile {
 export class SessionService {
   private supabase = inject(SupabaseService).client;
   private router = inject(Router);
+  private biometricService = inject(BiometricService);
 
   // --- STATE (Signals) ---
   private _session = signal<Session | null>(null);
@@ -29,6 +31,7 @@ export class SessionService {
   readonly isLoading = this._loading.asReadonly();
   
   readonly isAuthenticated = computed(() => !!this._session());
+  readonly isFullyAuthenticated = computed(() => !!this._session() && !!this._profile());
   readonly userRole = computed(() => this._profile()?.role);
 
   constructor() {
@@ -38,26 +41,17 @@ export class SessionService {
   private async initSession() {
     this._loading.set(true);
 
-    // Check if we're on the OAuth callback page
-    const isCallbackPage = window.location.pathname.includes('/auth/callback');
-
     try {
-      // Skip initial session check if we're on the callback page to avoid lock contention
-      // The callback page will handle setting the session
-      if (!isCallbackPage) {
-        console.log('SessionService: Getting initial session');
-        const { data, error } = await this.supabase.auth.getSession();
-        if (error) {
-          console.error('Error getting session:', error);
-        }
+      console.log('SessionService: Getting initial session');
+      const { data, error } = await this.supabase.auth.getSession();
+      if (error) {
+        console.error('Error getting session:', error);
+      }
 
-        this._session.set(data.session);
+      this._session.set(data.session);
 
-        if (data.session) {
-          await this.fetchProfile(data.session.user.id);
-        }
-      } else {
-        console.log('SessionService: Skipping initial session check (on callback page)');
+      if (data.session) {
+        await this.fetchProfile(data.session.user.id);
       }
     } catch (error) {
       console.error('Error during session initialization:', error);
@@ -134,7 +128,7 @@ export class SessionService {
         return;
       }
 
-      // Create profile for OAuth user
+      // Create profile for new user
       const profileData = {
         id: userId,
         email: user.email || '',
@@ -155,11 +149,11 @@ export class SessionService {
         return;
       }
 
-      console.log('Profile created successfully for OAuth user:', userId);
+      console.log('Profile created successfully for user:', userId);
       this._profile.set(profileData as UserProfile);
 
     } catch (error) {
-      console.error('Error creating profile for OAuth user:', error);
+      console.error('Error creating profile for user:', error);
     }
   }
 
@@ -185,5 +179,74 @@ export class SessionService {
 
   async signOut() {
     await this.supabase.auth.signOut();
+  }
+
+  // --- BIOMETRIC AUTHENTICATION ---
+
+  /**
+   * Enable biometric login for the current session
+   * Stores the refresh token securely for future biometric authentication
+   */
+  async enableBiometricForCurrentSession(): Promise<boolean> {
+    const session = this._session();
+    if (!session?.refresh_token) {
+      console.warn('SessionService: No session or refresh token available for biometric');
+      return false;
+    }
+
+    const result = await this.biometricService.enableBiometric(session.refresh_token);
+    return result.success;
+  }
+
+  /**
+   * Login using biometric authentication
+   * Retrieves stored refresh token and creates new session
+   */
+  async loginWithBiometric(): Promise<{ success: boolean; error?: string }> {
+    if (!this.biometricService.isBiometricEnabled()) {
+      return { success: false, error: 'Biometric login not enabled' };
+    }
+
+    const result = await this.biometricService.authenticateWithBiometric();
+
+    if (result.success) {
+      // Session was refreshed by biometric service, get updated session
+      const { data } = await this.supabase.auth.getSession();
+      if (data.session) {
+        this._session.set(data.session);
+        await this.fetchProfile(data.session.user.id);
+      }
+    }
+
+    return result;
+  }
+
+  /**
+   * Disable biometric login
+   */
+  async disableBiometric(): Promise<boolean> {
+    const result = await this.biometricService.disableBiometric();
+    return result.success;
+  }
+
+  /**
+   * Check if biometric login is available on this device
+   */
+  get canUseBiometric(): boolean {
+    return this.biometricService.isBiometricAvailable();
+  }
+
+  /**
+   * Check if biometric login is enabled for this user
+   */
+  get isBiometricEnabled(): boolean {
+    return this.biometricService.isBiometricEnabled();
+  }
+
+  /**
+   * Get the biometry type name (Face ID, Touch ID, etc.)
+   */
+  get biometryTypeName(): string {
+    return this.biometricService.getBiometryTypeName();
   }
 }

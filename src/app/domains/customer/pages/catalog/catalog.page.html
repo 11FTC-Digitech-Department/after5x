@@ -63,13 +63,15 @@
                   />
                 </ion-thumbnail>
                 <ion-label>
-                  <h2>{{ serviceVariant.name }}</h2>
+                  <h2>
+                    {{ serviceVariant.name }} 
+                  </h2>
                   <p>{{ serviceVariant.description || serviceVariant.service?.description || 'No description available' }} • {{ serviceVariant.duration_minutes }} min</p>
+                  <ion-badge color="primary">
+                    ₱{{ serviceVariant.price_min === serviceVariant.price_max ? serviceVariant.price_min : (serviceVariant.price_min + ' - ₱' + serviceVariant.price_max) }}
+                  </ion-badge>
                 </ion-label>
                 <div slot="end" class="badges-container">
-                  <ion-badge color="primary">
-                    ₱{{ serviceVariant.price_min }} - ₱{{ serviceVariant.price_max }}
-                  </ion-badge>
                   <ion-badge color="warning">
                     <ion-icon name="star"></ion-icon>
                     {{ (serviceVariant.provider_offerings?.[0]?.provider?.rating_avg || 0) | number:'1.1-1' }}

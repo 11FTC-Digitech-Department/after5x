@@ -1,0 +1,537 @@
+// Booking Form Page Styles
+ion-content {
+  --background: #f8f9fa;
+}
+
+// Header Styles
+.booking-header {
+  --color: #2c3e50;
+  --background: white;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+
+  .back-icon {
+    font-size: 20px;
+    color: var(--ion-color-primary);
+  }
+
+  ion-title {
+    font-weight: 600;
+    font-size: 18px;
+  }
+
+  .step-indicator {
+    font-size: 12px;
+    color: var(--ion-color-medium);
+    font-weight: 500;
+  }
+}
+
+// Progress Container
+.progress-container {
+  padding: 20px 0 10px 0;
+  text-align: center;
+
+  .step-title {
+    display: block;
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--ion-color-primary);
+    margin-bottom: 12px;
+  }
+
+  .step-progress {
+    height: 4px;
+    --background: #e9ecef;
+    --progress-background: var(--ion-color-primary);
+  }
+}
+
+// Form Sections
+.form-section {
+  margin-bottom: 16px;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  border: none;
+
+  ion-card-header {
+    padding-bottom: 8px;
+
+    .section-title {
+      display: flex;
+      align-items: center;
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--ion-color-dark);
+      margin: 0;
+
+      .section-icon {
+        font-size: 20px;
+        color: var(--ion-color-primary);
+        margin-right: 8px;
+      }
+    }
+
+    .section-subtitle {
+      font-size: 12px;
+      color: var(--ion-color-medium);
+      margin-top: 4px;
+      display: block;
+    }
+  }
+
+  ion-card-content {
+    padding-top: 8px;
+  }
+}
+
+// Service Option Styles
+.service-option-icon {
+  font-size: 16px;
+  margin-right: 8px;
+}
+
+// Urgency Options
+.urgency-options {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+
+  .urgency-chip {
+    width: 100%;
+    justify-content: flex-start;
+    min-height: 44px;
+
+    ion-icon {
+      margin-right: 8px;
+    }
+
+    ion-label {
+      font-size: 14px;
+      font-weight: 500;
+    }
+  }
+}
+
+// Media Upload Styles
+.media-upload-buttons {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 16px;
+
+  .media-btn {
+    flex: 1;
+    --border-radius: 8px;
+
+    ion-icon {
+      font-size: 18px;
+    }
+  }
+}
+
+.media-preview {
+  .media-count {
+    display: block;
+    font-size: 12px;
+    color: var(--ion-color-medium);
+    margin-bottom: 12px;
+    font-weight: 500;
+  }
+
+  .media-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    gap: 12px;
+  }
+
+  .media-item {
+    position: relative;
+    border-radius: 8px;
+    overflow: hidden;
+    background: white;
+    border: 1px solid #e9ecef;
+
+    .media-thumbnail {
+      width: 100%;
+      height: 80px;
+      object-fit: cover;
+      display: block;
+    }
+
+    .video-thumbnail {
+      width: 100%;
+      height: 80px;
+      background: linear-gradient(135deg, var(--ion-color-primary) 0%, var(--ion-color-secondary) 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+
+      .video-icon {
+        font-size: 24px;
+        color: white;
+      }
+    }
+
+    .remove-media-btn {
+      position: absolute;
+      top: -8px;
+      right: -8px;
+      --background: white;
+      --border-radius: 50%;
+      width: 24px;
+      height: 24px;
+      min-width: 24px;
+      min-height: 24px;
+
+      ion-icon {
+        font-size: 16px;
+      }
+    }
+
+    .media-info {
+      padding: 8px;
+
+      .media-name {
+        display: block;
+        font-size: 11px;
+        font-weight: 500;
+        color: var(--ion-color-dark);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        margin-bottom: 2px;
+      }
+
+      .media-size {
+        display: block;
+        font-size: 10px;
+        color: var(--ion-color-medium);
+      }
+    }
+  }
+}
+
+// Action Buttons
+.action-buttons {
+  padding: 20px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+
+  .next-btn,
+  .submit-btn {
+    --border-radius: 12px;
+    font-weight: 600;
+    height: 50px;
+
+    ion-icon {
+      font-size: 18px;
+    }
+  }
+
+  .back-btn {
+    --border-radius: 12px;
+    --border-color: var(--ion-color-primary);
+    --color: var(--ion-color-primary);
+    font-weight: 600;
+    height: 50px;
+
+    ion-icon {
+      font-size: 18px;
+    }
+  }
+}
+
+// Review Section Styles
+.review-section {
+  margin-bottom: 16px;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  border: none;
+
+  ion-card-header {
+    .section-title {
+      display: flex;
+      align-items: center;
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--ion-color-dark);
+      margin: 0;
+
+      .section-icon {
+        font-size: 20px;
+        color: var(--ion-color-primary);
+        margin-right: 8px;
+      }
+    }
+  }
+}
+
+// Summary Items
+.summary-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: 12px 0;
+  border-bottom: 1px solid #f1f3f4;
+
+  &:last-child {
+    border-bottom: none;
+  }
+
+  .summary-label {
+    font-size: 14px;
+    color: var(--ion-color-medium);
+    font-weight: 500;
+    min-width: 120px;
+  }
+
+  .summary-value {
+    font-size: 14px;
+    color: var(--ion-color-dark);
+    font-weight: 500;
+    text-align: right;
+    flex: 1;
+
+    .service-icon {
+      font-size: 16px;
+      margin-right: 6px;
+      color: var(--ion-color-primary);
+    }
+  }
+
+  .urgency-chip-small {
+    font-size: 11px;
+    height: 24px;
+  }
+}
+
+// Description Text
+.description-text {
+  display: block;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--ion-color-dark);
+  white-space: pre-line;
+}
+
+// Review Media Grid
+.review-media-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.review-media-item {
+  text-align: center;
+
+  .review-media-thumbnail {
+    width: 100%;
+    height: 60px;
+    object-fit: cover;
+    border-radius: 6px;
+    border: 1px solid #e9ecef;
+  }
+
+  .review-video-thumbnail {
+    width: 100%;
+    height: 60px;
+    background: linear-gradient(135deg, var(--ion-color-primary) 0%, var(--ion-color-secondary) 100%);
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid #e9ecef;
+
+    .review-video-icon {
+      font-size: 20px;
+      color: white;
+    }
+  }
+
+  .review-media-name {
+    display: block;
+    font-size: 10px;
+    font-weight: 500;
+    color: var(--ion-color-dark);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin-top: 4px;
+  }
+
+  .review-media-size {
+    display: block;
+    font-size: 9px;
+    color: var(--ion-color-medium);
+    margin-top: 2px;
+  }
+}
+
+// Price Section Styles
+.price-section {
+  margin-bottom: 16px;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  border: none;
+  --background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+
+  ion-card-header {
+    .section-title {
+      display: flex;
+      align-items: center;
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--ion-color-dark);
+      margin: 0;
+
+      .section-icon {
+        font-size: 20px;
+        color: var(--ion-color-primary);
+        margin-right: 8px;
+      }
+    }
+  }
+
+  ion-card-content {
+    padding-top: 8px;
+  }
+}
+
+.price-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 0;
+
+  .price-label {
+    font-size: 14px;
+    color: var(--ion-color-medium);
+    font-weight: 500;
+  }
+
+  .price-value {
+    font-size: 14px;
+    color: var(--ion-color-dark);
+    font-weight: 600;
+  }
+
+  &.total-price {
+    border-top: 2px solid var(--ion-color-primary);
+    margin-top: 8px;
+    padding-top: 16px;
+
+    .total-label {
+      font-size: 16px;
+      color: var(--ion-color-dark);
+      font-weight: 600;
+    }
+
+    .total-value {
+      font-size: 18px;
+      color: var(--ion-color-primary);
+      font-weight: 700;
+    }
+  }
+}
+
+.price-divider {
+  height: 1px;
+  background: #e9ecef;
+  margin: 8px 0;
+}
+
+// Responsive Design
+@media (min-width: 768px) {
+  .urgency-options {
+    flex-direction: row;
+    flex-wrap: wrap;
+
+    .urgency-chip {
+      flex: 1;
+      min-width: 200px;
+    }
+  }
+
+  .media-upload-buttons {
+    .media-btn {
+      flex: none;
+      min-width: 140px;
+    }
+  }
+
+  .action-buttons {
+    flex-direction: row;
+    gap: 16px;
+
+    .back-btn,
+    .next-btn,
+    .submit-btn {
+      flex: 1;
+    }
+  }
+
+  .review-media-grid {
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  }
+}
+
+// Ion-Datetime Styles
+ion-datetime {
+  --background: white;
+  --placeholder-color: var(--ion-color-medium);
+  border-radius: 8px;
+  font-size: 14px;
+}
+
+// Form Validation Styles
+ion-item {
+  --border-radius: 8px;
+  --padding-start: 16px;
+  --inner-padding-end: 16px;
+  --border-color: #e9ecef;
+  --background: white;
+  --color: var(--ion-color-dark);
+
+  &.item-has-focus {
+    --border-color: var(--ion-color-primary);
+  }
+}
+
+ion-input,
+ion-textarea,
+ion-select {
+  --placeholder-color: var(--ion-color-medium);
+  --color: var(--ion-color-dark);
+  font-size: 14px;
+}
+
+// Loading States
+.loading-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(255, 255, 255, 0.9);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+}
+
+// Error States
+.error-message {
+  font-size: 12px;
+  color: var(--ion-color-danger);
+  margin-top: 4px;
+  display: block;
+}
+
+// Success States
+.success-message {
+  font-size: 12px;
+  color: var(--ion-color-success);
+  margin-top: 4px;
+  display: block;
+}

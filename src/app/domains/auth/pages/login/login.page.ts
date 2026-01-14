@@ -9,13 +9,17 @@ import {
   IonSegment,
   IonSegmentButton,
   IonLabel,
-  ToastController,
-  Platform
+  IonButton,
+  IonIcon,
+  ToastController
 } from '@ionic/angular/standalone';
+import { addIcons } from 'ionicons';
+import { fingerPrintOutline, eyeOutline } from 'ionicons/icons';
 import { LoginFormComponent, LoginFormData } from '../../components/login-form/login-form.component';
 import { SignupFormComponent, SignupFormData } from '../../components/signup-form/signup-form.component';
 import { SupabaseService } from '../../../../core/supabase/supabase';
 import { SessionService } from '../../../../core/auth/session';
+import { BiometricService } from '../../../../core/auth/biometric.service';
 
 @Component({
   selector: 'app-login',
@@ -30,6 +34,8 @@ import { SessionService } from '../../../../core/auth/session';
     IonSegment,
     IonSegmentButton,
     IonLabel,
+    IonButton,
+    IonIcon,
     CommonModule,
     LoginFormComponent,
     SignupFormComponent
@@ -40,13 +46,16 @@ export class LoginPage implements OnInit {
   private supabaseService = inject(SupabaseService);
   private sessionService = inject(SessionService);
   private toastController = inject(ToastController);
-  private platform = inject(Platform);
+  biometricService = inject(BiometricService);
 
   selectedSegment = signal<'login' | 'signup'>('login');
   isLoginLoading = signal<boolean>(false);
   isSignupLoading = signal<boolean>(false);
+  isBiometricLoading = signal<boolean>(false);
 
-  constructor() { }
+  constructor() {
+    addIcons({ fingerPrintOutline, eyeOutline });
+  }
 
   ngOnInit() {
     // Check if user is already authenticated
@@ -121,96 +130,41 @@ export class LoginPage implements OnInit {
     }
   }
 
-  async onFacebookLogin() {
-    console.log('Facebook login button clicked');
-    console.log('Current platform detection:', {
-      allPlatforms: this.platform.platforms(),
-      isCapacitor: this.platform.is('capacitor'),
-      isHybrid: this.platform.is('hybrid'),
-      isMobile: this.platform.is('mobile'),
-      userAgent: navigator.userAgent
-    });
+  async onBiometricLogin() {
+    if (!this.biometricService.isBiometricEnabled()) {
+      return;
+    }
 
-    this.isLoginLoading.set(true);
+    this.isBiometricLoading.set(true);
 
     try {
-      const result = await this.supabaseService.signInWithProvider('facebook');
-      console.log('Facebook login result:', result);
+      const result = await this.sessionService.loginWithBiometric();
 
-      if (!result.success) {
-        console.error('Facebook login failed:', result.error);
-        await this.showToast(result.error || 'Facebook login failed', 'danger');
+      if (result.success) {
+        await this.showToast('Welcome back!', 'success');
+        this.navigateBasedOnRole();
       } else {
-        console.log('Facebook OAuth initiated successfully');
+        await this.showToast(result.error || 'Biometric login failed', 'danger');
       }
-      // OAuth redirect will handle the success case
     } catch (error) {
-      console.error('Facebook login error:', error);
+      console.error('Biometric login error:', error);
       await this.showToast('An unexpected error occurred', 'danger');
     } finally {
-      this.isLoginLoading.set(false);
+      this.isBiometricLoading.set(false);
     }
   }
 
-  async onGoogleLogin() {
-    console.log('Google login button clicked');
-    console.log('Current platform detection:', {
-      allPlatforms: this.platform.platforms(),
-      isCapacitor: this.platform.is('capacitor'),
-      isHybrid: this.platform.is('hybrid'),
-      isMobile: this.platform.is('mobile'),
-      userAgent: navigator.userAgent
-    });
-
-    this.isLoginLoading.set(true);
-
-    try {
-      const result = await this.supabaseService.signInWithProvider('google');
-      console.log('Google login result:', result);
-
-      if (!result.success) {
-        console.error('Google login failed:', result.error);
-        await this.showToast(result.error || 'Google login failed', 'danger');
-      } else {
-        console.log('Google OAuth initiated successfully');
-      }
-      // OAuth redirect will handle the success case
-    } catch (error) {
-      console.error('Google login error:', error);
-      await this.showToast('An unexpected error occurred', 'danger');
-    } finally {
-      this.isLoginLoading.set(false);
+  getBiometricIcon(): string {
+    const typeName = this.biometricService.getBiometryTypeName();
+    if (typeName.includes('Face')) {
+      return 'eye-outline';
     }
+    return 'finger-print-outline';
   }
 
   navigateToForgotPassword() {
     // Navigate to forgot password page
     this.router.navigate(['/auth/forgot-password']);
-  }
-
-  // Debug method for OAuth setup (can be called from console)
-  debugOAuthSetup() {
-    console.log('=== OAUTH DEBUG INFO ===');
-    console.log('Platform detection:', {
-      allPlatforms: this.platform.platforms(),
-      isCapacitor: this.platform.is('capacitor'),
-      isHybrid: this.platform.is('hybrid'),
-      isIOS: this.platform.is('ios'),
-      isAndroid: this.platform.is('android'),
-      isMobile: this.platform.is('mobile'),
-      isDesktop: this.platform.is('desktop'),
-      isPWA: this.platform.is('pwa'),
-      userAgent: navigator.userAgent
-    });
-
-    console.log('Redirect URLs:', {
-      web: `${window.location.origin}/auth/callback`,
-      mobile: 'com.rockit.after5://auth/callback'
-    });
-
-    console.log('Supabase config available:', !!this.supabaseService.client);
-    console.log('Current URL:', window.location.href);
-    console.log('=======================');
   }
 
   private validateSignupForm(formData: SignupFormData): boolean {
@@ -235,9 +189,9 @@ export class LoginPage implements OnInit {
       return false;
     }
 
-    const phoneRegex = /^[\+]?[1-9][\d]{0,15}$/;
+    const phoneRegex = /^(\+639|639|09)\d{9}$/;
     if (!phoneRegex.test(formData.mobile.replace(/\s+/g, ''))) {
-      this.showToast('Please enter a valid mobile number', 'warning');
+      this.showToast('Please enter a valid Philippine mobile number (09XXXXXXXXX, 639XXXXXXXXX, or +639XXXXXXXXX)', 'warning');
       return false;
     }
 
@@ -247,9 +201,9 @@ export class LoginPage implements OnInit {
   private async showToast(message: string, color: 'success' | 'danger' | 'warning' = 'success') {
     const toast = await this.toastController.create({
       message,
-      duration: 3000,
+      duration: 1800,
       color,
-      position: 'top'
+      position: 'bottom'
     });
     await toast.present();
   }

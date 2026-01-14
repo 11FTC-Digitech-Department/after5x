@@ -5,20 +5,10 @@ export interface SupabaseConfig {
   key: string;
 }
 
-export interface OAuthConfig {
-  google: {
-    clientId: string;
-  };
-  facebook: {
-    appId: string;
-  };
-}
-
 export interface AppConfig {
   production: boolean;
   appUrl: string;
   supabase: SupabaseConfig;
-  oauth: OAuthConfig;
 }
 
 @Injectable({
@@ -40,10 +30,6 @@ export class ConfigService {
 
   get supabase(): SupabaseConfig {
     return this.getConfig().supabase;
-  }
-
-  get oauth(): OAuthConfig {
-    return this.getConfig().oauth;
   }
 
   get production(): boolean {

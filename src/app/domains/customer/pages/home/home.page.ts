@@ -19,9 +19,9 @@ import {
   IonText,
   IonBadge
 } from '@ionic/angular/standalone';
-import { SupabaseService } from '@core/supabase/supabase';
 import { AddressService } from '@core/supabase/address.service';
-import { User } from '@supabase/supabase-js';
+import { SessionService } from '@core/auth/session';
+import { AuthGuard } from '@core/auth/auth.guard';
 
 interface ServiceCategory {
   id: string;
@@ -65,14 +65,14 @@ interface PopularService {
   ]
 })
 export class HomePage implements OnInit {
-  private supabaseService = inject(SupabaseService);
   private addressService = inject(AddressService);
   private router = inject(Router);
+  private sessionService = inject(SessionService);
+  private authGuard = inject(AuthGuard);
 
-  currentUser = signal<User | null>(null);
   userName = computed(() => {
-    const user = this.currentUser();
-    return user?.user_metadata?.['full_name'] || user?.email?.split('@')[0] || 'User';
+    const profile = this.sessionService.profile();
+    return profile?.full_name || 'User';
   });
 
   currentLocation = signal('Select your location');
@@ -118,17 +118,13 @@ export class HomePage implements OnInit {
   constructor() { }
 
   async ngOnInit() {
-    await this.loadUser();
-    await this.loadDefaultAddress();
-  }
-
-  async loadUser() {
-    try {
-      const user = await this.supabaseService.getCurrentUser();
-      this.currentUser.set(user);
-    } catch (error) {
-      console.error('Error loading user:', error);
+    // Ensure authentication before loading data
+    const isAuthenticated = await this.authGuard.requireAuthentication();
+    if (!isAuthenticated) {
+      return; // Auth guard will handle navigation
     }
+
+    await this.loadDefaultAddress();
   }
 
   async loadDefaultAddress() {

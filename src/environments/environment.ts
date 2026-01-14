@@ -8,14 +8,6 @@ export const environment = {
   supabase: {
     url: 'https://344a134aeec4.ngrok-free.app/',
     key: 'sb_publishable_ACJWlzQHlZjBrEguHvfOxg_3BJgxAaH',
-  },
-  oauth: {
-    google: {
-      clientId: '725548600646-ajniqfs22sdic3mjncp5oomsuoihtl0c.apps.googleusercontent.com',
-    },
-    facebook: {
-      appId: '1653418931970731'
-    }
   }
 };
 

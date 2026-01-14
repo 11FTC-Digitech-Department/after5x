@@ -120,6 +120,16 @@ export class GoogleMapsService {
    */
   async getCurrentPosition(): Promise<{ lat: number; lng: number } | null> {
     try {
+      // Check and request location permissions if needed
+      const permissions = await Geolocation.checkPermissions();
+      if (permissions.location === 'denied' || permissions.location === 'prompt') {
+        const requestResult = await Geolocation.requestPermissions();
+        if (requestResult.location !== 'granted') {
+          console.error('Location permission denied');
+          return null;
+        }
+      }
+
       const coordinates = await Geolocation.getCurrentPosition({
         enableHighAccuracy: true,
         timeout: 10000,

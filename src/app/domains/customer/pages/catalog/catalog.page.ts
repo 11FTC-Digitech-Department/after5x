@@ -22,6 +22,7 @@ import {
   IonBadge
 } from '@ionic/angular/standalone';
 import { ServiceService, ServiceVariant, Service } from '@core/services/service.service';
+import { AuthGuard } from '@core/auth/auth.guard';
 
 interface CategoryWithServices {
   id: string;
@@ -63,12 +64,19 @@ export class CatalogPage implements OnInit {
   private route = inject(ActivatedRoute);
   private router = inject(Router);
   private serviceService = inject(ServiceService);
+  private authGuard = inject(AuthGuard);
 
   categorySlug = signal<string>('');
   categoryData = signal<CategoryWithServices | null>(null);
   isLoading = signal(true);
 
   async ngOnInit() {
+    // Ensure authentication before loading data
+    const isAuthenticated = await this.authGuard.requireAuthentication();
+    if (!isAuthenticated) {
+      return; // Auth guard will handle navigation
+    }
+
     const categorySlug = this.route.snapshot.paramMap.get('catId');
     if (categorySlug) {
       this.categorySlug.set(categorySlug);

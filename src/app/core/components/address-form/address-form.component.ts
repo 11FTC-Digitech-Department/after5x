@@ -195,7 +195,7 @@ export class AddressFormComponent implements OnInit {
       message,
       duration: 3000,
       color,
-      position: 'top'
+      position: 'bottom'
     });
     await toast.present();
   }

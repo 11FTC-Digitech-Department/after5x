@@ -11,7 +11,7 @@ import {
   IonSpinner
 } from '@ionic/angular/standalone';
 import { addIcons } from 'ionicons';
-import { logoFacebook, logoGoogle, eye, eyeOff } from 'ionicons/icons';
+import { eye, eyeOff } from 'ionicons/icons';
 
 export interface SignupFormData {
   email: string;
@@ -31,16 +31,12 @@ export interface SignupFormData {
     IonItem,
     IonInput,
     IonButton,
-    IonRow,
-    IonCol,
     IonIcon,
     IonSpinner
   ]
 })
 export class SignupFormComponent {
   signup = output<SignupFormData>();
-  facebookLogin = output<void>();
-  googleLogin = output<void>();
 
   isLoading = input<boolean>(false);
 
@@ -55,19 +51,11 @@ export class SignupFormComponent {
   isConfirmPasswordVisible = false;
 
   constructor() {
-    addIcons({ logoFacebook, logoGoogle, eye, eyeOff });
+    addIcons({ eye, eyeOff });
   }
 
   onSignup() {
     this.signup.emit(this.signupForm);
-  }
-
-  onFacebookLogin() {
-    this.facebookLogin.emit();
-  }
-
-  onGoogleLogin() {
-    this.googleLogin.emit();
   }
 
   togglePasswordVisibility() {

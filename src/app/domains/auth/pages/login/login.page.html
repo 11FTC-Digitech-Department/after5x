@@ -17,13 +17,33 @@
             </ion-segment-button>
           </ion-segment>
 
+          <!-- Biometric Login Button -->
+          @if (selectedSegment() === 'login' && biometricService.isBiometricEnabled()) {
+          <div class="biometric-container">
+            <ion-button
+              expand="block"
+              fill="outline"
+              class="biometric-button"
+              (click)="onBiometricLogin()"
+              [disabled]="isBiometricLoading() || isLoginLoading()">
+              <ion-icon [name]="getBiometricIcon()" slot="start"></ion-icon>
+              @if (isBiometricLoading()) {
+                Authenticating...
+              } @else {
+                Sign in with {{ biometricService.getBiometryTypeName() }}
+              }
+            </ion-button>
+            <div class="divider">
+              <span>or continue with</span>
+            </div>
+          </div>
+          }
+
           <!-- Login Form -->
           @if (selectedSegment() === 'login') {
           <app-login-form
             [isLoading]="isLoginLoading()"
             (login)="onLogin($event)"
-            (facebookLogin)="onFacebookLogin()"
-            (googleLogin)="onGoogleLogin()"
             (forgotPassword)="navigateToForgotPassword()"
           ></app-login-form>
           }
@@ -33,8 +53,6 @@
           <app-signup-form
             [isLoading]="isSignupLoading()"
             (signup)="onSignup($event)"
-            (facebookLogin)="onFacebookLogin()"
-            (googleLogin)="onGoogleLogin()"
           ></app-signup-form>
           }
         </div>

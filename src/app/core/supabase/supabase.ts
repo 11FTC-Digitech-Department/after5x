@@ -1,10 +1,9 @@
 import { Injectable, inject } from '@angular/core';
-import { createClient, SupabaseClient, AuthError, AuthResponse, OAuthResponse, User, Session } from '@supabase/supabase-js';
+import { createClient, SupabaseClient, AuthError, User, Session } from '@supabase/supabase-js';
 import { Platform } from '@ionic/angular';
 import { ConfigService } from '../config/config.service';
 import { Database } from './database.types';
 import { CapacitorStorageAdapter } from '../storage/capacitor-storage.adapter';
-import { OAuthHelperService } from '../auth/oauth-helper.service';
 
 export interface AuthResult {
   success: boolean;
@@ -26,7 +25,6 @@ export class SupabaseService {
   private _client: SupabaseClient<Database>;
   private configService = inject(ConfigService);
   private platform = inject(Platform);
-  private oauthHelper = inject(OAuthHelperService);
 
   constructor() {
     const config = this.configService.supabase;
@@ -37,8 +35,15 @@ export class SupabaseService {
         storage: storage,
         autoRefreshToken: true,
         persistSession: true,
-        detectSessionInUrl: false,  // Manually handle OAuth callback to avoid race conditions
-        flowType: 'pkce'
+        detectSessionInUrl: false,  // Disable automatic session detection from URL
+        flowType: 'pkce',
+        // Disable Navigator Lock to prevent NavigatorLockAcquireTimeoutError
+        // This no-op lock function bypasses the browser's LockManager API
+        // Safe because we use custom storage adapter with proper async handling
+        lock: async <R>(_name: string, _acquireTimeout: number, fn: () => Promise<R>): Promise<R> => {
+          // Directly execute the function without acquiring a lock
+          return await fn();
+        }
       },
       db: {
         schema: 'public'
@@ -124,78 +129,6 @@ export class SupabaseService {
     }
   }
 
-  // Social Authentication
-  async signInWithProvider(provider: 'google' | 'facebook'): Promise<AuthResult> {
-    try {
-      console.log(`Starting OAuth flow for ${provider}`);
-
-      const isMobile = this.platform.is('capacitor');
-      const redirectTo = isMobile
-        ? this.getMobileRedirectUrl()
-        : `${window.location.origin}/auth/callback`;
-
-      console.log('OAuth redirect URL:', redirectTo);
-
-      // Get OAuth URL from Supabase
-      const { data, error } = await this._client.auth.signInWithOAuth({
-        provider,
-        options: {
-          redirectTo,
-          queryParams: {
-            access_type: 'offline',
-            prompt: 'consent'
-          },
-          skipBrowserRedirect: true  // We handle browser manually
-        }
-      });
-
-      if (error) {
-        console.error(`OAuth error for ${provider}:`, error);
-        return this.handleAuthError(error);
-      }
-
-      if (!data.url) {
-        return {
-          success: false,
-          error: 'Failed to get OAuth URL from provider'
-        };
-      }
-
-      // On mobile, use in-app browser with fallback
-      if (isMobile) {
-        const result = await this.oauthHelper.initiateOAuth(data.url, provider);
-
-        if (!result.success) {
-          return {
-            success: false,
-            error: result.error || 'OAuth authentication failed'
-          };
-        }
-
-        console.log(`OAuth completed via ${result.method} browser`);
-        return { success: true };
-      }
-
-      // On web, open in same window
-      window.location.href = data.url;
-      return { success: true };
-
-    } catch (error) {
-      console.error(`OAuth exception for ${provider}:`, error);
-      return this.handleAuthError(error as AuthError);
-    }
-  }
-
-  private isMobilePlatform(): boolean {
-    // Check if running in Capacitor (native mobile app)
-    return this.platform.is('capacitor');
-  }
-
-  private getMobileRedirectUrl(): string {
-    // For mobile apps, use the app scheme for deep linking
-    const appScheme = 'com.rockit.after5'; // This should match your Capacitor appId
-    return `${appScheme}://auth/callback`;
-  }
 
   // Password Reset
   async resetPassword(email: string): Promise<AuthResult> {
@@ -253,6 +186,66 @@ export class SupabaseService {
     }
   }
 
+  // Phone OTP - Send verification code
+  async signInWithPhone(phone: string): Promise<AuthResult> {
+    try {
+      const { error } = await this._client.auth.signInWithOtp({
+        phone,
+        options: {
+          channel: 'sms'
+        }
+      });
+
+      if (error) {
+        return this.handleAuthError(error);
+      }
+
+      return { success: true };
+    } catch (error) {
+      return this.handleAuthError(error as AuthError);
+    }
+  }
+
+  // Phone OTP - Verify code and create session
+  async verifyPhoneOtp(phone: string, token: string): Promise<AuthResult> {
+    try {
+      const { data, error } = await this._client.auth.verifyOtp({
+        phone,
+        token,
+        type: 'sms'
+      });
+
+      if (error) {
+        return this.handleAuthError(error);
+      }
+
+      return {
+        success: true,
+        user: data.user ?? undefined,
+        session: data.session ?? undefined,
+      };
+    } catch (error) {
+      return this.handleAuthError(error as AuthError);
+    }
+  }
+
+  // Update phone number with verification
+  async updatePhoneNumber(phone: string): Promise<AuthResult> {
+    try {
+      const { error } = await this._client.auth.updateUser({
+        phone
+      });
+
+      if (error) {
+        return this.handleAuthError(error);
+      }
+
+      return { success: true };
+    } catch (error) {
+      return this.handleAuthError(error as AuthError);
+    }
+  }
+
   // Get current session
   async getCurrentSession(): Promise<Session | null> {
     try {
@@ -275,12 +268,15 @@ export class SupabaseService {
     }
   }
 
-  private handleAuthError(error: AuthError): AuthResult {
+  private handleAuthError(error: any): AuthResult {
     console.error('Auth error:', error);
 
     let errorMessage = 'An unexpected error occurred. Please try again.';
 
-    switch (error.message) {
+    // Handle different error object structures
+    const message = error?.message || error?.error?.message || error?.msg || '';
+
+    switch (message) {
       case 'Invalid login credentials':
         errorMessage = 'Invalid email or password. Please check your credentials and try again.';
         break;
@@ -305,30 +301,11 @@ export class SupabaseService {
       case 'Too many requests':
         errorMessage = 'Too many attempts. Please wait a few minutes before trying again.';
         break;
-      // OAuth-specific errors
-      case 'OAuth provider not configured':
-        errorMessage = 'Social login is not properly configured. Please contact support.';
-        break;
-      case 'OAuth callback error':
-        errorMessage = 'There was an issue with the social login. Please try again.';
-        break;
-      case 'Invalid OAuth state':
-        errorMessage = 'Social login session expired. Please try again.';
-        break;
-      case 'OAuth in-app browser failed':
-        errorMessage = 'Failed to open login browser. Please check your internet connection and try again.';
-        break;
-      case 'OAuth timeout - user may have closed browser':
-        errorMessage = 'Login timed out or was cancelled. Please try again.';
-        break;
-      case 'OAuth already in progress':
-        errorMessage = 'Please complete the current login before trying again.';
-        break;
       default:
-        if (error.message.includes('Network request failed')) {
+        if (message.includes('Network request failed')) {
           errorMessage = 'Network error. Please check your internet connection and try again.';
-        } else if (error.message.includes('OAuth')) {
-          errorMessage = 'Social login failed. Please try again or use email/password login.';
+        } else if (error?.code === 'user_already_exists') {
+          errorMessage = 'An account with this email already exists. Please try logging in instead.';
         }
     }
 

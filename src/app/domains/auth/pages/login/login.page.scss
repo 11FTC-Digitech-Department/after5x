@@ -27,3 +27,39 @@ ion-content {
     font-weight: 600;
   }
 }
+
+.biometric-container {
+  margin-bottom: 1.5rem;
+
+  .biometric-button {
+    --border-radius: 8px;
+    --border-width: 2px;
+    font-weight: 600;
+    height: 48px;
+
+    ion-icon {
+      font-size: 22px;
+      margin-right: 8px;
+    }
+  }
+
+  .divider {
+    display: flex;
+    align-items: center;
+    margin: 1.5rem 0;
+
+    &::before,
+    &::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--ion-color-light-shade);
+    }
+
+    span {
+      padding: 0 1rem;
+      color: var(--ion-color-medium);
+      font-size: 14px;
+    }
+  }
+}

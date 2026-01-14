@@ -7,14 +7,6 @@ const PRODUCTION_CONFIG: AppConfig = {
   supabase: {
     url: 'https://zqdnzbchifwwtyyjrmzx.supabase.co',
     key: 'sb_publishable_Szhgg3U8rsjPrWh2bSAxhg_Y1Kkr8G7'
-  },
-  oauth: {
-    google: {
-      clientId: 'your-production-google-client-id' // Update with production Google OAuth client ID
-    },
-    facebook: {
-      appId: 'your-production-facebook-app-id' // Update with production Facebook App ID
-    }
   }
 };
 
@@ -25,14 +17,6 @@ const DEVELOPMENT_CONFIG: AppConfig = {
   supabase: {
     url: 'http://127.0.0.1:54321/',
     key: 'sb_publishable_ACJWlzQHlZjBrEguHvfOxg_3BJgxAaH'
-  },
-  oauth: {
-    google: {
-      clientId: '725548600646-ajniqfs22sdic3mjncp5oomsuoihtl0c.apps.googleusercontent.com'
-    },
-    facebook: {
-      appId: '1653418931970731'
-    }
   }
 };
 

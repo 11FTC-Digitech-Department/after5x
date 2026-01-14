@@ -21,8 +21,4 @@ export const AUTH_ROUTES: Routes = [
     path: 'verify-otp',
     loadComponent: () => import('./pages/verify-otp/verify-otp.page').then(m => m.VerifyOtpPage),
   },
-  {
-    path: 'callback',
-    loadComponent: () => import('./pages/callback/callback.page').then(m => m.CallbackPage),
-  },
 ];
