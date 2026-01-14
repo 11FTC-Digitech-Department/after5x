@@ -63,3 +63,15 @@ ion-content {
     }
   }
 }
+
+.version-row {
+  margin-top: auto;
+  padding-bottom: 1rem;
+
+  .version-text {
+    font-size: 12px;
+    opacity: 0.6;
+    font-weight: 400;
+    letter-spacing: 0.5px;
+  }
+}

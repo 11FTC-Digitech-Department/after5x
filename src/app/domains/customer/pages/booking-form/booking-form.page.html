@@ -1,14 +1,22 @@
 <ion-header class="ion-no-border">
   <ion-toolbar class="booking-header">
-    <ion-buttons slot="start">
-      <ion-button fill="clear" routerLink="/c/home">
-        <ion-icon name="arrow-back" class="back-icon"></ion-icon>
-      </ion-button>
-    </ion-buttons>
+      <ion-buttons slot="start">
+        <ion-back-button defaultHref="/c/home"></ion-back-button>
+      </ion-buttons>
     <ion-title>Book a Service</ion-title>
-    <ion-buttons slot="end">
-      <ion-text class="step-indicator">Step {{ currentStep() }} of 2</ion-text>
-    </ion-buttons>
+  </ion-toolbar>
+  <ion-toolbar class="progress-toolbar">
+    <div class="step-indicators">
+      <div class="step-circle" [class]="'step-1 ' + step1State()">
+        <span class="step-number">1</span>
+        <span class="step-label">Details</span>
+      </div>
+      <div class="step-connector"></div>
+      <div class="step-circle" [class]="'step-2 ' + step2State()">
+        <span class="step-number">2</span>
+        <span class="step-label">Review</span>
+      </div>
+    </div>
   </ion-toolbar>
 </ion-header>
 
@@ -17,58 +25,71 @@
   @if (currentStep() === 1) {
     <form [formGroup]="bookingForm" class="booking-form">
       <ion-grid>
-        <!-- Progress Indicator -->
-        <ion-row>
-          <ion-col size="12">
-            <div class="progress-container">
-              <ion-text class="step-title">Service Details & Scheduling</ion-text>
-              <ion-progress-bar value="0.5" class="step-progress"></ion-progress-bar>
-            </div>
-          </ion-col>
-        </ion-row>
-
-        <!-- Service Type Selection -->
+        <!-- Selected Service Display or Service Type Selection -->
         <ion-row>
           <ion-col size="12">
             <ion-card class="form-section">
               <ion-card-header>
                 <ion-card-title class="section-title">
                   <ion-icon name="construct" class="section-icon"></ion-icon>
-                  What service do you need?
+                  {{ selectedService() ? 'Selected Service' : 'What service do you need?' }}
                 </ion-card-title>
               </ion-card-header>
               <ion-card-content>
-                <ion-list>
-                  <ion-item>
-                    <ion-label position="stacked">Service Type *</ion-label>
-                    <ion-select formControlName="serviceType" placeholder="Select a service">
-                      @for (service of serviceTypes; track service.value) {
-                        <ion-select-option [value]="service.value">
-                          <ion-icon [name]="service.icon" class="service-option-icon"></ion-icon>
-                          {{ service.label }}
-                        </ion-select-option>
-                      }
-                    </ion-select>
-                  </ion-item>
-                </ion-list>
-              </ion-card-content>
-            </ion-card>
-          </ion-col>
-        </ion-row>
+                @if (selectedService()) {
+                  <!-- Display selected service information -->
+                  <div class="selected-service-display">
+                    <div class="service-info">
+                      <div class="service-header">
+                        <ion-icon [name]="getServiceIcon(bookingForm.get('serviceType')?.value)" class="service-icon-large"></ion-icon>
+                        <div class="service-details">
+                          <ion-text class="service-name">{{ selectedService()?.name }}</ion-text>
+                          <ion-text class="service-category">{{ selectedService()?.category?.name }}</ion-text>
+                          <div class="service-provider">
+                            <ion-avatar class="provider-avatar-small">
+                              <img [src]="selectedService()?.provider?.profile?.avatar_url || 'assets/logo/main-logo.png'" alt="Provider" />
+                            </ion-avatar>
+                            <ion-text class="provider-name">{{ selectedService()?.provider?.profile?.full_name }}</ion-text>
+                          </div>
+                        </div>
+                      </div>
+                      <div class="service-meta">
+                        <ion-chip color="primary" class="price-chip">
+                          ₱{{ selectedService()?.price_min }} - ₱{{ selectedService()?.price_max }}
+                        </ion-chip>
+                        <ion-chip color="secondary" outline class="duration-chip">
+                          {{ selectedService()?.duration_minutes }} min
+                        </ion-chip>
+                      </div>
+                    </div>
+                  </div>
+                }
 
-        <!-- Service Description -->
-        <ion-row>
-          <ion-col size="12">
-            <ion-card class="form-section">
-              <ion-card-header>
-                <ion-card-title class="section-title">
-                  <ion-icon name="document-text" class="section-icon"></ion-icon>
-                  Describe your service needs
-                </ion-card-title>
-              </ion-card-header>
-              <ion-card-content>
+                @if (!selectedService()) {
+                  <!-- Service type selection -->
+                  <ion-list>
+                    <ion-item>
+                      <ion-label position="stacked">Service Type *</ion-label>
+                      <ion-select formControlName="serviceType" placeholder="Select a service">
+                        @for (service of serviceTypes; track service.value) {
+                          <ion-select-option [value]="service.value">
+                            <ion-icon [name]="service.icon" class="service-option-icon"></ion-icon>
+                            {{ service.label }}
+                          </ion-select-option>
+                        }
+                      </ion-select>
+                    </ion-item>
+                  </ion-list>
+                }
+
+                <!-- Service Description -->
+                <div class="description-section">
+                  <ion-text class="section-title" color="dark">
+                    <ion-icon name="document-text" class="section-icon"></ion-icon>
+                    Describe your service needs
+                  </ion-text>
                 <ion-list>
-                  <ion-item>
+                  <ion-item lines="none">
                     <ion-label position="stacked">Description *</ion-label>
                     <ion-textarea
                       formControlName="description"
@@ -79,6 +100,84 @@
                     ></ion-textarea>
                   </ion-item>
                 </ion-list>
+
+                <!-- Common Description Chips -->
+                @if (commonDescriptions().length > 0) {
+                  <div class="description-chips-section">
+                    <ion-text class="chips-label" color="medium">
+                      <small>Quick add common issues:</small>
+                    </ion-text>
+                    <div class="description-chips">
+                      @for (description of commonDescriptions(); track description) {
+                        <ion-chip
+                          [outline]="true"
+                          color="primary"
+                          (click)="addDescriptionChip(description)"
+                          class="description-chip"
+                        >
+                          <ion-label>{{ description }}</ion-label>
+                          <ion-icon name="add-circle" class="chip-add-icon"></ion-icon>
+                        </ion-chip>
+                      }
+                    </div>
+                  </div>
+                }
+                </div>
+
+                <!-- Media Upload Section -->
+                <div class="media-upload-section">
+                  <ion-text class="media-upload-label" color="medium">
+                    <small>Add photos or videos to help describe your service needs</small>
+                  </ion-text>
+                  <div class="media-upload-buttons">
+                    <ion-button
+                      fill="outline"
+                      (click)="takePhoto()"
+                      class="media-btn"
+                    >
+                      <ion-icon name="camera" slot="start"></ion-icon>
+                      Take Photo
+                    </ion-button>
+                    <ion-button
+                      fill="outline"
+                      (click)="selectFromGallery()"
+                      class="media-btn"
+                    >
+                      <ion-icon name="images" slot="start"></ion-icon>
+                      From Gallery
+                    </ion-button>
+                  </div>
+                  @if (mediaFiles().length > 0) {
+                    <div class="media-preview">
+                      <ion-text class="media-count">{{ mediaFiles().length }} file(s) selected</ion-text>
+                      <div class="media-grid">
+                        @for (file of mediaFiles(); track file.id) {
+                          <div class="media-item">
+                            @if (file.type === 'image') {
+                              <img [src]="file.preview" alt="Preview" class="media-thumbnail" />
+                            } @else {
+                              <div class="video-thumbnail">
+                                <ion-icon name="videocam" class="video-icon"></ion-icon>
+                              </div>
+                            }
+                            <ion-button
+                              fill="clear"
+                              size="small"
+                              (click)="removeMediaFile(file.id)"
+                              class="remove-media-btn"
+                            >
+                              <ion-icon name="close-circle" color="danger"></ion-icon>
+                            </ion-button>
+                            <div class="media-info">
+                              <ion-text class="media-name">{{ file.name }}</ion-text>
+                              <ion-text class="media-size">{{ formatFileSize(file.size) }}</ion-text>
+                            </div>
+                          </div>
+                        }
+                      </div>
+                    </div>
+                  }
+                </div>
               </ion-card-content>
             </ion-card>
           </ion-col>
@@ -125,7 +224,7 @@
               </ion-card-header>
               <ion-card-content>
                 <ion-list>
-                  <ion-item>
+                  <ion-item button="false" lines="none">
                     <ion-label position="stacked">Select Date & Time *</ion-label>
                     <ion-datetime
                       formControlName="preferredDateTime"
@@ -140,17 +239,69 @@
           </ion-col>
         </ion-row>
 
-        <!-- Contact Information -->
+        <!-- Service Location -->
         <ion-row>
           <ion-col size="12">
             <ion-card class="form-section">
               <ion-card-header>
                 <ion-card-title class="section-title">
                   <ion-icon name="location" class="section-icon"></ion-icon>
-                  Service Location & Contact
+                  Service Location
                 </ion-card-title>
               </ion-card-header>
               <ion-card-content>
+                <!-- Saved Addresses Selection -->
+                @if (userAddresses().length > 0) {
+                  <div class="saved-addresses-section">
+                    <ion-text class="section-subtitle" color="medium">
+                      <small>Select from your saved addresses</small>
+                    </ion-text>
+                    <ion-list class="address-list">
+                      @for (address of userAddresses(); track address.id) {
+                        <ion-item
+                          button
+                          [class.selected]="selectedAddressId() === address.id"
+                          (click)="selectSavedAddress(address)"
+                          class="address-item"
+                        >
+                          <ion-icon [name]="getAddressIcon(address.label)" slot="start" class="address-icon"></ion-icon>
+                          <ion-label>
+                            <h3 class="address-label">
+                              {{ address.label }}
+                              @if (address.is_default) {
+                                <ion-badge color="primary" class="default-badge">Default</ion-badge>
+                              }
+                            </h3>
+                            <p class="address-text">{{ address.full_address }}</p>
+                            @if (address.unit_details) {
+                              <p class="unit-details">{{ address.unit_details }}</p>
+                            }
+                          </ion-label>
+                          @if (selectedAddressId() === address.id) {
+                            <ion-icon name="checkmark-circle" color="primary" slot="end"></ion-icon>
+                          }
+                        </ion-item>
+                      }
+                    </ion-list>
+                  </div>
+                }
+
+                <!-- Or Use Map to Select Location -->
+                <div class="map-selection-section">
+                  <ion-text class="section-subtitle" color="medium">
+                    <small>Or select location on map</small>
+                  </ion-text>
+
+                  <!-- Map Selector Component -->
+                  <app-map-selector
+                    [height]="'300px'"
+                    [initialLocation]="getInitialMapLocation()"
+                    (locationSelected)="onLocationSelected($event)">
+                  </app-map-selector>
+                </div>
+
+
+                <!-- Address Input (for manual entry or editing) -->
                 <ion-list>
                   <ion-item>
                     <ion-label position="stacked">Service Address *</ion-label>
@@ -158,10 +309,39 @@
                       formControlName="address"
                       placeholder="Enter the complete address where service is needed"
                       rows="3"
+                      [value]="selectedLocation()?.address || ''"
+                      (ionInput)="onAddressInputChange($event)"
                     ></ion-textarea>
                   </ion-item>
+                </ion-list>
+              </ion-card-content>
+            </ion-card>
+          </ion-col>
+        </ion-row>
+
+        <!-- Contact Information -->
+        <ion-row>
+          <ion-col size="12">
+            <ion-card class="form-section">
+              <ion-card-header>
+                <ion-card-title class="section-title">
+                  <ion-icon name="person" class="section-icon"></ion-icon>
+                  Contact Information
+                </ion-card-title>
+              </ion-card-header>
+              <ion-card-content>
+                <ion-list>
                   <ion-item>
-                    <ion-label position="stacked">Contact Number *</ion-label>
+                    <ion-label position="stacked">Contact Person *</ion-label>
+                    <ion-input
+                      formControlName="contactPerson"
+                      type="text"
+                      placeholder="Enter the name of the person to contact"
+                      maxlength="100"
+                    ></ion-input>
+                  </ion-item>
+                  <ion-item>
+                    <ion-label position="stacked">Contact Number</ion-label>
                     <ion-input
                       formControlName="contactNumber"
                       type="tel"
@@ -170,74 +350,6 @@
                     ></ion-input>
                   </ion-item>
                 </ion-list>
-              </ion-card-content>
-            </ion-card>
-          </ion-col>
-        </ion-row>
-
-        <!-- Media Upload Section -->
-        <ion-row>
-          <ion-col size="12">
-            <ion-card class="form-section">
-              <ion-card-header>
-                <ion-card-title class="section-title">
-                  <ion-icon name="camera" class="section-icon"></ion-icon>
-                  Photos & Videos (Optional)
-                </ion-card-title>
-                <ion-text class="section-subtitle">Add evidence photos or videos to help our providers</ion-text>
-              </ion-card-header>
-              <ion-card-content>
-                <!-- Media Upload Buttons -->
-                <div class="media-upload-buttons">
-                  <ion-button
-                    fill="outline"
-                    (click)="takePhoto()"
-                    class="media-btn"
-                  >
-                    <ion-icon name="camera" slot="start"></ion-icon>
-                    Take Photo
-                  </ion-button>
-                  <ion-button
-                    fill="outline"
-                    (click)="selectFromGallery()"
-                    class="media-btn"
-                  >
-                    <ion-icon name="images" slot="start"></ion-icon>
-                    From Gallery
-                  </ion-button>
-                </div>
-
-                <!-- Uploaded Media Preview -->
-                @if (mediaFiles().length > 0) {
-                  <div class="media-preview">
-                    <ion-text class="media-count">{{ mediaFiles().length }} file(s) selected</ion-text>
-                    <div class="media-grid">
-                      @for (file of mediaFiles(); track file.id) {
-                        <div class="media-item">
-                          @if (file.type === 'image') {
-                            <img [src]="file.preview" alt="Preview" class="media-thumbnail" />
-                          } @else {
-                            <div class="video-thumbnail">
-                              <ion-icon name="videocam" class="video-icon"></ion-icon>
-                            </div>
-                          }
-                          <ion-button
-                            fill="clear"
-                            size="small"
-                            (click)="removeMediaFile(file.id)"
-                            class="remove-media-btn"
-                          >
-                            <ion-icon name="close-circle" color="danger"></ion-icon>
-                          </ion-button>
-                          <div class="media-info">
-                            <ion-text class="media-name">{{ file.name }}</ion-text>
-                            <ion-text class="media-size">{{ formatFileSize(file.size) }}</ion-text>
-                          </div>
-                        </div>
-                      }
-                    </div>
-                  </div>
-                }
               </ion-card-content>
             </ion-card>
           </ion-col>
@@ -270,23 +382,6 @@
           </ion-col>
         </ion-row>
 
-        <!-- Next Step Button -->
-        <ion-row>
-          <ion-col size="12">
-            <div class="action-buttons">
-              <ion-button
-                expand="block"
-                size="large"
-                [disabled]="!bookingForm.valid"
-                (click)="nextStep()"
-                class="next-btn"
-              >
-                Review Booking
-                <ion-icon name="arrow-forward" slot="end"></ion-icon>
-              </ion-button>
-            </div>
-          </ion-col>
-        </ion-row>
       </ion-grid>
     </form>
   }
@@ -294,16 +389,6 @@
   <!-- Step 2: Review & Confirm -->
   @if (currentStep() === 2) {
     <ion-grid>
-      <!-- Progress Indicator -->
-      <ion-row>
-        <ion-col size="12">
-          <div class="progress-container">
-            <ion-text class="step-title">Review Your Booking</ion-text>
-            <ion-progress-bar value="1" class="step-progress"></ion-progress-bar>
-          </div>
-        </ion-col>
-      </ion-row>
-
       <!-- Booking Summary -->
       <ion-row>
         <ion-col size="12">
@@ -342,9 +427,23 @@
                 <ion-text class="summary-value">{{ bookingForm.get('address')?.value }}</ion-text>
               </div>
 
+              @if (selectedLocation()) {
+                <div class="summary-item">
+                  <ion-text class="summary-label">Coordinates:</ion-text>
+                  <ion-text class="summary-value">
+                    {{ selectedLocation()!.lat.toFixed(6) }}, {{ selectedLocation()!.lng.toFixed(6) }}
+                  </ion-text>
+                </div>
+              }
+
               <div class="summary-item">
-                <ion-text class="summary-label">Contact:</ion-text>
-                <ion-text class="summary-value">{{ bookingForm.get('contactNumber')?.value }}</ion-text>
+                <ion-text class="summary-label">Contact Person:</ion-text>
+                <ion-text class="summary-value">{{ bookingForm.get('contactPerson')?.value }}</ion-text>
+              </div>
+
+              <div class="summary-item">
+                <ion-text class="summary-label">Contact Number:</ion-text>
+                <ion-text class="summary-value">{{ bookingForm.get('contactNumber')?.value || 'Not provided' }}</ion-text>
               </div>
 
               @if (bookingForm.get('specialInstructions')?.value) {
@@ -484,3 +583,20 @@
     </ion-grid>
   }
 </ion-content>
+
+<ion-footer class="ion-no-border">
+  @if (currentStep() === 1) {
+    <ion-toolbar>
+      <ion-button
+        expand="block"
+        size="large"
+        [disabled]="!bookingForm.valid"
+        (click)="nextStep()"
+        class="next-btn"
+      >
+        Review Booking
+        <ion-icon name="arrow-forward" slot="end"></ion-icon>
+      </ion-button>
+    </ion-toolbar>
+  }
+</ion-footer>

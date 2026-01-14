@@ -36,6 +36,7 @@
     "@capacitor/preferences": "^8.0.0",
     "@capacitor/status-bar": "8.0.0",
     "@ionic/angular": "^8.0.0",
+    "@ionic/pwa-elements": "^3.3.0",
     "@supabase/supabase-js": "^2.90.1",
     "capacitor-native-biometric": "^4.2.2",
     "date-fns": "^4.1.0",

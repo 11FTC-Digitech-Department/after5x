@@ -1,4 +1,4 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnInit, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
@@ -14,7 +14,8 @@ import {
   IonItem,
   IonLabel,
   IonAvatar,
-  IonIcon
+  IonIcon,
+  IonSpinner
 } from '@ionic/angular/standalone';
 import { SessionService } from '../../../../core/auth/session';
 
@@ -36,6 +37,7 @@ import { SessionService } from '../../../../core/auth/session';
     IonLabel,
     IonAvatar,
     IonIcon,
+    IonSpinner,
     CommonModule,
     FormsModule
   ]
@@ -44,14 +46,29 @@ export class ProfilePage implements OnInit {
   private router = inject(Router);
   private sessionService = inject(SessionService);
 
+  // Logout loading state
+  readonly isLoggingOut = signal(false);
+
   constructor() { }
 
   ngOnInit() {
   }
 
   async logout() {
-    // Handle logout logic using SessionService
+    if (this.isLoggingOut()) {
+      return; // Prevent multiple logout attempts
+    }
+
+    this.isLoggingOut.set(true);
     console.log('Logging out...');
-    await this.sessionService.signOut();
+
+    try {
+      await this.sessionService.signOut();
+    } catch (error) {
+      console.error('Logout failed:', error);
+      // Even if logout fails, the SessionService should handle navigation
+    } finally {
+      this.isLoggingOut.set(false);
+    }
   }
 }

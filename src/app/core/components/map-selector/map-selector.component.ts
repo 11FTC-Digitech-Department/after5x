@@ -214,4 +214,9 @@ export class MapSelectorComponent implements OnInit, OnDestroy {
     // Map is now ready, initialize the location
     await this.initializeMap();
   }
+
+  async onMapClick(coordinates: { lat: number; lng: number }) {
+    // Handle map click by setting the location at the clicked coordinates
+    await this.setLocation(coordinates.lat, coordinates.lng);
+  }
 }

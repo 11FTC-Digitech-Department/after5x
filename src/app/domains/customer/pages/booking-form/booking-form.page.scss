@@ -26,23 +26,109 @@ ion-content {
   }
 }
 
-// Progress Container
-.progress-container {
-  padding: 20px 0 10px 0;
-  text-align: center;
+// Step Indicators
+.step-indicators {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px 20px;
+  gap: 12px;
 
-  .step-title {
-    display: block;
-    font-size: 16px;
-    font-weight: 600;
-    color: var(--ion-color-primary);
-    margin-bottom: 12px;
+  .step-circle {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    min-width: 60px;
+
+    .step-number {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      font-size: 14px;
+      font-weight: 600;
+      border: 2px solid;
+      transition: all 0.3s ease;
+    }
+
+    .step-label {
+      font-size: 10px;
+      font-weight: 500;
+      text-align: center;
+      transition: color 0.3s ease;
+    }
+
+    // Current step state
+    &.current {
+      .step-number {
+        background: var(--ion-color-primary);
+        border-color: var(--ion-color-primary);
+        color: white;
+      }
+
+      .step-label {
+        color: var(--ion-color-primary);
+      }
+    }
+
+    // Completed step state
+    &.completed {
+      .step-number {
+        background: var(--ion-color-success);
+        border-color: var(--ion-color-success);
+        color: white;
+      }
+
+      .step-label {
+        color: var(--ion-color-success);
+      }
+    }
+
+    // Error step state
+    &.error {
+      .step-number {
+        background: var(--ion-color-danger);
+        border-color: var(--ion-color-danger);
+        color: white;
+      }
+
+      .step-label {
+        color: var(--ion-color-danger);
+      }
+    }
+
+    // Pending step state
+    &.pending {
+      .step-number {
+        background: transparent;
+        border-color: var(--ion-color-medium);
+        color: var(--ion-color-medium);
+      }
+
+      .step-label {
+        color: var(--ion-color-medium);
+      }
+    }
   }
 
-  .step-progress {
-    height: 4px;
-    --background: #e9ecef;
-    --progress-background: var(--ion-color-primary);
+  .step-connector {
+    width: 40px;
+    height: 2px;
+    background: var(--ion-color-medium);
+    border-radius: 1px;
+    transition: background-color 0.3s ease;
+  }
+
+  // Update connector based on step completion
+  .step-1.completed + .step-connector {
+    background: var(--ion-color-success);
+  }
+
+  .step-1.error + .step-connector {
+    background: var(--ion-color-danger);
   }
 }
 
@@ -88,6 +174,176 @@ ion-content {
 .service-option-icon {
   font-size: 16px;
   margin-right: 8px;
+}
+
+// Selected Service Display
+.selected-service-display {
+  .service-info {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .service-header {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+
+    .service-icon-large {
+      font-size: 32px;
+      color: var(--ion-color-primary);
+      margin-top: 4px;
+    }
+
+    .service-details {
+      flex: 1;
+
+      .service-name {
+        display: block;
+        font-size: 18px;
+        font-weight: 600;
+        color: var(--ion-color-dark);
+        margin-bottom: 4px;
+      }
+
+      .service-category {
+        display: block;
+        font-size: 14px;
+        color: var(--ion-color-medium);
+        margin-bottom: 8px;
+      }
+
+      .service-provider {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+
+        .provider-avatar-small {
+          width: 24px;
+          height: 24px;
+        }
+
+        .provider-name {
+          font-size: 12px;
+          color: var(--ion-color-medium);
+          font-weight: 500;
+        }
+      }
+    }
+  }
+
+  .service-meta {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+
+    .price-chip,
+    .duration-chip {
+      font-size: 11px;
+      height: 24px;
+    }
+  }
+}
+
+// Description Chips Section
+.description-chips-section {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid #e9ecef;
+
+  .chips-label {
+    display: block;
+    margin-bottom: 12px;
+    font-weight: 500;
+  }
+
+  .description-chips {
+    display: flex;
+    gap: 8px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    padding-bottom: 4px;
+    scrollbar-width: thin;
+    scrollbar-color: var(--ion-color-medium) transparent;
+
+    &::-webkit-scrollbar {
+      height: 4px;
+    }
+
+    &::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    &::-webkit-scrollbar-thumb {
+      background: var(--ion-color-medium);
+      border-radius: 2px;
+    }
+
+    &::-webkit-scrollbar-thumb:hover {
+      background: var(--ion-color-primary);
+    }
+
+    .description-chip {
+      flex-shrink: 0;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      min-height: 32px;
+
+      &:hover {
+        --background: rgba(var(--ion-color-primary-rgb), 0.1);
+        --border-color: var(--ion-color-primary);
+      }
+
+      &:active {
+        transform: scale(0.95);
+      }
+
+      .chip-add-icon {
+        font-size: 16px;
+        margin-left: 4px;
+        color: var(--ion-color-primary);
+      }
+
+      ion-label {
+        font-size: 12px;
+        font-weight: 500;
+      }
+    }
+  }
+}
+
+// Description Section
+.description-section {
+  margin-top: 24px;
+  padding-top: 20px;
+  border-top: 1px solid #e9ecef;
+
+  .section-title {
+    display: flex;
+    align-items: center;
+    font-size: 16px;
+    font-weight: 600;
+    margin-bottom: 16px;
+
+    .section-icon {
+      font-size: 20px;
+      color: var(--ion-color-primary);
+      margin-right: 8px;
+    }
+  }
+}
+
+// Media Upload Section (within description card)
+.media-upload-section {
+  margin-top: 20px;
+  padding-top: 20px;
+  border-top: 1px solid #e9ecef;
+
+  .media-upload-label {
+    display: block;
+    margin-bottom: 12px;
+    font-weight: 500;
+  }
 }
 
 // Urgency Options

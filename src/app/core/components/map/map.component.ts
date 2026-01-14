@@ -74,7 +74,16 @@ export class MapComponent implements OnInit, OnDestroy {
         config: {
           center: { lat: center.lat, lng: center.lng },
           zoom: center.zoom || 15,
-        },
+          // Disable map controls for cleaner UI (works on web platform)
+          ...(typeof window !== 'undefined' && {
+            zoomControl: false,
+            mapTypeControl: false,
+            streetViewControl: false,
+            rotateControl: false,
+            scaleControl: false,
+            fullscreenControl: false,
+          }),
+        } as any,
       });
 
       if (mapInstance) {
@@ -83,6 +92,12 @@ export class MapComponent implements OnInit, OnDestroy {
           coordinate: { lat: center.lat, lng: center.lng },
           draggable: false
         });
+
+        // Add map click listener
+        await this.mapInstance.setOnMapClickListener((event) => {
+          this.mapClick.emit({ lat: event.latitude, lng: event.longitude });
+        });
+
         this.mapReady.emit();
       }
     } catch (error) {

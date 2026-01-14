@@ -1,4 +1,4 @@
-import { Component, OnInit, signal, inject } from '@angular/core';
+import { Component, OnInit, signal, inject, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import {
@@ -11,6 +11,7 @@ import {
   IonLabel,
   IonButton,
   IonIcon,
+  IonText,
   ToastController
 } from '@ionic/angular/standalone';
 import { addIcons } from 'ionicons';
@@ -20,6 +21,7 @@ import { SignupFormComponent, SignupFormData } from '../../components/signup-for
 import { SupabaseService } from '../../../../core/supabase/supabase';
 import { SessionService } from '../../../../core/auth/session';
 import { BiometricService } from '../../../../core/auth/biometric.service';
+import { AppInfoService } from '../../../../core/services/app-info.service';
 
 @Component({
   selector: 'app-login',
@@ -46,21 +48,32 @@ export class LoginPage implements OnInit {
   private supabaseService = inject(SupabaseService);
   private sessionService = inject(SessionService);
   private toastController = inject(ToastController);
+  private appInfoService = inject(AppInfoService);
   biometricService = inject(BiometricService);
 
   selectedSegment = signal<'login' | 'signup'>('login');
   isLoginLoading = signal<boolean>(false);
   isSignupLoading = signal<boolean>(false);
   isBiometricLoading = signal<boolean>(false);
+  appVersion = signal<string>('');
 
   constructor() {
     addIcons({ fingerPrintOutline, eyeOutline });
   }
 
-  ngOnInit() {
+  async ngOnInit() {
     // Check if user is already authenticated
     if (this.sessionService.isAuthenticated()) {
       this.navigateBasedOnRole();
+    }
+
+    // Load app version info
+    try {
+      const appInfo = await this.appInfoService.getAppInfo();
+      this.appVersion.set(`v${appInfo.version}-${appInfo.build}`);
+    } catch (error) {
+      console.warn('Could not load app version:', error);
+      this.appVersion.set('v0.0.1-dev');
     }
   }
 

@@ -134,7 +134,7 @@ capacitor-google-map {
 .current-location-btn {
   position: absolute;
   bottom: 16px;
-  right: 16px;
+  left: 16px;
   z-index: 100;
   --background: white;
   --color: var(--ion-color-primary);
@@ -202,6 +202,6 @@ capacitor-google-map {
   }
 
   .current-location-btn {
-    --background: var(--ion-color-dark);
+    // --background: var(--ion-color-dark);
   }
 }

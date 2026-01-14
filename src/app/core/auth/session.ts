@@ -62,7 +62,7 @@ export class SessionService {
 
     // 2. Listen for changes (Login/Logout)
     this.supabase.auth.onAuthStateChange(async (event, session) => {
-      console.log('SessionService: Auth state changed:', event);
+      console.log('SessionService: Auth state changed:', event, 'session:', !!session);
       const wasAuthenticated = !!this._session();
       this._session.set(session);
 
@@ -73,6 +73,7 @@ export class SessionService {
         // Only navigate to welcome if user was previously authenticated (logout)
         // and not during initial app load
         if (wasAuthenticated && this._initialized()) {
+          console.log('SessionService: Navigating to welcome page after logout');
           this.router.navigateByUrl('/auth/welcome');
         }
       }
@@ -178,7 +179,48 @@ export class SessionService {
   }
 
   async signOut() {
-    await this.supabase.auth.signOut();
+    const wasAuthenticated = !!this._session();
+
+    try {
+      console.log('SessionService: Attempting to sign out...');
+
+      // Attempt to sign out from Supabase
+      const { error } = await this.supabase.auth.signOut();
+
+      if (error) {
+        console.warn('SessionService: Supabase signOut error (likely expired session):', error);
+        // Continue with force logout even if server logout fails
+      }
+
+      // Force clear local session state regardless of server response
+      console.log('SessionService: Force clearing local session state');
+      this._session.set(null);
+      this._profile.set(null);
+
+      // Clean up biometric credentials if enabled
+      if (this.biometricService.isBiometricEnabled()) {
+        console.log('SessionService: Disabling biometric login during logout');
+        await this.biometricService.disableBiometric();
+      }
+
+      // Navigate to welcome page if user was authenticated
+      if (wasAuthenticated && this._initialized()) {
+        console.log('SessionService: Navigating to welcome page after logout');
+        this.router.navigateByUrl('/auth/welcome');
+      }
+
+    } catch (error) {
+      console.error('SessionService: Unexpected error during signOut:', error);
+
+      // Even on unexpected errors, force clear local state and navigate
+      this._session.set(null);
+      this._profile.set(null);
+
+      // Force navigation as fallback
+      if (this._initialized()) {
+        this.router.navigateByUrl('/auth/welcome');
+      }
+    }
   }
 
   // --- BIOMETRIC AUTHENTICATION ---
