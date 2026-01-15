@@ -957,11 +957,67 @@ ion-content {
   flex-direction: column;
   gap: 12px;
 
-  .next-btn,
-  .submit-btn {
+  .next-btn {
     --border-radius: 12px;
     font-weight: 600;
     height: 50px;
+    background: var(--app-gradient-primary);
+    --background: var(--app-gradient-primary);
+    --color: white;
+    box-shadow: 0 4px 12px rgba(var(--ion-color-primary-rgb), 0.3);
+    transition: all 0.3s ease;
+
+    &:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 6px 16px rgba(var(--ion-color-primary-rgb), 0.4);
+    }
+
+    &:active {
+      transform: translateY(0);
+      transition: transform 0.1s ease;
+    }
+
+    ion-icon {
+      font-size: 18px;
+    }
+  }
+
+  .submit-btn {
+    --border-radius: 12px;
+    font-weight: 700;
+    height: 50px;
+    background: var(--app-gradient-tertiary);
+    --background: var(--app-gradient-tertiary);
+    --color: white;
+    box-shadow: 0 4px 12px rgba(var(--ion-color-primary-rgb), 0.35);
+    position: relative;
+    overflow: hidden;
+    transition: all 0.3s ease;
+
+    &::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.15), transparent);
+      transition: left 0.5s;
+    }
+
+    &:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 6px 16px rgba(var(--ion-color-primary-rgb), 0.45);
+
+      &::before {
+        left: 100%;
+      }
+    }
+
+    &:active {
+      transform: translateY(0);
+      transition: transform 0.1s ease;
+    }
 
     ion-icon {
       font-size: 18px;
@@ -974,6 +1030,20 @@ ion-content {
     --color: var(--ion-color-primary);
     font-weight: 600;
     height: 50px;
+    --background: rgba(var(--ion-color-primary-rgb), 0.05);
+    border: 2px solid var(--ion-color-primary);
+    transition: all 0.3s ease;
+
+    &:hover {
+      --background: rgba(var(--ion-color-primary-rgb), 0.1);
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(var(--ion-color-primary-rgb), 0.2);
+    }
+
+    &:active {
+      transform: translateY(0);
+      transition: transform 0.1s ease;
+    }
 
     ion-icon {
       font-size: 18px;
