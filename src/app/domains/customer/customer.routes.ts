@@ -46,4 +46,8 @@ export const CUSTOMER_ROUTES: Routes = [
     path: 'service-details/:serviceVariantId',
     loadComponent: () => import('./pages/service-details/service-details.page').then(m => m.ServiceDetailsPage),
   },
+  {
+    path: 'address-selector',
+    loadComponent: () => import('./pages/address-selector/address-selector.page').then(m => m.AddressSelectorPage),
+  },
 ];

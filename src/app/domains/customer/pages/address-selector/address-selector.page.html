@@ -1,0 +1,101 @@
+<ion-header class="ion-no-border">
+  <ion-toolbar>
+    <ion-buttons slot="start">
+      @if (showMap()) {
+        <ion-button (click)="closeMapSelector()">
+          <ion-icon name="arrow-back" slot="icon-only"></ion-icon>
+        </ion-button>
+      } @else {
+        <ion-back-button defaultHref="/c/book"></ion-back-button>
+      }
+    </ion-buttons>
+    <ion-title>{{ showMap() ? 'Select on Map' : 'Choose Address' }}</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content [fullscreen]="true" [class.map-view]="showMap()" [scrollY]="!showMap()">
+  @if (!showMap()) {
+    <!-- Saved Addresses List -->
+    <div class="addresses-container">
+      @if (isLoading()) {
+        <div class="loading-container">
+          <ion-spinner name="crescent"></ion-spinner>
+          <ion-text color="medium">Loading addresses...</ion-text>
+        </div>
+      } @else {
+        <!-- Saved Addresses Section -->
+        @if (userAddresses().length > 0) {
+          <div class="section">
+            <ion-text class="section-title" color="medium">
+              <small>Your saved addresses</small>
+            </ion-text>
+            <ion-list class="address-list">
+              @for (address of userAddresses(); track address.id) {
+                <ion-item button (click)="selectSavedAddress(address)" class="address-item">
+                  <ion-icon [name]="getAddressIcon(address.label)" slot="start" class="address-icon"></ion-icon>
+                  <ion-label>
+                    <h3 class="address-label">
+                      {{ address.label }}
+                      @if (address.is_default) {
+                        <ion-badge color="primary" class="default-badge">Default</ion-badge>
+                      }
+                    </h3>
+                    <p class="address-text">{{ address.full_address }}</p>
+                    @if (address.unit_details) {
+                      <p class="unit-details">{{ address.unit_details }}</p>
+                    }
+                  </ion-label>
+                  <ion-icon name="chevron-forward" slot="end" color="medium"></ion-icon>
+                </ion-item>
+              }
+            </ion-list>
+          </div>
+        } @else {
+          <div class="empty-state">
+            <ion-icon name="location-outline" class="empty-icon"></ion-icon>
+            <ion-text color="medium">
+              <p>No saved addresses yet</p>
+            </ion-text>
+          </div>
+        }
+
+        <!-- Map Selection Option -->
+        <div class="section map-option-section">
+          <ion-text class="section-title" color="medium">
+            <small>Or choose a new location</small>
+          </ion-text>
+          <ion-button expand="block" fill="outline" (click)="openMapSelector()" class="map-button">
+            <ion-icon name="map" slot="start"></ion-icon>
+            Select Location on Map
+          </ion-button>
+        </div>
+      }
+    </div>
+  } @else {
+    <!-- Map View -->
+    <div class="map-view-container">
+      <app-map
+        [height]="'100%'"
+        [center]="getMapCenter()"
+        (locationSelected)="onLocationSelected($event)">
+      </app-map>
+
+      <!-- Selected Address Display -->
+      @if (selectedLocation()) {
+        <div class="selected-location-card">
+          <div class="location-info">
+            <ion-icon name="location" color="primary"></ion-icon>
+            <ion-text class="location-address">{{ selectedLocation()!.address }}</ion-text>
+          </div>
+          <ion-button expand="block" (click)="confirmMapSelection()" class="confirm-button">
+            Use This Location
+          </ion-button>
+        </div>
+      } @else {
+        <div class="map-instructions">
+          <ion-text color="medium">Tap on the map to select a location</ion-text>
+        </div>
+      }
+    </div>
+  }
+</ion-content>

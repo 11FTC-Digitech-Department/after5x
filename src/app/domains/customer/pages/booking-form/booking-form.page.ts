@@ -34,7 +34,7 @@ import { ServiceService, ServiceWithProvider } from '@core/services/service.serv
 import { SessionService } from '@core/auth/session';
 import { AddressService } from '@core/supabase/address.service';
 import { UserAddress, GeocodeResult } from '@core/models/address.model';
-import { MapSelectorComponent } from '@core/components/map-selector/map-selector.component';
+import { NavController } from '@ionic/angular/standalone';
 
 interface BookingDetails {
   serviceType: string;
@@ -100,7 +100,6 @@ interface PriceBreakdown {
     IonSpinner,
     IonBadge,
     IonNote,
-    MapSelectorComponent,
     CommonModule,
     ReactiveFormsModule]
 })
@@ -108,6 +107,7 @@ export class BookingFormPage implements OnInit {
   private formBuilder = inject(FormBuilder);
   private router = inject(Router);
   private route = inject(ActivatedRoute);
+  private navController = inject(NavController);
   private serviceService = inject(ServiceService);
   private sessionService = inject(SessionService);
   private addressService = inject(AddressService);
@@ -387,6 +387,23 @@ export class BookingFormPage implements OnInit {
     if (serviceId) {
       await this.loadServiceData(serviceId);
     }
+
+    // Check if returning from address selector with a selected location
+    const navigation = this.router.getCurrentNavigation();
+    const state = navigation?.extras?.state as { selectedLocation?: GeocodeResult };
+    if (state?.selectedLocation) {
+      this.onLocationSelected(state.selectedLocation);
+    }
+  }
+
+  ionViewWillEnter() {
+    // Check for selected location in navigation state when returning to this page
+    const state = history.state as { selectedLocation?: GeocodeResult };
+    if (state?.selectedLocation) {
+      this.onLocationSelected(state.selectedLocation);
+      // Clear the state after using it
+      history.replaceState({}, '');
+    }
   }
 
   private prePopulateUserData() {
@@ -658,6 +675,26 @@ export class BookingFormPage implements OnInit {
   }
 
   // Address and location selection methods
+  openAddressSelector() {
+    // Store current form state in session storage before navigating
+    const currentServiceId = this.route.snapshot.paramMap.get('id');
+    this.navController.navigateForward('/c/address-selector', {
+      state: {
+        returnUrl: currentServiceId ? `/c/book/${currentServiceId}` : '/c/book'
+      }
+    });
+  }
+
+  clearSelectedLocation() {
+    this.selectedLocation.set(null);
+    this.selectedAddressId.set(null);
+    this.bookingForm.patchValue({
+      address: '',
+      latitude: null,
+      longitude: null
+    });
+  }
+
   selectSavedAddress(address: UserAddress) {
     this.selectedAddressId.set(address.id);
     this.selectedLocation.set({

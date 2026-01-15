@@ -307,8 +307,26 @@
                 </ion-card-title>
               </ion-card-header>
               <ion-card-content>
+                <!-- Selected Location Display -->
+                @if (selectedLocation()) {
+                  <div class="selected-location-display">
+                    <div class="location-info">
+                      <ion-icon name="location" color="primary" class="location-icon"></ion-icon>
+                      <div class="location-details">
+                        <ion-text class="location-address">{{ selectedLocation()!.address }}</ion-text>
+                        <ion-text class="location-coords" color="medium">
+                          <small>{{ selectedLocation()!.lat.toFixed(6) }}, {{ selectedLocation()!.lng.toFixed(6) }}</small>
+                        </ion-text>
+                      </div>
+                      <ion-button fill="clear" size="small" (click)="clearSelectedLocation()">
+                        <ion-icon name="close-circle" color="medium"></ion-icon>
+                      </ion-button>
+                    </div>
+                  </div>
+                }
+
                 <!-- Saved Addresses Selection -->
-                @if (userAddresses().length > 0) {
+                @if (userAddresses().length > 0 && !selectedLocation()) {
                   <div class="saved-addresses-section">
                     <ion-text class="section-subtitle" color="medium">
                       <small>Select from your saved addresses</small>
@@ -343,34 +361,26 @@
                   </div>
                 }
 
-                <!-- Or Use Map to Select Location -->
+                <!-- Choose Location on Map Button -->
                 <div class="map-selection-section">
-                  <ion-text class="section-subtitle" color="medium">
-                    <small>Or select location on map</small>
-                  </ion-text>
-
-                  <!-- Map Selector Component -->
-                  <app-map-selector
-                    [height]="'300px'"
-                    [initialLocation]="getInitialMapLocation()"
-                    (locationSelected)="onLocationSelected($event)">
-                  </app-map-selector>
+                  @if (!selectedLocation()) {
+                    <ion-text class="section-subtitle" color="medium">
+                      <small>Or choose a new location</small>
+                    </ion-text>
+                  }
+                  <ion-button
+                    expand="block"
+                    fill="outline"
+                    (click)="openAddressSelector()"
+                    class="choose-location-btn"
+                  >
+                    <ion-icon name="map" slot="start"></ion-icon>
+                    {{ selectedLocation() ? 'Change Location' : 'Choose Location on Map' }}
+                  </ion-button>
                 </div>
 
-
-                <!-- Address Input (for manual entry or editing) -->
-                <ion-list>
-                  <ion-item>
-                    <ion-label position="stacked">Service Address *</ion-label>
-                    <ion-textarea
-                      formControlName="address"
-                      placeholder="Enter the complete address where service is needed"
-                      rows="3"
-                      [value]="selectedLocation()?.address || ''"
-                      (ionInput)="onAddressInputChange($event)"
-                    ></ion-textarea>
-                  </ion-item>
-                </ion-list>
+                <!-- Hidden Address Input (for form validation) -->
+                <input type="hidden" formControlName="address" />
               </ion-card-content>
             </ion-card>
           </ion-col>

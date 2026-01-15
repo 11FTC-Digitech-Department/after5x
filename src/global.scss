@@ -28,37 +28,35 @@
 /* Android Google Maps transparency fix
  * On Android, Capacitor Google Maps renders beneath the webview.
  * All layers from the root to the map must be transparent.
+ * This is scoped to pages that use the .map-view class on ion-content.
  */
 
-// Platform-specific transparency (Android only)
+// Platform-specific transparency (Android only) - scoped to map view pages
 .plt-android {
-  // Root elements
-  ion-app {
-    background: transparent !important;
-  }
+  // Only make root elements transparent when a map-view is active
+  // This is controlled by the address-selector page
+  &:has(ion-content.map-view) {
+    ion-app {
+      background: transparent !important;
+    }
 
-  ion-router-outlet {
-    background: transparent !important;
-  }
+    ion-router-outlet {
+      background: transparent !important;
+    }
 
-  ion-page {
-    background: transparent !important;
-  }
-
-  // Content with maps
-  ion-content.transparent-for-maps {
-    --background: transparent !important;
-    background: transparent !important;
-
-    // Inner scroll content
-    .inner-scroll {
+    ion-page {
       background: transparent !important;
     }
   }
 
-  // Map selection section
-  .map-selection-section {
+  // Content with map view class
+  ion-content.map-view {
+    --background: transparent !important;
     background: transparent !important;
+
+    .inner-scroll {
+      background: transparent !important;
+    }
   }
 
   // Ensure capacitor-google-map element is visible
@@ -69,8 +67,6 @@
     background: transparent;
   }
 }
-
-// iOS and Web - keep normal styling (maps work normally on these platforms)
 
 
 

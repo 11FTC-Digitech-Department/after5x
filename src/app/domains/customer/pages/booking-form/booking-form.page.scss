@@ -3,47 +3,6 @@ ion-content {
   --background: #f8f9fa;
 }
 
-// Android Google Maps transparency fix
-// On Android, the map renders beneath the webview, so we need transparency
-:host-context(.plt-android) {
-  ion-content.transparent-for-maps {
-    --background: transparent !important;
-    background: transparent !important;
-  }
-}
-
-// Map visibility - ensure transparency for Android Google Maps
-.map-selection-section {
-  position: relative;
-  background: transparent !important;
-}
-
-// Android-specific: Make the card containing the map transparent
-// This targets the parent ion-card when it contains .map-selection-section
-:host-context(.plt-android) {
-  // Grid elements need transparency
-  ion-grid,
-  ion-row,
-  ion-col {
-    background: transparent !important;
-  }
-
-  // The form-section card containing the map needs special handling
-  .form-section:has(.map-selection-section) {
-    background: transparent !important;
-    --background: transparent !important;
-    box-shadow: none !important;
-
-    ion-card-content {
-      background: transparent !important;
-    }
-  }
-
-  .map-selection-section {
-    background: transparent !important;
-  }
-}
-
 // Header Styles
 .booking-header {
   --color: #2c3e50;
@@ -507,6 +466,134 @@ ion-content {
     display: block;
     margin-bottom: 12px;
     font-weight: 500;
+  }
+}
+
+// Selected Location Display
+.selected-location-display {
+  background: rgba(var(--ion-color-primary-rgb), 0.05);
+  border: 1px solid rgba(var(--ion-color-primary-rgb), 0.2);
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 16px;
+
+  .location-info {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+
+    .location-icon {
+      font-size: 24px;
+      margin-top: 2px;
+      flex-shrink: 0;
+    }
+
+    .location-details {
+      flex: 1;
+      min-width: 0;
+
+      .location-address {
+        display: block;
+        font-size: 14px;
+        line-height: 1.5;
+        color: var(--ion-color-dark);
+        font-weight: 500;
+        margin-bottom: 4px;
+      }
+
+      .location-coords {
+        display: block;
+        font-family: monospace;
+      }
+    }
+
+    ion-button {
+      margin: -8px -8px -8px 0;
+      flex-shrink: 0;
+    }
+  }
+}
+
+// Saved Addresses Section
+.saved-addresses-section {
+  margin-bottom: 16px;
+
+  .section-subtitle {
+    display: block;
+    margin-bottom: 12px;
+    font-weight: 500;
+    padding-left: 4px;
+  }
+
+  .address-list {
+    background: white;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+
+    .address-item {
+      --padding-start: 16px;
+      --inner-padding-end: 16px;
+
+      &.selected {
+        --background: rgba(var(--ion-color-primary-rgb), 0.05);
+      }
+
+      .address-icon {
+        font-size: 24px;
+        color: var(--ion-color-primary);
+        margin-right: 12px;
+      }
+
+      .address-label {
+        font-size: 16px;
+        font-weight: 600;
+        color: var(--ion-color-dark);
+        margin-bottom: 4px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+
+        .default-badge {
+          font-size: 10px;
+          padding: 2px 6px;
+        }
+      }
+
+      .address-text {
+        font-size: 14px;
+        color: var(--ion-color-medium);
+        line-height: 1.4;
+      }
+
+      .unit-details {
+        font-size: 12px;
+        color: var(--ion-color-medium);
+        font-style: italic;
+      }
+    }
+  }
+}
+
+// Map Selection Section
+.map-selection-section {
+  .section-subtitle {
+    display: block;
+    margin-bottom: 12px;
+    font-weight: 500;
+    padding-left: 4px;
+  }
+
+  .choose-location-btn {
+    --border-radius: 12px;
+    --border-width: 2px;
+    height: 50px;
+    font-weight: 600;
+
+    ion-icon {
+      font-size: 20px;
+      margin-right: 8px;
+    }
   }
 }
 
