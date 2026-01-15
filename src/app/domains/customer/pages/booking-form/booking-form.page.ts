@@ -28,14 +28,13 @@ import {
   IonList,
   IonChip,
   IonAvatar,
-  IonSpinner, IonBackButton, IonFooter, IonBadge } from '@ionic/angular/standalone';
+  IonSpinner, IonBackButton, IonFooter, IonBadge, IonNote } from '@ionic/angular/standalone';
 import { Camera, CameraResultType, CameraSource } from '@capacitor/camera';
 import { ServiceService, ServiceWithProvider } from '@core/services/service.service';
 import { SessionService } from '@core/auth/session';
 import { AddressService } from '@core/supabase/address.service';
 import { UserAddress, GeocodeResult } from '@core/models/address.model';
 import { MapSelectorComponent } from '@core/components/map-selector/map-selector.component';
-import { MapComponent } from "@app/core/components/map";
 
 interface BookingDetails {
   serviceType: string;
@@ -100,9 +99,10 @@ interface PriceBreakdown {
     IonAvatar,
     IonSpinner,
     IonBadge,
+    IonNote,
     MapSelectorComponent,
     CommonModule,
-    ReactiveFormsModule, MapComponent]
+    ReactiveFormsModule]
 })
 export class BookingFormPage implements OnInit {
   private formBuilder = inject(FormBuilder);
@@ -186,6 +186,82 @@ export class BookingFormPage implements OnInit {
     return this.timeslots.find(t => t.value === timeslot)?.after5 || false;
   });
 
+  isRecommendedTimeslot = computed(() => {
+    const urgency = this.bookingForm?.get('urgency')?.value;
+    const currentTimeslot = this.bookingForm?.get('preferredTimeslot')?.value;
+    if (!urgency || !currentTimeslot) return false;
+
+    const recommendedTimeslot = this.getRecommendedTimeslot(urgency);
+    return currentTimeslot === recommendedTimeslot;
+  });
+
+  recommendedTimeslotForUrgency = computed(() => {
+    const urgency = this.bookingForm?.get('urgency')?.value;
+    return urgency ? this.getRecommendedTimeslot(urgency) : null;
+  });
+
+  isAsapSelected = computed(() => {
+    return this.bookingForm?.get('urgency')?.value === 'emergency';
+  });
+
+  // Smart timeslot recommendations based on urgency
+  getRecommendedTimeslot(urgency: string): string {
+    const recommendations: { [key: string]: string } = {
+      'low': 'morning',        // Within 24 hours - convenient morning slot
+      'medium': 'afternoon',   // Within 12 hours - afternoon slot
+      'high': 'evening',       // Within 6 hours - immediate evening slot
+      'emergency': this.getCurrentTimeTimeslot() // ASAP - current time slot
+    };
+    return recommendations[urgency] || 'morning';
+  }
+
+  getCurrentTimeTimeslot(): string {
+    const now = new Date();
+    const currentHour = now.getHours();
+
+    // Map current hour to appropriate timeslot
+    if (currentHour >= 3 && currentHour < 6) return 'dawn';        // 3AM-6AM
+    if (currentHour >= 6 && currentHour < 12) return 'morning';    // 6AM-12PM (but morning starts at 8AM, so this covers early morning)
+    if (currentHour >= 12 && currentHour < 15) return 'noon';      // 12PM-3PM
+    if (currentHour >= 15 && currentHour < 17) return 'afternoon'; // 3PM-5PM
+    if (currentHour >= 17 && currentHour < 21) return 'evening';   // 5PM-9PM
+    if (currentHour >= 21 || currentHour < 3) return 'late-night'; // 9PM-12AM or 12AM-3AM
+
+    // Fallback to morning if somehow no match
+    return 'morning';
+  }
+
+  onUrgencyChange(urgency: string) {
+    // Update urgency
+    this.bookingForm.get('urgency')?.setValue(urgency);
+
+    if (urgency === 'emergency') {
+      // For ASAP: set date to today and timeslot to current time slot
+      const today = new Date().toISOString().split('T')[0];
+      this.bookingForm.get('preferredDate')?.setValue(today);
+
+      const currentTimeslot = this.getCurrentTimeTimeslot();
+      this.bookingForm.get('preferredTimeslot')?.setValue(currentTimeslot);
+    } else {
+      // For other urgencies: auto-select recommended timeslot
+      const recommendedTimeslot = this.getRecommendedTimeslot(urgency);
+      this.bookingForm.get('preferredTimeslot')?.setValue(recommendedTimeslot);
+    }
+  }
+
+  selectedServicePrice = computed(() => {
+    const service = this.selectedService();
+    if (!service) return '';
+
+    const minPrice = service.price_min;
+    const maxPrice = service.price_max;
+
+    if (minPrice === maxPrice) {
+      return `₱${minPrice}`;
+    }
+    return `₱${minPrice} - ₱${maxPrice}`;
+  });
+
   // Step state computations
   step1State = computed(() => {
     const currentStep = this.currentStep();
@@ -216,10 +292,10 @@ export class BookingFormPage implements OnInit {
 
   // Urgency levels
   urgencyLevels = [
-    { value: 'low', label: 'Low - Within 24 hours', color: 'success' },
-    { value: 'medium', label: 'Medium - Within 12 hours', color: 'warning' },
+    { value: 'emergency', label: 'Emergency - ASAP', color: 'danger' },
     { value: 'high', label: 'High - Within 6 hours', color: 'danger' },
-    { value: 'emergency', label: 'Emergency - ASAP', color: 'danger' }
+    { value: 'medium', label: 'Medium - Within 12 hours', color: 'warning' },
+    { value: 'low', label: 'Low - Within 24 hours', color: 'success' }
   ];
 
   // Timeslots

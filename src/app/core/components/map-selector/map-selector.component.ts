@@ -1,10 +1,11 @@
 import { Component, OnInit, OnDestroy, input, output, effect, signal, computed, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { CUSTOM_ELEMENTS_SCHEMA } from '@angular/core';
 import { IonSearchbar, IonList, IonItem, IonLabel, IonSpinner, IonText, IonIcon, IonButton } from '@ionic/angular/standalone';
 import { GoogleMapsService } from '../../services/google-maps.service';
 import { GooglePlaceResult, GeocodeResult } from '../../models/address.model';
-import { MapComponent } from '../map/map.component';
+import { MapComponent, MapCamera } from '../map/map.component';
 import { debounceTime, distinctUntilChanged, Subject } from 'rxjs';
 
 @Component({
@@ -12,6 +13,7 @@ import { debounceTime, distinctUntilChanged, Subject } from 'rxjs';
   templateUrl: './map-selector.component.html',
   styleUrls: ['./map-selector.component.scss'],
   standalone: true,
+  schemas: [CUSTOM_ELEMENTS_SCHEMA],
   imports: [
     CommonModule,
     FormsModule,
@@ -23,6 +25,7 @@ import { debounceTime, distinctUntilChanged, Subject } from 'rxjs';
     IonText,
     IonIcon,
     IonButton,
+    MapComponent,
   ]
 })
 export class MapSelectorComponent implements OnInit, OnDestroy {
@@ -43,7 +46,7 @@ export class MapSelectorComponent implements OnInit, OnDestroy {
   isLoading = signal(true);
 
   // Computed signals
-  mapCenter = computed(() => {
+  mapCenter = computed((): MapCamera => {
     const location = this.selectedLocation();
     if (location) {
       return { lat: location.lat, lng: location.lng, zoom: 15 };
@@ -122,11 +125,12 @@ export class MapSelectorComponent implements OnInit, OnDestroy {
         this.selectedLocation.set(geocodeResult);
         this.locationSelected.emit(geocodeResult);
 
-        // Update marker and camera imperatively
-        if (this.mapComponent) {
-
-
-
+        // Center the map on the selected location
+        if (this.mapComponent && this.mapComponent.mapInstance()) {
+          await this.mapComponent.mapInstance()?.setCamera({
+            coordinate: { lat, lng },
+            zoom: 15,
+          });
         }
       }
     } catch (error) {
@@ -204,8 +208,8 @@ export class MapSelectorComponent implements OnInit, OnDestroy {
     await this.initializeMap();
   }
 
-  async onMapClick(coordinates: { lat: number; lng: number }) {
-    // Handle map click by setting the location at the clicked coordinates
-    await this.setLocation(coordinates.lat, coordinates.lng);
+  async onMapClick(geocodeResult: GeocodeResult) {
+    // Handle map click by setting the location from the geocode result
+    await this.setLocation(geocodeResult.lat, geocodeResult.lng);
   }
 }

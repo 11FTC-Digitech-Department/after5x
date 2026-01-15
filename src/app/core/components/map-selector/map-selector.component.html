@@ -31,7 +31,13 @@
     }
   </div>
 
-
+  <!-- Map Component -->
+  <app-map
+    [center]="mapCenter()"
+    [height]="height()"
+    (mapReady)="onMapReady()"
+    (locationSelected)="onMapClick($event)">
+  </app-map>
 
     <!-- Current Location Button -->
     <ion-button
