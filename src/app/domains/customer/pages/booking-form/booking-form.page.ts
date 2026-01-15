@@ -1,6 +1,7 @@
 import { Component, OnInit, inject, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
+import { FormsModule } from '@angular/forms';
 import { Router, ActivatedRoute } from '@angular/router';
 import {
   IonContent,
@@ -28,7 +29,7 @@ import {
   IonList,
   IonChip,
   IonAvatar,
-  IonSpinner, IonBackButton, IonFooter, IonBadge, IonNote } from '@ionic/angular/standalone';
+  IonSpinner, IonBackButton, IonFooter, IonBadge, IonNote, IonSegment, IonSegmentButton } from '@ionic/angular/standalone';
 import { Camera, CameraResultType, CameraSource } from '@capacitor/camera';
 import { ServiceService, ServiceWithProvider } from '@core/services/service.service';
 import { SessionService } from '@core/auth/session';
@@ -100,8 +101,11 @@ interface PriceBreakdown {
     IonSpinner,
     IonBadge,
     IonNote,
+    IonSegment,
+    IonSegmentButton,
     CommonModule,
-    ReactiveFormsModule]
+    ReactiveFormsModule,
+    FormsModule]
 })
 export class BookingFormPage implements OnInit {
   private formBuilder = inject(FormBuilder);
@@ -494,14 +498,18 @@ export class BookingFormPage implements OnInit {
 
     // Add custom validation for location (either coordinates or manually entered address)
     this.bookingForm.get('address')?.setValidators([
-      Validators.required,
       (control) => {
         const address = control.value;
         const latitude = this.bookingForm.get('latitude')?.value;
         const longitude = this.bookingForm.get('longitude')?.value;
 
-        // If coordinates are set, address is valid
-        if (latitude && longitude && address) {
+        // If coordinates are set and address is provided, it's valid (map selection)
+        if (latitude && longitude && address && address.trim().length > 0) {
+          return null;
+        }
+
+        // If coordinates are set but no address, still valid (fallback to coordinates)
+        if (latitude && longitude) {
           return null;
         }
 
@@ -545,6 +553,17 @@ export class BookingFormPage implements OnInit {
   previousStep() {
     if (this.currentStep() === 2) {
       this.currentStep.set(1);
+    }
+  }
+
+  onSegmentChange(event: any) {
+    const value = event.detail.value;
+    if (value === 1 || value === 2) {
+      // Only allow navigation to step 2 if form is valid
+      if (value === 2 && !this.bookingForm.valid) {
+        return;
+      }
+      this.currentStep.set(value);
     }
   }
 

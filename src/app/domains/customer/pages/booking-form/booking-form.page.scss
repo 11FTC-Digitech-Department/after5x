@@ -26,6 +26,47 @@ ion-content {
   }
 }
 
+// Progress Toolbar
+.progress-toolbar {
+  --background: white;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+
+  ion-segment {
+    --background: transparent;
+
+
+    ion-segment-button {
+      --background: transparent;
+      --background-checked: var(--ion-color-primary);
+      --color-checked: white;
+      --transition: all 0.3s ease;
+      font-weight: 500;
+
+      ion-label {
+        font-size: 14px;
+      }
+
+      // Selected state
+      &.segment-button-checked {
+        --background: var(--ion-color-primary);
+        --color: white;
+        box-shadow: 0 2px 4px rgba(var(--ion-color-primary-rgb), 0.3);
+      }
+
+      // Hover state
+      &:hover:not(.segment-button-checked) {
+        --background: rgba(var(--ion-color-primary-rgb), 0.1);
+      }
+
+      // Disabled state
+      &.segment-button-disabled {
+        opacity: 0.5;
+        pointer-events: none;
+      }
+    }
+  }
+}
+
 // Step Indicators
 .step-indicators {
   display: flex;
@@ -1344,4 +1385,28 @@ ion-select {
   color: var(--ion-color-success);
   margin-top: 4px;
   display: block;
+}
+
+// Footer Grid
+.footer-grid {
+  --ion-grid-padding: 0;
+  --ion-grid-margin: 0;
+  padding: 0;
+
+  ion-row {
+    --ion-grid-row-padding: 0;
+  }
+
+  ion-col {
+    --ion-grid-column-padding: 0;
+    padding: 0 8px;
+
+    &:first-child {
+      padding-left: 0;
+    }
+
+    &:last-child {
+      padding-right: 0;
+    }
+  }
 }

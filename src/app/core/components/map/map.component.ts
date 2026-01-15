@@ -25,6 +25,7 @@ export class MapComponent implements OnInit, OnDestroy, AfterViewInit {
   // Inputs
   center = input<MapCamera>({ lat: 14.5995, lng: 120.9842, zoom: 15 });
   height = input<string>('300px');
+  initialMarker = input<{ lat: number; lng: number } | null>(null);
 
   // Outputs
   mapReady = output<void>();
@@ -79,6 +80,16 @@ export class MapComponent implements OnInit, OnDestroy, AfterViewInit {
 
       console.log(this.mapInstance());
       
+      // Add initial marker if provided
+      const initialMarkerPos = this.initialMarker();
+      if (initialMarkerPos) {
+        const markerId = await this.mapInstance()?.addMarker({
+          coordinate: { lat: initialMarkerPos.lat, lng: initialMarkerPos.lng },
+          draggable: true,
+        });
+        this.currentMarkerId.set(markerId ?? null);
+      }
+
       await this.mapInstance()?.setOnMapClickListener(async (event) => {
         const lat = event.latitude;
         const lng = event.longitude;

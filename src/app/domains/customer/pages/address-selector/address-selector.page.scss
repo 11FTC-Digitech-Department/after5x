@@ -40,6 +40,116 @@ ion-content.map-view {
   }
 }
 
+// Search Section Styles
+.search-section {
+  .search-container {
+    position: relative;
+  }
+
+  .address-searchbar {
+    --background: white;
+    --border-radius: 12px;
+    --box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    --placeholder-color: var(--ion-color-medium);
+    --icon-color: var(--ion-color-medium);
+    padding: 0;
+
+    &::part(native) {
+      padding: 0;
+    }
+  }
+
+  .search-loading {
+    position: absolute;
+    top: 50%;
+    right: 16px;
+    transform: translateY(-50%);
+    z-index: 10;
+
+    ion-spinner {
+      width: 20px;
+      height: 20px;
+    }
+  }
+
+  .search-results-dropdown {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+    z-index: 100;
+    max-height: 300px;
+    overflow-y: auto;
+    margin-top: 4px;
+
+    .search-result-item {
+      display: flex;
+      align-items: flex-start;
+      padding: 14px 16px;
+      cursor: pointer;
+      transition: background-color 0.2s ease;
+
+      &:hover {
+        background-color: var(--ion-color-light);
+      }
+
+      &:not(:last-child) {
+        border-bottom: 1px solid var(--ion-color-light);
+      }
+
+      .result-icon {
+        font-size: 20px;
+        color: var(--ion-color-primary);
+        margin-right: 12px;
+        margin-top: 2px;
+        flex-shrink: 0;
+      }
+
+      .result-text {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+        min-width: 0;
+
+        .result-main {
+          font-size: 15px;
+          font-weight: 500;
+          color: var(--ion-color-dark);
+        }
+
+        .result-secondary {
+          font-size: 13px;
+          color: var(--ion-color-medium);
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+      }
+    }
+
+    .search-loading-item {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      gap: 12px;
+      color: var(--ion-color-medium);
+
+      ion-spinner {
+        width: 20px;
+        height: 20px;
+      }
+
+      span {
+        font-size: 14px;
+      }
+    }
+  }
+}
+
 .address-list {
   background: white;
   border-radius: 12px;
@@ -102,6 +212,31 @@ ion-content.map-view {
   p {
     margin: 0;
     font-size: 16px;
+  }
+}
+
+.current-location-section {
+  .current-location-button {
+    --border-radius: 12px;
+    height: 56px;
+    font-weight: 600;
+
+    ion-icon {
+      font-size: 20px;
+      margin-right: 8px;
+    }
+
+    ion-spinner {
+      width: 20px;
+      height: 20px;
+      margin-right: 8px;
+    }
+  }
+
+  .error-text {
+    display: block;
+    margin-top: 8px;
+    padding-left: 4px;
   }
 }
 
@@ -199,7 +334,7 @@ ion-content.map-view {
 
 .map-instructions {
   position: absolute;
-  top: 16px;
+  top: 65px;
   left: 16px;
   right: 16px;
   background: rgba(255, 255, 255, 0.95);

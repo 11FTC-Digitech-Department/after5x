@@ -17,7 +17,52 @@
   @if (!showMap()) {
     <!-- Saved Addresses List -->
     <div class="addresses-container">
-      @if (isLoading()) {
+      <!-- Search Address Section -->
+      <div class="section search-section">
+        <ion-text class="section-title" color="medium">
+          <small>Search for an address</small>
+        </ion-text>
+        <div class="search-container">
+          <ion-searchbar
+            [value]="searchQuery()"
+            (ionInput)="onSearchInput($event)"
+            (ionFocus)="onSearchFocus()"
+            (ionBlur)="onSearchBlur()"
+            placeholder="Enter an address..."
+            [debounce]="0"
+            [disabled]="isSelectingPlace()"
+            class="address-searchbar">
+          </ion-searchbar>
+          @if (isSelectingPlace()) {
+            <div class="search-loading">
+              <ion-spinner name="crescent"></ion-spinner>
+            </div>
+          }
+          @if (showSearchResults() && searchResults().length > 0) {
+            <div class="search-results-dropdown">
+              @for (result of searchResults(); track result.place_id) {
+                <div class="search-result-item" (click)="selectSearchResult(result)">
+                  <ion-icon name="location-outline" class="result-icon"></ion-icon>
+                  <div class="result-text">
+                    <span class="result-main">{{ result.structured_formatting.main_text }}</span>
+                    <span class="result-secondary">{{ result.structured_formatting.secondary_text }}</span>
+                  </div>
+                </div>
+              }
+            </div>
+          }
+          @if (showSearchResults() && isSearching()) {
+            <div class="search-results-dropdown">
+              <div class="search-loading-item">
+                <ion-spinner name="crescent"></ion-spinner>
+                <span>Searching...</span>
+              </div>
+            </div>
+          }
+        </div>
+      </div>
+
+      @if (isLoading() || !hasLoaded()) {
         <div class="loading-container">
           <ion-spinner name="crescent"></ion-spinner>
           <ion-text color="medium">Loading addresses...</ion-text>
@@ -59,6 +104,31 @@
           </div>
         }
 
+        <!-- Current Location Option -->
+        <div class="section current-location-section">
+          <ion-text class="section-title" color="medium">
+            <small>Use your current location</small>
+          </ion-text>
+          <ion-button
+            expand="block"
+            (click)="useCurrentLocation()"
+            [disabled]="isGettingLocation()"
+            class="current-location-button">
+            @if (isGettingLocation()) {
+              <ion-spinner name="crescent" slot="start"></ion-spinner>
+              Getting Location...
+            } @else {
+              <ion-icon name="navigate" slot="start"></ion-icon>
+              Use Current Location
+            }
+          </ion-button>
+          @if (locationError()) {
+            <ion-text color="danger" class="error-text">
+              <small>{{ locationError() }}</small>
+            </ion-text>
+          }
+        </div>
+
         <!-- Map Selection Option -->
         <div class="section map-option-section">
           <ion-text class="section-title" color="medium">
@@ -77,6 +147,7 @@
       <app-map
         [height]="'100%'"
         [center]="getMapCenter()"
+        [initialMarker]="currentLocation()"
         (locationSelected)="onLocationSelected($event)">
       </app-map>
 
