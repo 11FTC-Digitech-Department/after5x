@@ -59,6 +59,29 @@ export interface ServiceWithProvider extends ServiceVariant {
   };
 }
 
+export interface ProviderOffering {
+  id: string;  // provider_offerings.id
+  providerId: string;
+  providerName: string;
+  avatarUrl?: string;
+  rating: number;
+  reviewCount: number;
+  yearsExperience: number;
+  serviceRadius: number;
+  status: string;
+  isDefault: boolean;  // highest rated = default
+}
+
+export interface ServiceWithProviders extends ServiceVariant {
+  service: Service;
+  providers: ProviderOffering[];  // ALL providers
+  selectedProvider: ProviderOffering;  // Default (highest rated)
+  category: {
+    name: string;
+    icon_url?: string;
+  };
+}
+
 export interface ProviderService {
   id: string;
   name: string;
@@ -160,6 +183,90 @@ export class ServiceService {
       };
     } catch (error) {
       console.error('Error in getServiceWithProvider:', error);
+      return null;
+    }
+  }
+
+  async getServiceWithAllProviders(serviceVariantId: string): Promise<ServiceWithProviders | null> {
+    try {
+      const client = this.supabaseService.client as any;
+
+      // Get service variant with service and category
+      const { data: variantData, error: variantError } = await client
+        .from('service_variants')
+        .select(`
+          *,
+          service:services(
+            *,
+            service_categories(name, icon_url)
+          )
+        `)
+        .eq('id', serviceVariantId)
+        .eq('is_active', true)
+        .single();
+
+      if (variantError || !variantData) {
+        console.error('Error fetching service variant:', variantError);
+        return null;
+      }
+
+      // Get ALL provider offerings for this service variant
+      const { data: offeringsData, error: offeringError } = await client
+        .from('provider_offerings')
+        .select(`
+          id,
+          provider:providers(
+            id, bio, years_of_experience, service_radius_km, status,
+            rating_avg, rating_count,
+            profiles!providers_id_fkey(full_name, avatar_url)
+          )
+        `)
+        .eq('service_variant_id', serviceVariantId)
+        .eq('is_active', true);
+
+      if (offeringError) {
+        console.error('Error fetching provider offerings:', offeringError);
+        return null;
+      }
+
+      if (!offeringsData || offeringsData.length === 0) {
+        console.error('No provider offerings found for service variant:', serviceVariantId);
+        return null;
+      }
+
+      // Map to ProviderOffering and sort by rating (highest first)
+      const providers: ProviderOffering[] = offeringsData
+        .map((o: any) => ({
+          id: o.id,
+          providerId: o.provider.id,
+          providerName: o.provider.profiles?.full_name || 'Provider',
+          avatarUrl: o.provider.profiles?.avatar_url,
+          rating: o.provider.rating_avg || 0,
+          reviewCount: o.provider.rating_count || 0,
+          yearsExperience: o.provider.years_of_experience || 0,
+          serviceRadius: o.provider.service_radius_km || 10,
+          status: o.provider.status,
+          isDefault: false
+        }))
+        .sort((a: ProviderOffering, b: ProviderOffering) => b.rating - a.rating);
+
+      // Mark the first provider (highest rated) as default
+      if (providers.length > 0) {
+        providers[0].isDefault = true;
+      }
+
+      return {
+        ...variantData,
+        service: variantData.service,
+        providers,
+        selectedProvider: providers[0],
+        category: {
+          name: variantData.service.service_categories?.name,
+          icon_url: variantData.service.service_categories?.icon_url,
+        },
+      };
+    } catch (error) {
+      console.error('Error in getServiceWithAllProviders:', error);
       return null;
     }
   }

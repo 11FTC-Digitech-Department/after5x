@@ -1,0 +1,243 @@
+<ion-header [translucent]="true">
+  <ion-toolbar>
+    <ion-buttons slot="start">
+      <ion-back-button defaultHref="/c/bookings"></ion-back-button>
+    </ion-buttons>
+    <ion-title>Booking {{ getShortBookingId() }}</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content [fullscreen]="true">
+  <!-- Pull to refresh -->
+  <ion-refresher slot="fixed" (ionRefresh)="handleRefresh($event)">
+    <ion-refresher-content pullingIcon="chevron-down-circle-outline" refreshingSpinner="circles">
+    </ion-refresher-content>
+  </ion-refresher>
+
+  <!-- Loading State -->
+  @if (isLoading()) {
+    <div class="loading-container">
+      <div class="status-header-skeleton">
+        <ion-skeleton-text [animated]="true" style="width: 100px; height: 28px; border-radius: 14px;"></ion-skeleton-text>
+        <ion-skeleton-text [animated]="true" style="width: 200px; height: 20px; margin-top: 8px;"></ion-skeleton-text>
+      </div>
+
+      <ion-card class="skeleton-card">
+        <ion-card-content>
+          <ion-skeleton-text [animated]="true" style="width: 60%; height: 18px;"></ion-skeleton-text>
+          <ion-skeleton-text [animated]="true" style="width: 80%; height: 14px; margin-top: 12px;"></ion-skeleton-text>
+          <ion-skeleton-text [animated]="true" style="width: 40%; height: 14px; margin-top: 8px;"></ion-skeleton-text>
+        </ion-card-content>
+      </ion-card>
+
+      <ion-card class="skeleton-card">
+        <ion-card-content>
+          <ion-skeleton-text [animated]="true" style="width: 50%; height: 18px;"></ion-skeleton-text>
+          <ion-skeleton-text [animated]="true" style="width: 70%; height: 14px; margin-top: 12px;"></ion-skeleton-text>
+        </ion-card-content>
+      </ion-card>
+    </div>
+  }
+
+  <!-- Booking Content -->
+  @else if (booking()) {
+    <!-- Status Header -->
+    <div class="status-header" [attr.data-status]="booking()?.status">
+      <ion-badge [color]="statusConfig()?.color" class="status-badge">
+        <ion-icon [name]="statusConfig()?.icon"></ion-icon>
+        {{ statusConfig()?.label }}
+      </ion-badge>
+      <p class="status-message">{{ statusConfig()?.message }}</p>
+    </div>
+
+    <!-- Service Info Card -->
+    <ion-card class="info-card">
+      <ion-card-header>
+        <ion-card-title>
+          <ion-icon [name]="getServiceIcon()"></ion-icon>
+          Service Details
+        </ion-card-title>
+      </ion-card-header>
+      <ion-card-content>
+        <div class="info-row">
+          <span class="info-label">Service</span>
+          <span class="info-value">{{ getServiceName() }}</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">Description</span>
+          <span class="info-value description">{{ getDescription() }}</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">Scheduled</span>
+          <span class="info-value">
+            {{ formatDate(booking()?.scheduled_for || null) }}
+            <br />
+            <small>{{ formatTime(booking()?.scheduled_for || null) }}</small>
+          </span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">Location</span>
+          <span class="info-value address">{{ getAddress() }}</span>
+        </div>
+      </ion-card-content>
+    </ion-card>
+
+    <!-- Provider Card -->
+    @if (getProviderName()) {
+      <ion-card class="provider-card">
+        <ion-card-header>
+          <ion-card-title>
+            <ion-icon name="person-outline"></ion-icon>
+            Service Provider
+          </ion-card-title>
+        </ion-card-header>
+        <ion-card-content>
+          <div class="provider-info">
+            @if (getProviderAvatar()) {
+              <ion-avatar class="provider-avatar">
+                <img [src]="getProviderAvatar()" [alt]="getProviderName()" />
+              </ion-avatar>
+            } @else {
+              <div class="provider-avatar-placeholder">
+                <ion-icon name="person-outline"></ion-icon>
+              </div>
+            }
+            <div class="provider-details">
+              <h3 class="provider-name">{{ getProviderName() }}</h3>
+              @if (getProviderPhone()) {
+                <p class="provider-phone">{{ getProviderPhone() }}</p>
+              }
+            </div>
+          </div>
+          @if (getProviderPhone()) {
+            <ion-button expand="block" fill="outline" (click)="callProvider()" class="contact-btn">
+              <ion-icon name="call-outline" slot="start"></ion-icon>
+              Contact Provider
+            </ion-button>
+          }
+        </ion-card-content>
+      </ion-card>
+    }
+
+    <!-- Timeline Card -->
+    @if (timeline().length > 0) {
+      <ion-card class="timeline-card">
+        <ion-card-header>
+          <ion-card-title>
+            <ion-icon name="time-outline"></ion-icon>
+            Timeline
+          </ion-card-title>
+        </ion-card-header>
+        <ion-card-content>
+          <div class="timeline">
+            @for (entry of timeline(); track entry.id; let first = $first; let last = $last) {
+              <div class="timeline-item" [class.first]="first" [class.last]="last">
+                <div class="timeline-marker">
+                  <div class="timeline-icon">
+                    <ion-icon [name]="getTimelineIcon(entry.icon_name)"></ion-icon>
+                  </div>
+                  @if (!last) {
+                    <div class="timeline-line"></div>
+                  }
+                </div>
+                <div class="timeline-content">
+                  <h4 class="timeline-title">{{ entry.title }}</h4>
+                  @if (entry.description) {
+                    <p class="timeline-description">{{ entry.description }}</p>
+                  }
+                  <span class="timeline-time">{{ formatRelativeTime(entry.created_at) }}</span>
+                </div>
+              </div>
+            }
+          </div>
+        </ion-card-content>
+      </ion-card>
+    }
+
+    <!-- Price Breakdown Card -->
+    <ion-card class="price-card">
+      <ion-card-header>
+        <ion-card-title>
+          <ion-icon name="receipt-outline"></ion-icon>
+          Price Breakdown
+        </ion-card-title>
+      </ion-card-header>
+      <ion-card-content>
+        <div class="price-row">
+          <span class="price-label">Service Fee</span>
+          <span class="price-value">{{ formatPrice(booking()?.total_labor_base || 0) }}</span>
+        </div>
+        @if (booking()?.total_transport_fees) {
+          <div class="price-row">
+            <span class="price-label">Transportation</span>
+            <span class="price-value">{{ formatPrice(booking()?.total_transport_fees || 0) }}</span>
+          </div>
+        }
+        @if (booking()?.total_materials_amount) {
+          <div class="price-row">
+            <span class="price-label">Materials</span>
+            <span class="price-value">{{ formatPrice(booking()?.total_materials_amount || 0) }}</span>
+          </div>
+        }
+        @if (booking()?.total_vat_amount) {
+          <div class="price-row">
+            <span class="price-label">VAT (12%)</span>
+            <span class="price-value">{{ formatPrice(booking()?.total_vat_amount || 0) }}</span>
+          </div>
+        }
+        <div class="price-row total">
+          <span class="price-label">Total</span>
+          <span class="price-value">{{ formatPrice(booking()?.grand_total || 0) }}</span>
+        </div>
+      </ion-card-content>
+    </ion-card>
+
+    <!-- Media Attachments -->
+    @if (booking()?.booking_media && booking()!.booking_media!.length > 0) {
+      <ion-card class="media-card">
+        <ion-card-header>
+          <ion-card-title>
+            <ion-icon name="image-outline"></ion-icon>
+            Attachments
+          </ion-card-title>
+        </ion-card-header>
+        <ion-card-content>
+          <div class="media-grid">
+            @for (media of booking()!.booking_media!; track media.id) {
+              <div class="media-item">
+                <img [src]="media.thumbnail_url || media.url" [alt]="media.context" />
+              </div>
+            }
+          </div>
+        </ion-card-content>
+      </ion-card>
+    }
+
+    <!-- Spacer for footer -->
+    @if (canCancel()) {
+      <div class="footer-spacer"></div>
+    }
+  }
+</ion-content>
+
+<!-- Cancel Footer -->
+@if (booking() && canCancel()) {
+  <ion-footer class="ion-no-border">
+    <ion-toolbar>
+      <ion-button
+        expand="block"
+        color="danger"
+        fill="outline"
+        (click)="confirmCancel()"
+        [disabled]="isCancelling()">
+        @if (isCancelling()) {
+          <ion-spinner name="crescent" slot="start"></ion-spinner>
+          Cancelling...
+        } @else {
+          <ion-icon name="close-circle" slot="start"></ion-icon>
+          Cancel Booking
+        }
+      </ion-button>
+    </ion-toolbar>
+  </ion-footer>
+}

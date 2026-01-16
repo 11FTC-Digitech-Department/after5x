@@ -26,9 +26,10 @@ import {
   IonList,
   IonItem,
   IonChip,
-  IonAvatar
+  IonAvatar,
+  IonBadge
 } from '@ionic/angular/standalone';
-import { ServiceService, ServiceWithProvider, ProviderService } from '@core/services/service.service';
+import { ServiceService, ServiceWithProviders, ProviderOffering, ProviderService } from '@core/services/service.service';
 
 @Component({
   selector: 'app-service-details',
@@ -60,6 +61,7 @@ import { ServiceService, ServiceWithProvider, ProviderService } from '@core/serv
     IonItem,
     IonChip,
     IonAvatar,
+    IonBadge,
     CommonModule,
     FormsModule
   ]
@@ -70,8 +72,10 @@ export class ServiceDetailsPage implements OnInit {
   private serviceService = inject(ServiceService);
 
   serviceVariantId = signal<string>('');
-  serviceData = signal<ServiceWithProvider | null>(null);
+  serviceData = signal<ServiceWithProviders | null>(null);
   providerServices = signal<ProviderService[]>([]);
+  availableProviders = signal<ProviderOffering[]>([]);
+  selectedProvider = signal<ProviderOffering | null>(null);
   selectedSegment = signal<'services' | 'provider' | 'reviews'>('services');
   isLoading = signal(true);
   isFavorite = signal(false);
@@ -92,15 +96,15 @@ export class ServiceDetailsPage implements OnInit {
   });
 
   providerRating = computed(() => {
-    const provider = this.serviceData()?.provider;
+    const provider = this.selectedProvider();
     if (!provider) return 0;
-    return provider.rating_avg || 0;
+    return provider.rating || 0;
   });
 
   providerName = computed(() => {
-    const provider = this.serviceData()?.provider;
-    if (!provider?.profile) return '';
-    return provider.profile.full_name || '';
+    const provider = this.selectedProvider();
+    if (!provider) return '';
+    return provider.providerName || '';
   });
 
   constructor() { }
@@ -116,33 +120,42 @@ export class ServiceDetailsPage implements OnInit {
   async loadServiceData(serviceVariantId: string) {
     this.isLoading.set(true);
     try {
-      const serviceData = await this.serviceService.getServiceWithProvider(serviceVariantId);
+      const serviceData = await this.serviceService.getServiceWithAllProviders(serviceVariantId);
 
       if (serviceData) {
         this.serviceData.set(serviceData);
+        this.availableProviders.set(serviceData.providers);
+        this.selectedProvider.set(serviceData.selectedProvider);
 
-        // Load other services by this provider
-        try {
-          const [otherServices, reviews] = await Promise.all([
-            this.serviceService.getProviderOtherServices(
-              serviceData.provider.id,
-              serviceVariantId
-            ),
-            this.serviceService.getProviderReviews(serviceData.provider.id)
-          ]);
-          this.providerServices.set(otherServices || []);
-          this.providerReviews.set(reviews || []);
-        } catch (error) {
-          console.error('Error loading provider data:', error);
-          this.providerServices.set([]);
-          this.providerReviews.set([]);
-        }
+        // Load other services and reviews for the default (selected) provider
+        await this.loadProviderData(serviceData.selectedProvider.providerId, serviceVariantId);
       }
     } catch (error) {
       console.error('Error loading service data:', error);
     } finally {
       this.isLoading.set(false);
     }
+  }
+
+  private async loadProviderData(providerId: string, excludeServiceVariantId: string) {
+    try {
+      const [otherServices, reviews] = await Promise.all([
+        this.serviceService.getProviderOtherServices(providerId, excludeServiceVariantId),
+        this.serviceService.getProviderReviews(providerId)
+      ]);
+      this.providerServices.set(otherServices || []);
+      this.providerReviews.set(reviews || []);
+    } catch (error) {
+      console.error('Error loading provider data:', error);
+      this.providerServices.set([]);
+      this.providerReviews.set([]);
+    }
+  }
+
+  selectProvider(provider: ProviderOffering) {
+    this.selectedProvider.set(provider);
+    // Reload other services and reviews for the newly selected provider
+    this.loadProviderData(provider.providerId, this.serviceVariantId());
   }
 
   onSegmentChange(event: any) {
@@ -159,8 +172,11 @@ export class ServiceDetailsPage implements OnInit {
 
   bookNow() {
     const serviceId = this.serviceVariantId();
+    const provider = this.selectedProvider();
     if (serviceId) {
-      this.router.navigate(['/c/book', serviceId]);
+      this.router.navigate(['/c/book', serviceId], {
+        state: { preSelectedProviderId: provider?.providerId }
+      });
     }
   }
 
@@ -173,7 +189,7 @@ export class ServiceDetailsPage implements OnInit {
   async addReview(rating: number, comment: string) {
     // This would typically be called from a review form
     // For now, just log the action
-    console.log('Adding review:', { rating, comment, providerId: this.serviceData()?.provider?.id });
+    console.log('Adding review:', { rating, comment, providerId: this.selectedProvider()?.providerId });
     // TODO: Implement review form and submission
   }
 }

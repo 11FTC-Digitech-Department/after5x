@@ -68,12 +68,26 @@ export class SessionService {
     this.supabase.auth.onAuthStateChange(async (event, session) => {
       console.log('SessionService: Auth state changed:', event, 'session:', !!session);
       const wasAuthenticated = !!this._session();
-      this._session.set(session);
 
       if (session) {
-        await this.fetchProfile(session.user.id);
+        // Set loading state while we fetch the profile
+        this._loading.set(true);
+        this._session.set(session);
+
+        try {
+          await this.fetchProfile(session.user.id);
+          console.log('SessionService: Profile loaded successfully for event:', event);
+        } catch (error) {
+          console.error('SessionService: Error fetching profile during auth state change:', error);
+          // Don't clear the session on profile fetch error - profile might load on retry
+        } finally {
+          this._loading.set(false);
+        }
       } else {
+        this._session.set(null);
         this._profile.set(null);
+        this._loading.set(false);
+
         // Handle different logout scenarios
         if (wasAuthenticated && this._initialized()) {
           if (event === 'SIGNED_OUT') {
@@ -92,6 +106,7 @@ export class SessionService {
 
   private async fetchProfile(userId: string) {
     try {
+      console.log('SessionService: Fetching profile for user:', userId);
       const { data, error } = await this.supabase
         .from('profiles')
         .select('*')
@@ -99,19 +114,21 @@ export class SessionService {
         .maybeSingle();
 
       if (error) {
-        console.error('Error fetching profile:', error);
-        return;
+        console.error('SessionService: Error fetching profile:', error);
+        throw new Error(`Failed to fetch profile: ${error.message}`);
       }
 
       if (data) {
         this._profile.set(data as UserProfile);
+        console.log('SessionService: Profile set successfully, role:', data.role);
       } else {
-        console.warn('Profile not found for user:', userId);
+        console.warn('SessionService: Profile not found for user:', userId);
         // Try to create profile for OAuth users
         await this.createProfileIfNeeded(userId);
       }
     } catch (error) {
-      console.error('Unexpected error fetching profile:', error);
+      console.error('SessionService: Unexpected error fetching profile:', error);
+      throw error; // Re-throw to be handled by caller
     }
   }
 
@@ -151,13 +168,34 @@ export class SessionService {
         updated_at: new Date().toISOString()
       };
 
-      const { error: insertError } = await this.supabase
+      // Create profile
+      const { error: profileError } = await this.supabase
         .from('profiles')
         .insert(profileData);
 
-      if (insertError) {
-        console.error('Error creating profile:', insertError);
+      if (profileError) {
+        console.error('Error creating profile:', profileError);
         return;
+      }
+
+      // Create customer record if role is customer
+      if (profileData.role === 'customer') {
+        const customerData = {
+          id: userId,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        };
+
+        const { error: customerError } = await this.supabase
+          .from('customers')
+          .insert(customerData);
+
+        if (customerError) {
+          console.error('Error creating customer record:', customerError);
+          // Don't return here - profile was created successfully
+        } else {
+          console.log('Customer record created successfully for user:', userId);
+        }
       }
 
       console.log('Profile created successfully for user:', userId);

@@ -30,11 +30,14 @@ import {
   IonChip,
   IonAvatar,
   IonSpinner, IonBackButton, IonFooter, IonBadge, IonNote, IonSegment, IonSegmentButton } from '@ionic/angular/standalone';
-import { Camera, CameraResultType, CameraSource } from '@capacitor/camera';
+import { Camera, CameraResultType, CameraSource, CameraPermissionType } from '@capacitor/camera';
 import { ServiceService, ServiceWithProvider } from '@core/services/service.service';
 import { SessionService } from '@core/auth/session';
 import { AddressService } from '@core/supabase/address.service';
+import { BookingService } from '@core/services/booking.service';
+import { RealTimeService } from '@core/services/real-time.service';
 import { UserAddress, GeocodeResult } from '@core/models/address.model';
+import { BookingSubmissionData, BookingResponse, BookingError } from '@core/models/booking.model';
 import { NavController } from '@ionic/angular/standalone';
 
 interface BookingDetails {
@@ -64,6 +67,7 @@ interface PriceBreakdown {
   baseService: number;
   urgencyFee: number;
   mediaProcessing: number;
+  transportationFee: number;
   total: number;
 }
 
@@ -115,14 +119,26 @@ export class BookingFormPage implements OnInit {
   private serviceService = inject(ServiceService);
   private sessionService = inject(SessionService);
   private addressService = inject(AddressService);
+  private bookingService = inject(BookingService);
+  private realTimeService = inject(RealTimeService);
 
   // Step management
   currentStep = signal<1 | 2>(1);
   isLoading = signal(false);
+  errorMessage = signal<string | null>(null);
+
+  // Assigned provider info (for review display)
+  assignedProvider = signal<any>(null);
+
+  // Pre-selected provider from service details page
+  preSelectedProviderId = signal<string | null>(null);
 
   // Service data
   selectedService = signal<ServiceWithProvider | null>(null);
   currentServiceType = signal<string>('');
+
+  // Reactive urgency signal for computed properties
+  currentUrgency = signal<string>('low');
 
   // Address data
   userAddresses = signal<UserAddress[]>([]);
@@ -136,20 +152,34 @@ export class BookingFormPage implements OnInit {
   mediaFiles = signal<MediaFile[]>([]);
   isUploading = signal(false);
 
-  // Price calculations
+  // Price calculations - consistent with booking service
   priceBreakdown = computed((): PriceBreakdown => {
     const selectedService = this.selectedService();
-    const baseService = selectedService
-      ? (selectedService.price_min + selectedService.price_max) / 2 // Use average of price range
-      : 1200; // Fallback base service fee
+    const timeslot = this.bookingForm?.get('preferredTimeslot')?.value;
+
+    // Determine if this is an "after 5" timeslot for pricing tier
+    const isAfter5 = this.timeslots.find(t => t.value === timeslot)?.after5 || false;
+
+    // Use service_variants pricing based on time tier (same logic as booking service)
+    let baseService: number;
+    if (selectedService) {
+      baseService = isAfter5
+        ? (selectedService.price_after5_min || selectedService.price_min)
+        : selectedService.price_min;
+    } else {
+      baseService = 1200; // Fallback
+    }
+
     const urgencyFee = this.calculateUrgencyFee();
     const mediaProcessing = this.mediaFiles().length * 100; // ₱100 per media file
-    const total = baseService + urgencyFee + mediaProcessing;
+    const transportationFee = selectedService?.transportation_fee || 0;
+    const total = baseService + urgencyFee + mediaProcessing + transportationFee;
 
     return {
       baseService,
       urgencyFee,
       mediaProcessing,
+      transportationFee,
       total
     };
   });
@@ -191,7 +221,7 @@ export class BookingFormPage implements OnInit {
   });
 
   isRecommendedTimeslot = computed(() => {
-    const urgency = this.bookingForm?.get('urgency')?.value;
+    const urgency = this.currentUrgency();
     const currentTimeslot = this.bookingForm?.get('preferredTimeslot')?.value;
     if (!urgency || !currentTimeslot) return false;
 
@@ -200,56 +230,120 @@ export class BookingFormPage implements OnInit {
   });
 
   recommendedTimeslotForUrgency = computed(() => {
-    const urgency = this.bookingForm?.get('urgency')?.value;
+    const urgency = this.currentUrgency();
     return urgency ? this.getRecommendedTimeslot(urgency) : null;
   });
 
   isAsapSelected = computed(() => {
-    return this.bookingForm?.get('urgency')?.value === 'emergency';
+    return this.currentUrgency() === 'emergency';
   });
 
-  // Smart timeslot recommendations based on urgency
+  // Smart timeslot recommendations based on urgency and current time
   getRecommendedTimeslot(urgency: string): string {
-    const recommendations: { [key: string]: string } = {
-      'low': 'morning',        // Within 24 hours - convenient morning slot
-      'medium': 'afternoon',   // Within 12 hours - afternoon slot
-      'high': 'evening',       // Within 6 hours - immediate evening slot
-      'emergency': this.getCurrentTimeTimeslot() // ASAP - current time slot
-    };
-    return recommendations[urgency] || 'morning';
+    const now = new Date();
+    const currentHour = now.getHours();
+    const currentMinute = now.getMinutes();
+    const currentTimeInMinutes = currentHour * 60 + currentMinute;
+
+    switch (urgency) {
+      case 'emergency':
+        // For emergency, use the next available timeslot
+        return this.getNextAvailableTimeslot();
+
+      case 'high':
+        // For high urgency (within 6 hours), recommend the soonest available timeslot
+        if (currentTimeInMinutes < 15 * 60) return 'afternoon'; // Before 3PM -> afternoon
+        if (currentTimeInMinutes < 17 * 60) return 'evening';   // Before 5PM -> evening
+        return 'late-night'; // After 5PM -> late-night
+
+      case 'medium':
+        // For medium urgency (within 12 hours), give some buffer time
+        if (currentTimeInMinutes < 12 * 60) return 'afternoon'; // Before noon -> afternoon
+        if (currentTimeInMinutes < 15 * 60) return 'evening';   // Before 3PM -> evening
+        return 'late-night'; // After 3PM -> late-night
+
+      case 'low':
+      default:
+        // For low urgency (within 24 hours), recommend next business day morning
+        if (currentTimeInMinutes < 17 * 60) return 'morning';   // Before 5PM -> tomorrow morning
+        return 'morning'; // After 5PM -> next day morning
+    }
   }
 
   getCurrentTimeTimeslot(): string {
     const now = new Date();
     const currentHour = now.getHours();
+    const currentMinute = now.getMinutes();
 
-    // Map current hour to appropriate timeslot
-    if (currentHour >= 3 && currentHour < 6) return 'dawn';        // 3AM-6AM
-    if (currentHour >= 6 && currentHour < 12) return 'morning';    // 6AM-12PM (but morning starts at 8AM, so this covers early morning)
-    if (currentHour >= 12 && currentHour < 15) return 'noon';      // 12PM-3PM
-    if (currentHour >= 15 && currentHour < 17) return 'afternoon'; // 3PM-5PM
-    if (currentHour >= 17 && currentHour < 21) return 'evening';   // 5PM-9PM
-    if (currentHour >= 21 || currentHour < 3) return 'late-night'; // 9PM-12AM or 12AM-3AM
+    // Convert to minutes since midnight for easier comparison
+    const currentTimeInMinutes = currentHour * 60 + currentMinute;
 
-    // Fallback to morning if somehow no match
-    return 'morning';
+    // Define timeslot boundaries in minutes since midnight
+    const timeslotBoundaries = [
+      { value: 'dawn', start: 3 * 60, end: 6 * 60 },        // 3:00 AM - 6:00 AM
+      { value: 'morning', start: 8 * 60, end: 12 * 60 },    // 8:00 AM - 12:00 PM
+      { value: 'noon', start: 12 * 60, end: 15 * 60 },      // 12:00 PM - 3:00 PM
+      { value: 'afternoon', start: 15 * 60, end: 17 * 60 }, // 3:00 PM - 5:00 PM
+      { value: 'evening', start: 17 * 60, end: 21 * 60 },   // 5:00 PM - 9:00 PM
+      { value: 'late-night', start: 21 * 60, end: 24 * 60 }, // 9:00 PM - 12:00 AM
+      { value: 'overnight', start: 0, end: 3 * 60 }         // 12:00 AM - 3:00 AM
+    ];
+
+    // Find the current timeslot
+    const currentTimeslot = timeslotBoundaries.find(slot =>
+      currentTimeInMinutes >= slot.start && currentTimeInMinutes < slot.end
+    );
+
+    if (currentTimeslot) {
+      return currentTimeslot.value;
+    }
+
+    // If we're in the overnight period (12AM-3AM), return that
+    if (currentTimeInMinutes >= 0 && currentTimeInMinutes < 3 * 60) {
+      return 'overnight';
+    }
+
+    // If no match found (shouldn't happen), find the next available timeslot
+    return this.getNextAvailableTimeslot();
   }
 
-  onUrgencyChange(urgency: string) {
+  private getNextAvailableTimeslot(): string {
+    const now = new Date();
+    const currentHour = now.getHours();
+
+    // Find the next available timeslot based on current time
+    if (currentHour >= 0 && currentHour < 3) return 'dawn';        // 12AM-3AM -> dawn (3AM-6AM)
+    if (currentHour >= 3 && currentHour < 8) return 'morning';     // 3AM-8AM -> morning (8AM-12PM)
+    if (currentHour >= 8 && currentHour < 12) return 'noon';       // 8AM-12PM -> noon (12PM-3PM)
+    if (currentHour >= 12 && currentHour < 15) return 'afternoon'; // 12PM-3PM -> afternoon (3PM-5PM)
+    if (currentHour >= 15 && currentHour < 17) return 'evening';   // 3PM-5PM -> evening (5PM-9PM)
+    if (currentHour >= 17 && currentHour < 21) return 'late-night'; // 5PM-9PM -> late-night (9PM-12AM)
+    if (currentHour >= 21) return 'overnight';                     // 9PM+ -> overnight (12AM-3AM)
+
+    return 'morning'; // Fallback
+  }
+
+  onUrgencyChange = (urgency: string) => {
     // Update urgency
     this.bookingForm.get('urgency')?.setValue(urgency);
+    this.currentUrgency.set(urgency);
 
     if (urgency === 'emergency') {
-      // For ASAP: set date to today and timeslot to current time slot
+      // For ASAP: set date to today and timeslot to current/next available slot
       const today = new Date().toISOString().split('T')[0];
       this.bookingForm.get('preferredDate')?.setValue(today);
 
       const currentTimeslot = this.getCurrentTimeTimeslot();
       this.bookingForm.get('preferredTimeslot')?.setValue(currentTimeslot);
     } else {
-      // For other urgencies: auto-select recommended timeslot
-      const recommendedTimeslot = this.getRecommendedTimeslot(urgency);
-      this.bookingForm.get('preferredTimeslot')?.setValue(recommendedTimeslot);
+      // For other urgencies: don't auto-select, just let the recommended badge guide the user
+      // Only set if no timeslot is currently selected
+      const currentTimeslot = this.bookingForm.get('preferredTimeslot')?.value;
+      if (!currentTimeslot) {
+        const recommendedTimeslot = this.getRecommendedTimeslot(urgency);
+        this.bookingForm.get('preferredTimeslot')?.setValue(recommendedTimeslot);
+      }
+      // If user already selected a timeslot, keep it but show the recommended badge on the appropriate slot
     }
   }
 
@@ -392,20 +486,41 @@ export class BookingFormPage implements OnInit {
       await this.loadServiceData(serviceId);
     }
 
-    // Check if returning from address selector with a selected location
+    // Check navigation state for pre-selected provider and location
     const navigation = this.router.getCurrentNavigation();
-    const state = navigation?.extras?.state as { selectedLocation?: GeocodeResult };
+    const state = navigation?.extras?.state as {
+      selectedLocation?: GeocodeResult;
+      preSelectedProviderId?: string;
+    };
+
     if (state?.selectedLocation) {
       this.onLocationSelected(state.selectedLocation);
+    }
+
+    // Store pre-selected provider ID from service details page
+    if (state?.preSelectedProviderId) {
+      this.preSelectedProviderId.set(state.preSelectedProviderId);
     }
   }
 
   ionViewWillEnter() {
-    // Check for selected location in navigation state when returning to this page
-    const state = history.state as { selectedLocation?: GeocodeResult };
+    // Check for selected location and pre-selected provider in navigation state when returning to this page
+    const state = history.state as {
+      selectedLocation?: GeocodeResult;
+      preSelectedProviderId?: string;
+    };
+
     if (state?.selectedLocation) {
       this.onLocationSelected(state.selectedLocation);
-      // Clear the state after using it
+    }
+
+    // Store pre-selected provider ID if present
+    if (state?.preSelectedProviderId && !this.preSelectedProviderId()) {
+      this.preSelectedProviderId.set(state.preSelectedProviderId);
+    }
+
+    // Clear the state after using it
+    if (state?.selectedLocation || state?.preSelectedProviderId) {
       history.replaceState({}, '');
     }
   }
@@ -423,7 +538,7 @@ export class BookingFormPage implements OnInit {
     }
   }
 
-  private async loadUserAddresses() {
+  private loadUserAddresses = async () => {
     try {
       const result = await this.addressService.getUserAddresses();
       if (result.error) {
@@ -436,7 +551,7 @@ export class BookingFormPage implements OnInit {
     }
   }
 
-  async loadServiceData(serviceVariantId: string) {
+  loadServiceData = async (serviceVariantId: string) => {
     try {
       this.isLoading.set(true);
       const serviceData = await this.serviceService.getServiceWithProvider(serviceVariantId);
@@ -488,12 +603,18 @@ export class BookingFormPage implements OnInit {
       specialInstructions: ['']
     });
 
-    // Initialize currentServiceType signal
+    // Initialize signals
     this.currentServiceType.set('');
+    this.currentUrgency.set('low');
 
     // Listen to service type changes to update currentServiceType signal
     this.bookingForm.get('serviceType')?.valueChanges.subscribe(value => {
       this.currentServiceType.set(value || '');
+    });
+
+    // Listen to urgency changes to update currentUrgency signal
+    this.bookingForm.get('urgency')?.valueChanges.subscribe(value => {
+      this.currentUrgency.set(value || 'low');
     });
 
     // Add custom validation for location (either coordinates or manually entered address)
@@ -543,20 +664,20 @@ export class BookingFormPage implements OnInit {
     }
   }
 
-  // Navigation methods
-  nextStep() {
+  // Navigation methods (arrow functions to preserve 'this' context)
+  nextStep = () => {
     if (this.bookingForm.valid && this.currentStep() === 1) {
       this.currentStep.set(2);
     }
   }
 
-  previousStep() {
+  previousStep = () => {
     if (this.currentStep() === 2) {
       this.currentStep.set(1);
     }
   }
 
-  onSegmentChange(event: any) {
+  onSegmentChange = (event: any) => {
     const value = event.detail.value;
     if (value === 1 || value === 2) {
       // Only allow navigation to step 2 if form is valid
@@ -567,8 +688,8 @@ export class BookingFormPage implements OnInit {
     }
   }
 
-  // Camera and file methods
-  async takePhoto() {
+  // Camera and file methods (arrow functions to preserve 'this' context)
+  takePhoto = async () => {
     try {
       const image = await Camera.getPhoto({
         quality: 80,
@@ -583,11 +704,24 @@ export class BookingFormPage implements OnInit {
       }
     } catch (error) {
       console.error('Error taking photo:', error);
+      this.errorMessage.set('Failed to take photo. Please try again.');
     }
   }
 
-  async selectFromGallery() {
+  selectFromGallery = async () => {
     try {
+      // Check and request photos permissions
+      const permissions = await Camera.checkPermissions();
+      if (permissions.photos !== 'granted') {
+        const requestResult = await Camera.requestPermissions({
+          permissions: ['photos']
+        });
+        if (requestResult.photos !== 'granted') {
+          this.errorMessage.set('Photo gallery permission is required to select images.');
+          return;
+        }
+      }
+
       const image = await Camera.getPhoto({
         quality: 80,
         allowEditing: false,
@@ -600,10 +734,11 @@ export class BookingFormPage implements OnInit {
       }
     } catch (error) {
       console.error('Error selecting from gallery:', error);
+      this.errorMessage.set('Failed to select image from gallery. Please try again.');
     }
   }
 
-  private async addMediaFileFromUri(uri: string, type: 'image' | 'video', name: string) {
+  private addMediaFileFromUri = async (uri: string, type: 'image' | 'video', name: string) => {
     try {
       // Convert URI to File object
       const response = await fetch(uri);
@@ -622,52 +757,97 @@ export class BookingFormPage implements OnInit {
       this.mediaFiles.update(files => [...files, mediaFile]);
     } catch (error) {
       console.error('Error adding media file:', error);
+      this.errorMessage.set('Failed to add media file. Please try again.');
     }
   }
 
-  removeMediaFile(fileId: string) {
+  removeMediaFile = (fileId: string) => {
     this.mediaFiles.update(files => files.filter(f => f.id !== fileId));
   }
 
 
-  // Submit booking
-  async submitBooking() {
-    if (this.bookingForm.valid) {
-      this.isLoading.set(true);
+  // Submit booking (arrow function to preserve 'this' context)
+  submitBooking = async () => {
+    if (!this.bookingForm.valid) return;
 
-      try {
-        // Combine date and timeslot into a single datetime for submission
-        const formValue = this.bookingForm.value;
-        const preferredDateTime = this.combineDateAndTimeslot(
-          formValue.preferredDate,
-          formValue.preferredTimeslot
-        );
+    // Validate location coordinates - prevent (0,0) which breaks provider matching
+    const lat = this.selectedLocation()?.lat;
+    const lng = this.selectedLocation()?.lng;
+    if (!lat || !lng || (lat === 0 && lng === 0)) {
+      this.errorMessage.set('Please select your location on the map for accurate service delivery.');
+      return;
+    }
 
-        const bookingData = {
-          ...formValue,
-          preferredDateTime, // Combined datetime for backend
-          mediaFiles: this.mediaFiles(),
-          priceBreakdown: this.priceBreakdown()
-        };
+    this.isLoading.set(true);
+    this.errorMessage.set(null);
 
-        console.log('Submitting booking:', bookingData);
+    try {
+      const formValue = this.bookingForm.value;
+      const preferredDateTime = this.combineDateAndTimeslot(
+        formValue.preferredDate,
+        formValue.preferredTimeslot
+      );
 
-        // Here you would typically call a service to submit the booking
-        // For now, just simulate success
-        await new Promise(resolve => setTimeout(resolve, 2000));
+      const bookingData: BookingSubmissionData = {
+        serviceType: formValue.serviceType,
+        description: formValue.description,
+        urgency: formValue.urgency,
+        preferredDate: formValue.preferredDate,
+        preferredTimeslot: formValue.preferredTimeslot,
+        preferredDateTime,
+        location: {
+          lat: this.selectedLocation()?.lat || 0,
+          lng: this.selectedLocation()?.lng || 0,
+          address: formValue.address
+        },
+        contactInfo: {
+          person: formValue.contactPerson,
+          phone: formValue.contactNumber
+        },
+        mediaFiles: this.mediaFiles(),
+        specialInstructions: formValue.specialInstructions,
+        serviceVariantId: this.selectedService()?.id,
+        preSelectedProviderId: this.preSelectedProviderId() || undefined
+      };
 
-        // Navigate to success page or booking confirmation
-        this.router.navigate(['/c/bookings']);
-      } catch (error) {
-        console.error('Error submitting booking:', error);
-      } finally {
-        this.isLoading.set(false);
-      }
+      const response: BookingResponse = await this.bookingService.createBooking(bookingData);
+
+      // Store assigned provider for review display
+      this.assignedProvider.set(response.assignedProvider);
+
+      // Navigate to booking details with real-time updates
+      this.router.navigate(['/c/bookings', response.bookingId], {
+        state: { bookingResponse: response }
+      });
+
+    } catch (error) {
+      console.error('Error submitting booking:', error);
+      this.errorMessage.set(this.handleBookingError(error));
+    } finally {
+      this.isLoading.set(false);
     }
   }
 
-  // Handle description chip click
-  addDescriptionChip(chipText: string) {
+  private handleBookingError(error: any): string {
+    if (error instanceof BookingError) {
+      switch (error.code) {
+        case 'AUTH_REQUIRED':
+          return 'Please log in to submit a booking.';
+        case 'BOOKING_CREATION_FAILED':
+          return 'Failed to create booking. Please try again.';
+        case 'PROVIDER_ASSIGNMENT_FAILED':
+          return 'Unable to find an available provider. Please try again later.';
+        case 'MEDIA_UPLOAD_FAILED':
+          return 'Some media files failed to upload. Please check your connection and try again.';
+        default:
+          return error.message || 'An unexpected error occurred.';
+      }
+    }
+    return 'An unexpected error occurred. Please try again.';
+  }
+
+  // Handle description chip click (arrow function to preserve 'this' context)
+  addDescriptionChip = (chipText: string) => {
     const currentDescription = this.bookingForm.get('description')?.value || '';
     const newDescription = currentDescription
       ? `${currentDescription}\n• ${chipText}`
@@ -693,8 +873,8 @@ export class BookingFormPage implements OnInit {
     return this.serviceTypes.find(service => service.value === serviceType)?.icon || 'construct';
   }
 
-  // Address and location selection methods
-  openAddressSelector() {
+  // Address and location selection methods (arrow functions to preserve 'this' context)
+  openAddressSelector = () => {
     // Store current form state in session storage before navigating
     const currentServiceId = this.route.snapshot.paramMap.get('id');
     this.navController.navigateForward('/c/address-selector', {
@@ -704,7 +884,7 @@ export class BookingFormPage implements OnInit {
     });
   }
 
-  clearSelectedLocation() {
+  clearSelectedLocation = () => {
     this.selectedLocation.set(null);
     this.selectedAddressId.set(null);
     this.bookingForm.patchValue({
@@ -714,7 +894,7 @@ export class BookingFormPage implements OnInit {
     });
   }
 
-  selectSavedAddress(address: UserAddress) {
+  selectSavedAddress = (address: UserAddress) => {
     this.selectedAddressId.set(address.id);
     this.selectedLocation.set({
       lat: address.location.lat,
@@ -730,7 +910,7 @@ export class BookingFormPage implements OnInit {
     });
   }
 
-  onLocationSelected(location: GeocodeResult) {
+  onLocationSelected = (location: GeocodeResult) => {
     this.selectedLocation.set(location);
     this.selectedAddressId.set(null); // Clear saved address selection when manually selecting location
 
@@ -742,7 +922,7 @@ export class BookingFormPage implements OnInit {
     });
   }
 
-  onAddressInputChange(event: any) {
+  onAddressInputChange = (event: any) => {
     const value = event.target.value;
     if (value !== this.selectedLocation()?.address) {
       // Clear location selection if user manually edits address

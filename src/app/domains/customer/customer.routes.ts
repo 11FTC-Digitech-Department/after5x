@@ -11,8 +11,14 @@ export const CUSTOMER_ROUTES: Routes = [
         loadComponent: () => import('./pages/home/home.page').then(m => m.HomePage),
       },
       {
-        path: 'activity',
-        loadComponent: () => import('./pages/activity/activity.page').then(m => m.ActivityPage),
+        path: 'bookings',
+        loadComponent: () => import('./pages/bookings/bookings.page').then(m => m.BookingsPage),
+        children: [
+          {
+            path: ':bookingId',
+            loadComponent: () => import('./pages/booking-details/booking-details.page').then(m => m.BookingDetailsPage),
+          },
+        ],
       },
       {
         path: 'messages',
