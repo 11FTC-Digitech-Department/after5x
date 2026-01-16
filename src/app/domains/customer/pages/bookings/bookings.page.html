@@ -5,15 +5,15 @@
 
   <!-- Filter Segment -->
   <ion-toolbar class="filter-toolbar">
-    <ion-segment [value]="filterStatus()" (ionChange)="onFilterChange($event)">
+    <ion-segment [(ngModel)]="filterStatus" >
       <ion-segment-button value="all">
         <ion-label>All</ion-label>
       </ion-segment-button>
       <ion-segment-button value="active">
-        <ion-label>Active</ion-label>
-        @if (activeCount() > 0) {
-          <ion-badge color="primary">{{ activeCount() }}</ion-badge>
-        }
+        <ion-label>
+          Active 
+          <ion-badge color="danger">{{ activeCount() }}</ion-badge>
+        </ion-label>
       </ion-segment-button>
       <ion-segment-button value="completed">
         <ion-label>Done</ion-label>

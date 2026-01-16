@@ -12,8 +12,11 @@ export const CUSTOMER_ROUTES: Routes = [
       },
       {
         path: 'bookings',
-        loadComponent: () => import('./pages/bookings/bookings.page').then(m => m.BookingsPage),
         children: [
+          {
+            path: '',
+            loadComponent: () => import('./pages/bookings/bookings.page').then(m => m.BookingsPage),
+          },
           {
             path: ':bookingId',
             loadComponent: () => import('./pages/booking-details/booking-details.page').then(m => m.BookingDetailsPage),

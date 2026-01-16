@@ -275,10 +275,6 @@ export class BookingsPage implements OnInit, OnDestroy {
     event.target.complete();
   }
 
-  onFilterChange(event: CustomEvent) {
-    this.filterStatus.set(event.detail.value as FilterStatus);
-  }
-
   toggleSortBy() {
     this.sortBy.set(this.sortBy() === 'date' ? 'status' : 'date');
   }
