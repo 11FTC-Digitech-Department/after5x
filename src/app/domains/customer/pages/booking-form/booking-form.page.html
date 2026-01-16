@@ -269,10 +269,11 @@
                       <ion-chip
                         [color]="timeslot.value === bookingForm.get('preferredTimeslot')?.value ? 'primary' : 'light'"
                         [outline]="timeslot.value !== bookingForm.get('preferredTimeslot')?.value"
-                        (click)="isAsapSelected() ? null : bookingForm.get('preferredTimeslot')?.setValue(timeslot.value)"
+                        (click)="isAsapSelected() ? null : (disabledTimeslots().has(timeslot.value) ? null : bookingForm.get('preferredTimeslot')?.setValue(timeslot.value))"
                         class="timeslot-chip"
                         [class.recommended]="!isAsapSelected() && timeslot.value === recommendedTimeslotForUrgency()"
-                        [class.disabled]="isAsapSelected() && timeslot.value !== bookingForm.get('preferredTimeslot')?.value"
+                        [class.disabled]="isAsapSelected() && timeslot.value !== bookingForm.get('preferredTimeslot')?.value || disabledTimeslots().has(timeslot.value)"
+                        [class.past-timeslot]="disabledTimeslots().has(timeslot.value)"
                       >
                         <ion-icon [name]="timeslot.icon" class="timeslot-icon"></ion-icon>
                         <ion-label>{{ timeslot.label }}</ion-label>

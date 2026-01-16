@@ -848,6 +848,23 @@ ion-content {
         cursor: not-allowed;
         pointer-events: none;
       }
+
+      // Past timeslot styling (for times that have already passed today)
+      &.past-timeslot {
+        opacity: 0.5;
+        --background: #f5f5f5;
+        --color: #999;
+        cursor: not-allowed;
+        pointer-events: none;
+
+        ion-icon {
+          opacity: 0.6;
+        }
+
+        .timeslot-range {
+          color: #999;
+        }
+      }
     }
   }
 }

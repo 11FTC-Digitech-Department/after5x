@@ -140,6 +140,9 @@ export class BookingFormPage implements OnInit {
   // Reactive urgency signal for computed properties
   currentUrgency = signal<string>('low');
 
+  // Reactive date signal for timeslot availability
+  selectedDate = signal<string>('');
+
   // Address data
   userAddresses = signal<UserAddress[]>([]);
   selectedAddressId = signal<string | null>(null);
@@ -238,6 +241,37 @@ export class BookingFormPage implements OnInit {
     return this.currentUrgency() === 'emergency';
   });
 
+  // Disabled timeslots based on selected date and current time
+  disabledTimeslots = computed(() => {
+    const selectedDateStr = this.selectedDate();
+    if (!selectedDateStr) return new Set<string>();
+
+    const selectedDate = new Date(selectedDateStr);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const selectedDateNormalized = new Date(selectedDate);
+    selectedDateNormalized.setHours(0, 0, 0, 0);
+
+    // If selected date is not today, all timeslots are available
+    if (selectedDateNormalized.getTime() !== today.getTime()) {
+      return new Set<string>();
+    }
+
+    // For today, disable timeslots that are in the past
+    const now = new Date();
+    const currentTimeInMinutes = now.getHours() * 60 + now.getMinutes();
+
+    const disabled = new Set<string>();
+    this.timeslots.forEach(timeslot => {
+      if (currentTimeInMinutes >= timeslot.startTime) {
+        disabled.add(timeslot.value);
+      }
+    });
+
+    return disabled;
+  });
+
   // Smart timeslot recommendations based on urgency and current time
   getRecommendedTimeslot(urgency: string): string {
     const now = new Date();
@@ -323,6 +357,18 @@ export class BookingFormPage implements OnInit {
     return 'morning'; // Fallback
   }
 
+  private getFirstAvailableTimeslot(dateStr?: string): string {
+    const disabled = this.disabledTimeslots();
+    const availableTimeslots = this.timeslots.filter(slot => !disabled.has(slot.value));
+
+    if (availableTimeslots.length > 0) {
+      return availableTimeslots[0].value;
+    }
+
+    // If no timeslots are available for today, return the first timeslot (shouldn't happen)
+    return this.timeslots[0].value;
+  }
+
   onUrgencyChange = (urgency: string) => {
     // Update urgency
     this.bookingForm.get('urgency')?.setValue(urgency);
@@ -396,15 +442,15 @@ export class BookingFormPage implements OnInit {
     { value: 'low', label: 'Low - Within 24 hours', color: 'success' }
   ];
 
-  // Timeslots
+  // Timeslots with their start times in minutes from midnight
   timeslots = [
-    { value: 'morning', label: 'Morning', range: '8:00 AM - 12:00 PM', icon: 'sunny-outline', after5: false },
-    { value: 'noon', label: 'Noon', range: '12:00 PM - 3:00 PM', icon: 'sunny', after5: false },
-    { value: 'afternoon', label: 'Afternoon', range: '3:00 PM - 5:00 PM', icon: 'partly-sunny', after5: false },
-    { value: 'evening', label: 'Evening', range: '5:00 PM - 9:00 PM', icon: 'moon-outline', after5: true },
-    { value: 'late-night', label: 'Late Night', range: '9:00 PM - 12:00 AM', icon: 'moon', after5: true },
-    { value: 'overnight', label: 'Overnight', range: '12:00 AM - 3:00 AM', icon: 'cloudy-night', after5: true },
-    { value: 'dawn', label: 'Dawn', range: '3:00 AM - 6:00 AM', icon: 'sunrise', after5: true }
+    { value: 'morning', label: 'Morning', range: '8:00 AM - 12:00 PM', icon: 'sunny-outline', after5: false, startTime: 8 * 60 },
+    { value: 'noon', label: 'Noon', range: '12:00 PM - 3:00 PM', icon: 'sunny', after5: false, startTime: 12 * 60 },
+    { value: 'afternoon', label: 'Afternoon', range: '3:00 PM - 5:00 PM', icon: 'partly-sunny', after5: false, startTime: 15 * 60 },
+    { value: 'evening', label: 'Evening', range: '5:00 PM - 9:00 PM', icon: 'moon-outline', after5: true, startTime: 17 * 60 },
+    { value: 'late-night', label: 'Late Night', range: '9:00 PM - 12:00 AM', icon: 'moon', after5: true, startTime: 21 * 60 },
+    { value: 'overnight', label: 'Overnight', range: '12:00 AM - 3:00 AM', icon: 'cloudy-night', after5: true, startTime: 0 },
+    { value: 'dawn', label: 'Dawn', range: '3:00 AM - 6:00 AM', icon: 'sunny-outline', after5: true, startTime: 3 * 60 }
   ];
 
   // Common service descriptions by service type
@@ -589,11 +635,14 @@ export class BookingFormPage implements OnInit {
   }
 
   private initializeForm() {
+    // Set default date to today
+    const today = new Date().toISOString().split('T')[0];
+
     this.bookingForm = this.formBuilder.group({
       serviceType: ['', Validators.required],
       description: ['', [Validators.required, Validators.minLength(10)]],
       urgency: ['low', Validators.required],
-      preferredDate: ['', Validators.required],
+      preferredDate: [today, Validators.required], // Default to today
       preferredTimeslot: ['', Validators.required],
       address: ['', Validators.required],
       contactNumber: ['', [Validators.pattern(/^(\+63|0)[9]\d{9}$/)]],
@@ -606,6 +655,7 @@ export class BookingFormPage implements OnInit {
     // Initialize signals
     this.currentServiceType.set('');
     this.currentUrgency.set('low');
+    this.selectedDate.set(today);
 
     // Listen to service type changes to update currentServiceType signal
     this.bookingForm.get('serviceType')?.valueChanges.subscribe(value => {
@@ -616,6 +666,25 @@ export class BookingFormPage implements OnInit {
     this.bookingForm.get('urgency')?.valueChanges.subscribe(value => {
       this.currentUrgency.set(value || 'low');
     });
+
+    // Listen to date changes to update selectedDate signal and adjust timeslot if needed
+    this.bookingForm.get('preferredDate')?.valueChanges.subscribe(value => {
+      this.selectedDate.set(value || '');
+
+      // Check if current timeslot becomes disabled and adjust if necessary
+      const currentTimeslot = this.bookingForm.get('preferredTimeslot')?.value;
+      const disabledTimeslots = this.disabledTimeslots();
+
+      if (currentTimeslot && disabledTimeslots.has(currentTimeslot)) {
+        // Current timeslot is now disabled, select the first available one
+        const firstAvailable = this.getFirstAvailableTimeslot(value);
+        this.bookingForm.get('preferredTimeslot')?.setValue(firstAvailable);
+      }
+    });
+
+    // Set initial timeslot based on current availability
+    const initialTimeslot = this.getFirstAvailableTimeslot(today);
+    this.bookingForm.get('preferredTimeslot')?.setValue(initialTimeslot);
 
     // Add custom validation for location (either coordinates or manually entered address)
     this.bookingForm.get('address')?.setValidators([
