@@ -48,6 +48,7 @@ export class SessionService {
     try {
       console.log('SessionService: Getting initial session');
       const { data, error } = await this.supabase.auth.getSession();
+
       if (error) {
         console.error('Error getting session:', error);
       }
@@ -55,16 +56,20 @@ export class SessionService {
       this._session.set(data.session);
 
       if (data.session) {
+        // Fetch profile - loading stays true until this completes
         await this.fetchProfile(data.session.user.id);
       }
     } catch (error) {
       console.error('Error during session initialization:', error);
+      this._session.set(null);
+      this._profile.set(null);
+    } finally {
+      // Only set loading false AFTER profile is resolved (or no session)
+      this._loading.set(false);
+      this._initialized.set(true);
     }
 
-    this._loading.set(false);
-    this._initialized.set(true);
-
-    // 2. Listen for changes (Login/Logout)
+    // Setup listener AFTER initialization is complete
     this.supabase.auth.onAuthStateChange(async (event, session) => {
       console.log('SessionService: Auth state changed:', event, 'session:', !!session);
       const wasAuthenticated = !!this._session();

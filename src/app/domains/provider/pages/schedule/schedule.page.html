@@ -1,13 +1,113 @@
 <ion-header [translucent]="true">
   <ion-toolbar>
-    <ion-title>schedule</ion-title>
+    <ion-title>My Jobs</ion-title>
   </ion-toolbar>
 </ion-header>
 
 <ion-content [fullscreen]="true">
+  <!-- Pull to refresh -->
+  <ion-refresher slot="fixed" (ionRefresh)="handleRefresh($event)">
+    <ion-refresher-content pullingIcon="chevron-down-circle-outline" refreshingSpinner="circles">
+    </ion-refresher-content>
+  </ion-refresher>
+
   <ion-header collapse="condense">
     <ion-toolbar>
-      <ion-title size="large">schedule</ion-title>
+      <ion-title size="large">My Jobs</ion-title>
     </ion-toolbar>
   </ion-header>
+
+  <!-- Segment Control -->
+  <div class="segment-container">
+    <ion-segment [value]="selectedSegment()" (ionChange)="onSegmentChange($event)">
+      <ion-segment-button value="incoming">
+        <ion-label>
+          Incoming
+          @if (incomingCount() > 0) {
+            <ion-badge color="danger" class="segment-badge">{{ incomingCount() }}</ion-badge>
+          }
+        </ion-label>
+      </ion-segment-button>
+      <ion-segment-button value="active">
+        <ion-label>Active</ion-label>
+      </ion-segment-button>
+      <ion-segment-button value="history">
+        <ion-label>History</ion-label>
+      </ion-segment-button>
+    </ion-segment>
+  </div>
+
+  <!-- Loading State -->
+  @if (isLoading()) {
+    <div class="loading-container">
+      <ion-spinner name="crescent" color="primary"></ion-spinner>
+      <p>Loading jobs...</p>
+    </div>
+  } @else {
+    <!-- Job Cards -->
+    @if (displayedJobs().length > 0) {
+      <div class="jobs-list">
+        @for (job of displayedJobs(); track job.id) {
+          <ion-card class="job-card" (click)="openJob(job)" button>
+            <ion-card-content>
+              <!-- Header with ID and Status -->
+              <div class="job-header">
+                <span class="job-id">{{ getShortBookingId(job.id) }}</span>
+                <ion-badge [color]="getStatusConfig(job.status).color" class="status-badge">
+                  <ion-icon [name]="getStatusConfig(job.status).icon"></ion-icon>
+                  {{ getStatusConfig(job.status).label }}
+                </ion-badge>
+              </div>
+
+              <!-- Service Name -->
+              <h2 class="service-name">{{ getServiceName(job) }}</h2>
+
+              <!-- Customer Info -->
+              <div class="info-row">
+                <ion-icon name="person-outline"></ion-icon>
+                <span>{{ getCustomerName(job) }}</span>
+              </div>
+
+              <!-- Schedule Info -->
+              <div class="info-row">
+                <ion-icon name="calendar-outline"></ion-icon>
+                <span>{{ formatDateTime(job.scheduled_for) }}</span>
+              </div>
+
+              <!-- Location -->
+              <div class="info-row location">
+                <ion-icon name="location-outline"></ion-icon>
+                <span>{{ getAddress(job) }}</span>
+              </div>
+
+              <!-- Footer with Price and Arrow -->
+              <div class="job-footer">
+                <span class="job-price">{{ formatPrice(job.grand_total) }}</span>
+                <ion-icon name="chevron-forward" class="arrow-icon"></ion-icon>
+              </div>
+            </ion-card-content>
+          </ion-card>
+        }
+      </div>
+    } @else {
+      <!-- Empty State -->
+      <div class="empty-state">
+        <ion-icon [name]="selectedSegment() === 'incoming' ? 'briefcase-outline' : 'document-text-outline'"></ion-icon>
+        @switch (selectedSegment()) {
+          @case ('incoming') {
+            <h3>No Incoming Jobs</h3>
+            <p>New job requests will appear here</p>
+          }
+          @case ('active') {
+            <h3>No Active Jobs</h3>
+            <p>Jobs you're working on will appear here</p>
+          }
+          @case ('history') {
+            <h3>No Job History</h3>
+            <p>Completed jobs will appear here</p>
+          }
+        }
+      </div>
+    }
+  }
 </ion-content>

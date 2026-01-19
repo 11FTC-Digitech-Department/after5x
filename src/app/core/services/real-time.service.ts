@@ -131,6 +131,66 @@ export class RealTimeService {
     };
   }
 
+  /**
+   * Subscribe to all booking updates for a specific provider
+   */
+  subscribeToProviderBookings(
+    providerId: string,
+    onBookingUpdate: (booking: any, oldStatus?: string, newStatus?: string) => void
+  ): () => void {
+    const client = this.supabaseService.client;
+    const channelName = `provider-bookings-${providerId}`;
+
+    // Remove existing subscription if any
+    const existingChannel = this.channels.get(channelName);
+    if (existingChannel) {
+      client.removeChannel(existingChannel);
+      this.channels.delete(channelName);
+    }
+
+    const channel = client
+      .channel(channelName)
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'bookings',
+          filter: `provider_id=eq.${providerId}`
+        },
+        (payload: RealtimePostgresChangesPayload<any>) => {
+          const oldStatus = (payload.old as any)?.status;
+          const newStatus = payload.new.status;
+          onBookingUpdate(payload.new, oldStatus, newStatus);
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'bookings',
+          filter: `provider_id=eq.${providerId}`
+        },
+        (payload: RealtimePostgresChangesPayload<any>) => {
+          onBookingUpdate(payload.new, undefined, payload.new.status);
+        }
+      )
+      .subscribe((status) => {
+        console.log(`Provider bookings subscription status for ${providerId}:`, status);
+      });
+
+    this.channels.set(channelName, channel);
+
+    return () => {
+      const ch = this.channels.get(channelName);
+      if (ch) {
+        client.removeChannel(ch);
+        this.channels.delete(channelName);
+      }
+    };
+  }
+
   subscribeToProviderLocation(
     providerId: string,
     bookingId: string,

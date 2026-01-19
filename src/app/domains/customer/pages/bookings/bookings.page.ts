@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy, inject, signal, computed } from '@angular/core';
+import { Component, OnInit, OnDestroy, inject, signal, computed, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
@@ -136,6 +136,9 @@ export class BookingsPage implements OnInit, OnDestroy {
   // Real-time subscription cleanup
   private unsubscribeRealTime: (() => void) | null = null;
 
+  // Track if initial data load happened (prevents duplicate loads from effect)
+  private dataLoaded = signal(false);
+
   // Computed: filtered and sorted bookings
   filteredBookings = computed(() => {
     let result = [...this.bookings()];
@@ -204,11 +207,28 @@ export class BookingsPage implements OnInit, OnDestroy {
       alertCircle,
       refreshOutline
     });
+
+    // Reactive effect: load data when profile becomes available
+    // This handles the case where profile loads after ngOnInit
+    effect(() => {
+      const profile = this.sessionService.profile();
+      const isLoading = this.sessionService.isLoading();
+
+      // Only trigger if we have profile, session is not loading, and haven't loaded data yet
+      if (profile?.id && !isLoading && !this.dataLoaded()) {
+        this.loadBookings();
+        this.setupRealTimeSubscription();
+      }
+    });
   }
 
   async ngOnInit() {
-    await this.loadBookings();
-    this.setupRealTimeSubscription();
+    // Fast path: if profile is already available, load immediately
+    // Otherwise, the effect will trigger when profile becomes available
+    if (this.sessionService.profile()?.id) {
+      await this.loadBookings();
+      this.setupRealTimeSubscription();
+    }
   }
 
   ngOnDestroy() {
@@ -224,7 +244,10 @@ export class BookingsPage implements OnInit, OnDestroy {
       return;
     }
 
+    // Mark as loaded to prevent duplicate loads from effect
+    this.dataLoaded.set(true);
     this.isLoading.set(true);
+
     try {
       const bookings = await this.bookingService.getCustomerBookings(profile.id);
       this.bookings.set(bookings);

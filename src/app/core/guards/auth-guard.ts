@@ -6,39 +6,23 @@ export const authGuard: CanActivateFn = async (route, state) => {
   const sessionService = inject(SessionService);
   const router = inject(Router);
 
-  // Wait for session initialization to complete
-  const maxWaitMs = 5000;
+  const maxWaitMs = 8000;
   const checkIntervalMs = 100;
   let waited = 0;
 
-  // Wait for loading to finish
-  while (sessionService.isLoading() && waited < maxWaitMs) {
+  // Wait for FULL authentication (session AND profile)
+  // This ensures profile is available before any page's ngOnInit runs
+  while (
+    (sessionService.isLoading() || !sessionService.isFullyAuthenticated()) &&
+    waited < maxWaitMs
+  ) {
     await new Promise(resolve => setTimeout(resolve, checkIntervalMs));
     waited += checkIntervalMs;
   }
 
-  // If still loading after timeout, redirect to auth
-  if (sessionService.isLoading()) {
-    console.warn('authGuard: Session still loading after timeout, redirecting to auth');
-    return router.createUrlTree(['/auth/welcome']);
-  }
-
-  // Check if user has a valid session
-  if (!sessionService.isAuthenticated()) {
-    console.log('authGuard: User not authenticated, redirecting to welcome');
-    return router.createUrlTree(['/auth/welcome']);
-  }
-
-  // Wait for profile to be loaded (ensures full authentication)
-  waited = 0;
-  while (!sessionService.userRole() && sessionService.isAuthenticated() && waited < maxWaitMs) {
-    await new Promise(resolve => setTimeout(resolve, checkIntervalMs));
-    waited += checkIntervalMs;
-  }
-
-  // If we have a session but no profile after waiting, something is wrong
-  if (sessionService.isAuthenticated() && !sessionService.userRole()) {
-    console.error('authGuard: Session exists but profile failed to load, redirecting to auth');
+  // Check if fully authenticated (has both session and profile)
+  if (!sessionService.isFullyAuthenticated()) {
+    console.warn('authGuard: Not fully authenticated after wait, redirecting to auth');
     return router.createUrlTree(['/auth/welcome']);
   }
 

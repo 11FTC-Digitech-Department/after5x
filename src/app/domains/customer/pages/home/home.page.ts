@@ -1,4 +1,4 @@
-import { Component, OnInit, inject, signal, computed } from '@angular/core';
+import { Component, OnInit, inject, signal, computed, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
@@ -21,7 +21,6 @@ import {
 } from '@ionic/angular/standalone';
 import { AddressService } from '@core/supabase/address.service';
 import { SessionService } from '@core/auth/session';
-import { AuthGuard } from '@core/auth/auth.guard';
 
 interface ServiceCategory {
   id: string;
@@ -68,7 +67,9 @@ export class HomePage implements OnInit {
   private addressService = inject(AddressService);
   private router = inject(Router);
   private sessionService = inject(SessionService);
-  private authGuard = inject(AuthGuard);
+
+  // Track if initial data load happened (prevents duplicate loads from effect)
+  private dataLoaded = signal(false);
 
   userName = computed(() => {
     const profile = this.sessionService.profile();
@@ -115,19 +116,32 @@ export class HomePage implements OnInit {
     }
   ];
 
-  constructor() { }
+  constructor() {
+    // Reactive effect: load data when profile becomes available
+    // This handles the case where profile loads after ngOnInit
+    effect(() => {
+      const profile = this.sessionService.profile();
+      const isLoading = this.sessionService.isLoading();
+
+      // Only trigger if we have profile, session is not loading, and haven't loaded data yet
+      if (profile?.id && !isLoading && !this.dataLoaded()) {
+        this.loadDefaultAddress();
+      }
+    });
+  }
 
   async ngOnInit() {
-    // Ensure authentication before loading data
-    const isAuthenticated = await this.authGuard.requireAuthentication();
-    if (!isAuthenticated) {
-      return; // Auth guard will handle navigation
+    // Fast path: if profile is already available, load immediately
+    // Otherwise, the effect will trigger when profile becomes available
+    if (this.sessionService.profile()?.id) {
+      await this.loadDefaultAddress();
     }
-
-    await this.loadDefaultAddress();
   }
 
   async loadDefaultAddress() {
+    // Mark as loaded to prevent duplicate loads from effect
+    this.dataLoaded.set(true);
+
     try {
       const result = await this.addressService.getDefaultAddress();
       if (result.data) {
