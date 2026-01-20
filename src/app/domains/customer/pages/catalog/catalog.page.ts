@@ -15,22 +15,26 @@ import {
   IonRefresher,
   IonRefresherContent,
   IonIcon,
-  IonList,
-  IonItem,
-  IonThumbnail,
-  IonLabel,
-  IonBadge
+  IonBadge,
+  IonCard,
+  IonCardHeader,
+  IonCardTitle,
+  IonCardSubtitle,
+  IonCardContent,
+  IonButton,
+  ModalController
 } from '@ionic/angular/standalone';
-import { ServiceService, ServiceVariant, Service } from '@core/services/service.service';
+import { addIcons } from 'ionicons';
+import { optionsOutline, chevronForward, star, constructOutline } from 'ionicons/icons';
+import { ServiceService, ServiceGroup, ServiceVariant } from '@core/services/service.service';
 import { AuthGuard } from '@core/auth/auth.guard';
+import { VariantSelectorComponent, VariantSelectionResult } from '@shared/components/variant-selector/variant-selector.component';
 
-interface CategoryWithServices {
+interface CategoryInfo {
   id: string;
   name: string;
   slug: string;
   icon_url?: string;
-  services: any[];
-  serviceVariants: any[];
 }
 
 @Component({
@@ -51,13 +55,16 @@ interface CategoryWithServices {
     IonRefresher,
     IonRefresherContent,
     IonIcon,
-    IonList,
-    IonItem,
-    IonThumbnail,
-    IonLabel,
     IonBadge,
+    IonCard,
+    IonCardHeader,
+    IonCardTitle,
+    IonCardSubtitle,
+    IonCardContent,
+    IonButton,
     CommonModule,
-    FormsModule
+    FormsModule,
+    VariantSelectorComponent
   ]
 })
 export class CatalogPage implements OnInit {
@@ -65,10 +72,20 @@ export class CatalogPage implements OnInit {
   private router = inject(Router);
   private serviceService = inject(ServiceService);
   private authGuard = inject(AuthGuard);
+  private modalController = inject(ModalController);
 
   categorySlug = signal<string>('');
-  categoryData = signal<CategoryWithServices | null>(null);
+  categoryInfo = signal<CategoryInfo | null>(null);
+  serviceGroups = signal<ServiceGroup[]>([]);
   isLoading = signal(true);
+
+  // Track expanded service for inline variant selection
+  expandedServiceId = signal<string | null>(null);
+  selectedVariantResult = signal<VariantSelectionResult | null>(null);
+
+  constructor() {
+    addIcons({ optionsOutline, chevronForward, star, constructOutline });
+  }
 
   async ngOnInit() {
     // Ensure authentication before loading data
@@ -86,31 +103,23 @@ export class CatalogPage implements OnInit {
 
   async loadCategoryData(categorySlug: string) {
     this.isLoading.set(true);
+    this.expandedServiceId.set(null);
+    this.selectedVariantResult.set(null);
+
     try {
-      const services = await this.serviceService.getServicesByCategory(categorySlug);
+      const groups = await this.serviceService.getGroupedServicesByCategory(categorySlug);
 
-      if (services && services.length > 0) {
-        // Group services by category
-        const category = services[0] as any; // Assuming all have same category
-
-        // Flatten service variants from all services
-        const serviceVariants = services.reduce((acc: any[], service: any) => {
-          return acc.concat(
-            service.service_variants.map((variant: any) => ({
-              ...variant,
-              service: service // Include service info
-            }))
-          );
-        }, []);
-
-        this.categoryData.set({
-          id: category.category_id,
-          name: category.service_categories?.name,
+      if (groups && groups.length > 0) {
+        // Extract category info from first service
+        const firstService = groups[0].service as any;
+        this.categoryInfo.set({
+          id: firstService.category_id,
+          name: firstService.service_categories?.name,
           slug: categorySlug,
-          icon_url: category.service_categories?.icon_url,
-          services: services,
-          serviceVariants: serviceVariants
+          icon_url: firstService.service_categories?.icon_url
         });
+
+        this.serviceGroups.set(groups);
       }
     } catch (error) {
       console.error('Error loading category data:', error);
@@ -119,8 +128,43 @@ export class CatalogPage implements OnInit {
     }
   }
 
+  selectService(group: ServiceGroup) {
+    if (!group.hasMultipleVariants || !group.service.variant_selection_schema) {
+      // Single variant or no schema - navigate directly to service details
+      this.navigateToService(group.variants[0].id);
+    } else {
+      // Multiple variants with schema - toggle expanded state
+      const currentExpanded = this.expandedServiceId();
+      if (currentExpanded === group.service.id) {
+        this.expandedServiceId.set(null);
+        this.selectedVariantResult.set(null);
+      } else {
+        this.expandedServiceId.set(group.service.id);
+        this.selectedVariantResult.set(null);
+      }
+    }
+  }
+
+  onVariantSelected(result: VariantSelectionResult | null) {
+    this.selectedVariantResult.set(result);
+  }
+
+  proceedWithVariant() {
+    const result = this.selectedVariantResult();
+    if (result) {
+      this.navigateToService(result.variant.id);
+    }
+  }
+
   navigateToService(serviceVariantId: string) {
     this.router.navigate(['/c/service-details', serviceVariantId]);
+  }
+
+  formatPriceRange(min: number, max: number): string {
+    if (min === max) {
+      return `₱${min.toLocaleString()}`;
+    }
+    return `₱${min.toLocaleString()} - ₱${max.toLocaleString()}`;
   }
 
   async doRefresh(event: any) {
@@ -129,5 +173,13 @@ export class CatalogPage implements OnInit {
       await this.loadCategoryData(categorySlug);
     }
     event.target.complete();
+  }
+
+  isExpanded(serviceId: string): boolean {
+    return this.expandedServiceId() === serviceId;
+  }
+
+  getGroupVariants(group: ServiceGroup): ServiceVariant[] {
+    return group.variants;
   }
 }

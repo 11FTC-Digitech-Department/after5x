@@ -1,3 +1,396 @@
+// Animations
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 ion-content {
-  --background: white;
+  --background: var(--ion-color-light);
+}
+
+// Toolbar
+.toolbar-end {
+  display: flex;
+  align-items: center;
+  padding-right: 16px;
+}
+
+.notification-btn {
+  position: relative;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: none;
+  background: var(--ion-color-light);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+
+  ion-icon {
+    font-size: 22px;
+    color: var(--ion-color-dark);
+  }
+
+  .notification-badge {
+    position: absolute;
+    top: 2px;
+    right: 2px;
+    min-width: 18px;
+    height: 18px;
+    border-radius: 9px;
+    background: var(--ion-color-danger);
+    color: #fff;
+    font-size: 10px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 4px;
+  }
+}
+
+// Container
+.dashboard-container {
+  padding: 16px;
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+// Header
+.dashboard-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  animation: fadeIn 0.3s ease;
+}
+
+.provider-info {
+  .provider-name {
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--ion-color-dark);
+    margin: 0 0 4px 0;
+  }
+
+  .provider-greeting {
+    font-size: 14px;
+    color: var(--ion-color-medium);
+    margin: 0;
+  }
+}
+
+.online-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+
+  .toggle-label {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--ion-color-medium);
+    transition: color 0.2s ease;
+
+    &.online {
+      color: var(--ion-color-success);
+    }
+  }
+
+  ion-toggle {
+    --track-background: var(--ion-color-light-shade);
+    --track-background-checked: var(--ion-color-success);
+    --handle-background: #fff;
+    --handle-background-checked: #fff;
+  }
+}
+
+// Section
+.section {
+  margin-bottom: 24px;
+  animation: fadeIn 0.3s ease;
+}
+
+.section-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+  padding: 0 4px;
+}
+
+.section-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--ion-color-dark);
+  margin: 0;
+}
+
+.section-badge {
+  background: var(--ion-color-warning);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 10px;
+}
+
+// Stats Grid
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+
+// Earnings Card
+.earnings-card {
+  background: linear-gradient(135deg, var(--ion-color-primary), var(--ion-color-primary-shade));
+  border-radius: 12px;
+  padding: 16px;
+  color: #fff;
+  box-shadow: 0 4px 12px rgba(var(--ion-color-primary-rgb), 0.3);
+}
+
+.earnings-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+  font-size: 14px;
+  font-weight: 500;
+  opacity: 0.9;
+
+  ion-icon {
+    font-size: 18px;
+  }
+}
+
+.earnings-content {
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+}
+
+.earning-item {
+  text-align: center;
+}
+
+.earning-label {
+  display: block;
+  font-size: 12px;
+  opacity: 0.8;
+  margin-bottom: 4px;
+}
+
+.earning-value {
+  display: block;
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.earning-divider {
+  width: 1px;
+  height: 40px;
+  background: rgba(255, 255, 255, 0.3);
+}
+
+// Pending Jobs List
+.pending-jobs-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+// Job Card
+.job-card {
+  --background: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  margin: 0;
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+  }
+
+  ion-card-content {
+    padding: 16px;
+  }
+
+  .job-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+
+    .job-id {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--ion-color-medium);
+      font-family: monospace;
+    }
+  }
+
+  .service-name {
+    font-size: 17px;
+    font-weight: 600;
+    color: var(--ion-color-dark);
+    margin: 0 0 12px 0;
+  }
+
+  .info-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+
+    ion-icon {
+      font-size: 16px;
+      color: var(--ion-color-medium);
+      flex-shrink: 0;
+    }
+
+    span {
+      font-size: 14px;
+      color: var(--ion-color-dark-tint);
+    }
+
+    &.location span {
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    &:last-of-type {
+      margin-bottom: 0;
+    }
+  }
+
+  .job-footer {
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px solid var(--ion-color-light);
+
+    .job-price {
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--ion-color-primary);
+    }
+  }
+
+  .job-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px solid var(--ion-color-light);
+
+    ion-button {
+      flex: 1;
+      --border-radius: 8px;
+      font-weight: 500;
+
+      &:last-child {
+        flex: 0;
+      }
+    }
+  }
+}
+
+// Quick Actions Button
+.section > ion-button {
+  --border-radius: 12px;
+  --padding-top: 14px;
+  --padding-bottom: 14px;
+  font-weight: 500;
+  margin-top: 8px;
+}
+
+// Loading State
+.loading-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(255, 255, 255, 0.9);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+
+  ion-spinner {
+    width: 40px;
+    height: 40px;
+  }
+
+  p {
+    margin-top: 16px;
+    color: var(--ion-color-medium);
+    font-size: 14px;
+  }
+}
+
+// Empty State
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+  text-align: center;
+
+  ion-icon {
+    font-size: 48px;
+    color: var(--ion-color-light-shade);
+    margin-bottom: 12px;
+  }
+
+  h3 {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--ion-color-dark);
+    margin: 0 0 8px 0;
+  }
+
+  p {
+    font-size: 14px;
+    color: var(--ion-color-medium);
+    margin: 0;
+  }
+}
+
+// Responsive
+@media (max-width: 380px) {
+  .stats-grid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+  }
+
+  .dashboard-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .earnings-content {
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .earning-divider {
+    width: 80%;
+    height: 1px;
+  }
 }

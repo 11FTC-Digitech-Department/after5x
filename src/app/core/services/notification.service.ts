@@ -141,6 +141,30 @@ export class NotificationService {
           channels: [NotificationChannel.PUSH, NotificationChannel.SMS, NotificationChannel.IN_APP]
         });
         break;
+
+      case NotificationType.BOOKING_REJECTED:
+        notifications.push({
+          type,
+          bookingId,
+          title: 'Booking Rejected',
+          message: 'Your booking has been rejected by the provider.',
+          data,
+          channels: [NotificationChannel.PUSH, NotificationChannel.SMS, NotificationChannel.IN_APP]
+        });
+        break;
+
+      default:
+        console.error('Unknown notification type:', type);
+        // Create a fallback notification to prevent null type errors
+        notifications.push({
+          type: NotificationType.BOOKING_CREATED, // Fallback type
+          bookingId,
+          title: 'Notification',
+          message: 'You have a new notification.',
+          data,
+          channels: [NotificationChannel.IN_APP]
+        });
+        break;
     }
 
     return notifications;

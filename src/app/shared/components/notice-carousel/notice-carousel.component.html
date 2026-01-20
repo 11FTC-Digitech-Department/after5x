@@ -1,0 +1,30 @@
+@if (notices.length > 0) {
+  <div class="notice-carousel">
+    <div class="carousel-header">
+      <ion-icon name="alert-circle-outline"></ion-icon>
+      <span>Urgent Notices</span>
+      <span class="notice-count">{{ notices.length }}</span>
+    </div>
+    <div class="carousel-scroll">
+      @for (notice of notices; track notice.id) {
+        <div
+          class="notice-card"
+          [class]="getNoticeClass(notice.type)"
+          (click)="onNoticeClick(notice)"
+        >
+          <button class="dismiss-btn" (click)="onDismiss($event, notice)">
+            <ion-icon name="close-circle"></ion-icon>
+          </button>
+          <div class="notice-icon">
+            <ion-icon [name]="getNoticeIcon(notice.type)"></ion-icon>
+          </div>
+          <div class="notice-content">
+            <div class="notice-title">{{ notice.title }}</div>
+            <div class="notice-message">{{ notice.message }}</div>
+          </div>
+          <ion-icon name="chevron-forward" class="notice-arrow"></ion-icon>
+        </div>
+      }
+    </div>
+  </div>
+}

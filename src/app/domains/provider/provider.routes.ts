@@ -34,4 +34,8 @@ export const PROVIDER_ROUTES: Routes = [
     path: 'job/:bookingId',
     loadComponent: () => import('./pages/job-execution/job-execution.page').then(m => m.JobExecutionPage),
   },
+  {
+    path: 'notifications',
+    loadComponent: () => import('./pages/notifications/notifications.page').then(m => m.NotificationsPage),
+  },
 ];

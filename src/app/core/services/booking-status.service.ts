@@ -1,7 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { SupabaseService } from '../supabase/supabase';
 import { SessionService } from '../auth/session';
-import { BookingStatus, BookingTimelineEntry, StatusTransition, InvalidStatusTransitionError } from '../models/booking.model';
+import { BookingStatus, BookingTimelineEntry, StatusTransition, InvalidStatusTransitionError, NotificationType } from '../models/booking.model';
 import { NotificationService } from './notification.service';
 
 @Injectable({
@@ -224,12 +224,15 @@ export class BookingStatusService {
 
       // Notify provider if applicable
       if (providerId && this.shouldNotifyProvider(status)) {
-        await this.notificationService.notifyBookingEvent(
-          bookingId,
-          this.getProviderNotificationType(status),
-          [providerId],
-          { status, ...metadata }
-        );
+        const notificationType = this.getProviderNotificationType(status);
+        if (notificationType) {
+          await this.notificationService.notifyBookingEvent(
+            bookingId,
+            notificationType,
+            [providerId],
+            { status, ...metadata }
+          );
+        }
       }
     } catch (error) {
       console.error('Failed to send status notifications:', error);
@@ -245,22 +248,22 @@ export class BookingStatusService {
     return providerNotifications.includes(status);
   }
 
-  private getProviderNotificationType(status: BookingStatus): any {
-    const typeMap: Record<BookingStatus, any> = {
+  private getProviderNotificationType(status: BookingStatus): NotificationType | null {
+    const typeMap: Record<BookingStatus, NotificationType | null> = {
       [BookingStatus.FINDING_PROVIDER]: null,
       [BookingStatus.PENDING_ACCEPTANCE]: null,
-      [BookingStatus.CONFIRMED]: 'booking_confirmed',
-      [BookingStatus.ON_THE_WAY]: 'provider_en_route',
-      [BookingStatus.ARRIVED]: 'provider_arrived',
+      [BookingStatus.CONFIRMED]: NotificationType.BOOKING_CONFIRMED,
+      [BookingStatus.ON_THE_WAY]: NotificationType.PROVIDER_EN_ROUTE,
+      [BookingStatus.ARRIVED]: NotificationType.PROVIDER_ARRIVED,
       [BookingStatus.IN_PROGRESS]: null,
       [BookingStatus.PAYMENT_PENDING]: null,
       [BookingStatus.PAID]: null,
-      [BookingStatus.COMPLETED]: 'booking_completed',
-      [BookingStatus.CANCELLED]: 'booking_cancelled',
-      [BookingStatus.REJECTED]: 'booking_rejected',
+      [BookingStatus.COMPLETED]: NotificationType.BOOKING_COMPLETED,
+      [BookingStatus.CANCELLED]: NotificationType.BOOKING_CANCELLED,
+      [BookingStatus.REJECTED]: NotificationType.BOOKING_REJECTED,
       [BookingStatus.EXPIRED]: null
     };
-    return typeMap[status] || 'status_update';
+    return typeMap[status] || null;
   }
 
   private async handleStatusSideEffects(
