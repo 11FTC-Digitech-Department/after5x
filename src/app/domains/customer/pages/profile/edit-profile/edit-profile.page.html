@@ -1,0 +1,95 @@
+<ion-header>
+  <ion-toolbar>
+    <ion-buttons slot="start">
+      <ion-button fill="clear" (click)="goBack()">
+        <ion-icon name="arrow-back" slot="icon-only"></ion-icon>
+      </ion-button>
+    </ion-buttons>
+    <ion-title>Edit Profile</ion-title>
+    <ion-buttons slot="end">
+      <ion-button
+        fill="clear"
+        (click)="saveProfile()"
+        [disabled]="isSaving() || isLoading() || !hasChanges">
+        @if (isSaving()) {
+          <ion-spinner name="crescent"></ion-spinner>
+        } @else {
+          Save
+        }
+      </ion-button>
+    </ion-buttons>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content [fullscreen]="true">
+  @if (isLoading()) {
+    <div class="loading-container">
+      <ion-spinner name="crescent"></ion-spinner>
+      <ion-text color="medium">Loading profile...</ion-text>
+    </div>
+  } @else {
+    <!-- Avatar Section -->
+    <div class="avatar-section">
+      <div class="avatar-container" (click)="onAvatarClick()">
+        <ion-avatar class="profile-avatar">
+          @if (avatarUrl()) {
+            <img [src]="avatarUrl()" alt="Profile photo" />
+          } @else {
+            <div class="avatar-initials">{{ initials }}</div>
+          }
+        </ion-avatar>
+        <div class="camera-overlay" [class.uploading]="isUploadingAvatar()">
+          @if (isUploadingAvatar()) {
+            <ion-icon name="sync" class="spin"></ion-icon>
+          } @else {
+            <ion-icon name="camera"></ion-icon>
+          }
+        </div>
+      </div>
+      <ion-text color="primary">
+        <p class="change-photo-text">Tap to change photo</p>
+      </ion-text>
+    </div>
+
+    <!-- Form -->
+    <ion-list [inset]="true">
+      <ion-item>
+        <ion-input
+          label="Full Name"
+          labelPlacement="stacked"
+          placeholder="Enter your full name"
+          [value]="fullName()"
+          (ionInput)="fullName.set($any($event).target.value)"
+          [clearInput]="true"
+          type="text"
+          autocapitalize="words">
+        </ion-input>
+      </ion-item>
+
+      <ion-item>
+        <ion-input
+          label="Phone Number"
+          labelPlacement="stacked"
+          placeholder="Enter your phone number"
+          [value]="phoneNumber()"
+          (ionInput)="phoneNumber.set($any($event).target.value)"
+          [clearInput]="true"
+          type="tel">
+        </ion-input>
+      </ion-item>
+
+      <ion-item>
+        <ion-input
+          label="Email"
+          labelPlacement="stacked"
+          [value]="email()"
+          [readonly]="true"
+          type="email">
+        </ion-input>
+        <ion-text slot="helper" color="medium">
+          <small>Email cannot be changed</small>
+        </ion-text>
+      </ion-item>
+    </ion-list>
+  }
+</ion-content>

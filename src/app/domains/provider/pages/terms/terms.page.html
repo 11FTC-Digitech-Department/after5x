@@ -1,0 +1,58 @@
+<ion-header>
+  <ion-toolbar>
+    <ion-buttons slot="start">
+      <ion-button fill="clear" (click)="goBack()">
+        <ion-icon name="arrow-back" slot="icon-only"></ion-icon>
+      </ion-button>
+    </ion-buttons>
+    <ion-title>Terms & Conditions</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content [fullscreen]="true">
+  <ion-header collapse="condense">
+    <ion-toolbar>
+      <ion-title size="large">Terms & Conditions</ion-title>
+    </ion-toolbar>
+  </ion-header>
+
+  <div class="terms-header">
+    <ion-text color="medium">
+      <p>Last updated: {{ lastUpdated }}</p>
+    </ion-text>
+    <ion-text>
+      <p class="intro-text">
+        These terms govern your use of After5 as a service provider. Please read them carefully.
+      </p>
+    </ion-text>
+  </div>
+
+  @for (section of sections; track section.title) {
+    <ion-card class="terms-section">
+      <ion-card-header>
+        <ion-card-title>{{ section.title }}</ion-card-title>
+      </ion-card-header>
+      <ion-card-content>
+        <ion-text color="medium">
+          <p class="section-content">{{ section.content }}</p>
+        </ion-text>
+      </ion-card-content>
+    </ion-card>
+  }
+
+  <div class="full-terms-section">
+    <ion-button expand="block" fill="outline" (click)="openFullTerms()">
+      <ion-icon name="open-outline" slot="start"></ion-icon>
+      View Full Terms & Conditions
+    </ion-button>
+  </div>
+
+  <div class="terms-footer">
+    <ion-text color="medium">
+      <small>
+        By providing services through After5, you agree to these Terms & Conditions.
+        Questions? Contact provider-support@after5.ph
+      </small>
+    </ion-text>
+  </div>
+</ion-content>

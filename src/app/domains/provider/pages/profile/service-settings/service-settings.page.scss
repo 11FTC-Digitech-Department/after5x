@@ -1,0 +1,102 @@
+ion-content {
+  --background: var(--ion-background-color, #f4f5f8);
+}
+
+.loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 200px;
+  gap: 16px;
+}
+
+ion-list {
+  ion-list-header {
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--ion-color-medium);
+  }
+
+  ion-item {
+    --padding-start: 16px;
+  }
+}
+
+.status-note {
+  display: block;
+  font-size: 13px;
+  margin-top: 4px;
+}
+
+.radius-item {
+  h3 {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 500;
+  }
+
+  .radius-value {
+    margin: 4px 0 0;
+    font-size: 14px;
+    color: var(--ion-color-primary);
+    font-weight: 500;
+  }
+}
+
+.range-item {
+  --padding-top: 8px;
+  --padding-bottom: 8px;
+
+  ion-range {
+    --bar-height: 6px;
+    --bar-border-radius: 3px;
+    --knob-size: 24px;
+    --pin-background: var(--ion-color-primary);
+    --pin-color: var(--ion-color-primary-contrast);
+
+    ion-label {
+      font-size: 12px;
+      color: var(--ion-color-medium);
+    }
+  }
+}
+
+.radius-note,
+.hours-note {
+  --padding-top: 4px;
+  --padding-bottom: 12px;
+
+  small {
+    font-size: 12px;
+  }
+}
+
+.info-section {
+  padding: 16px 20px;
+
+  p {
+    margin: 0;
+    font-size: 13px;
+    line-height: 1.6;
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+
+    ion-icon {
+      font-size: 18px;
+      flex-shrink: 0;
+      margin-top: 2px;
+    }
+  }
+}
+
+ion-modal {
+  --height: auto;
+
+  ion-datetime {
+    --background: var(--ion-item-background);
+  }
+}

@@ -5,47 +5,62 @@
 </ion-header>
 
 <ion-content [fullscreen]="true">
-  <ion-grid fixed class="ion-no-padding">
-    <ion-row>
-      <ion-col size="12">
-        <div style="padding: 20px;">
-          <ion-list>
-            <ion-item>
-              <ion-avatar slot="start">
-                <ion-icon name="person-circle" size="large"></ion-icon>
-              </ion-avatar>
-              <ion-label>
-                <h2>John Doe</h2>
-                <p>john.doe@example.com</p>
-              </ion-label>
-            </ion-item>
+  <ion-header collapse="condense">
+    <ion-toolbar>
+      <ion-title size="large">Profile</ion-title>
+    </ion-toolbar>
+  </ion-header>
 
-            <ion-item button routerLink="/c/profile/addresses">
-              <ion-icon name="location" slot="start"></ion-icon>
-              <ion-label>Addresses</ion-label>
-              <ion-icon name="chevron-forward" slot="end"></ion-icon>
-            </ion-item>
+  <ion-refresher slot="fixed" (ionRefresh)="onRefresh($event)">
+    <ion-refresher-content></ion-refresher-content>
+  </ion-refresher>
 
-            <ion-item button routerLink="/c/profile/support">
-              <ion-icon name="help-circle" slot="start"></ion-icon>
-              <ion-label>Support</ion-label>
-              <ion-icon name="chevron-forward" slot="end"></ion-icon>
-            </ion-item>
+  <!-- Profile Card -->
+  <app-profile-card
+    [fullName]="profile()?.full_name || ''"
+    [avatarUrl]="profile()?.avatar_url"
+    [role]="'customer'"
+    [memberSince]="getMemberSince()"
+    [isLoading]="isLoading()"
+    [isUploadingAvatar]="isUploadingAvatar()"
+    (avatarClick)="onAvatarClick()">
+  </app-profile-card>
 
-            <ion-item button (click)="logout()" [disabled]="isLoggingOut()">
-              <ion-icon name="log-out" slot="start"></ion-icon>
-              <ion-label color="danger">
-                @if (isLoggingOut()) {
-                  <ion-spinner name="crescent" slot="end"></ion-spinner>
-                  Logging out...
-                } @else {
-                  Logout
-                }
-              </ion-label>
-            </ion-item>
-          </ion-list>
-        </div>
-      </ion-col>
-    </ion-row>
-  </ion-grid>
+  <!-- Menu Sections -->
+  @for (section of menuSections; track section.title) {
+    <ion-list [inset]="true" class="menu-section">
+      @if (section.title) {
+        <ion-list-header>
+          <ion-label>{{ section.title }}</ion-label>
+        </ion-list-header>
+      }
+
+      @for (item of section.items; track item.label) {
+        <ion-item
+          button
+          [detail]="!item.action"
+          (click)="onMenuItemClick(item)"
+          [disabled]="item.action === 'logout' && isLoggingOut()">
+          <ion-icon [name]="item.icon" slot="start" [color]="item.color || ''"></ion-icon>
+          <ion-label [color]="item.color || ''">
+            @if (item.action === 'logout' && isLoggingOut()) {
+              <div class="logout-loading">
+                <ion-spinner name="crescent"></ion-spinner>
+                <span>Logging out...</span>
+              </div>
+            } @else {
+              {{ item.label }}
+            }
+          </ion-label>
+        </ion-item>
+      }
+    </ion-list>
+  }
+
+  <!-- Version Info -->
+  <div class="version-info">
+    <ion-text color="medium">
+      <small>After5 v1.0.0</small>
+    </ion-text>
+  </div>
 </ion-content>

@@ -1,0 +1,90 @@
+<ion-header>
+  <ion-toolbar>
+    <ion-buttons slot="start">
+      <ion-button fill="clear" (click)="goBack()">
+        <ion-icon name="arrow-back" slot="icon-only"></ion-icon>
+      </ion-button>
+    </ion-buttons>
+    <ion-title>Help & Support</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content [fullscreen]="true">
+  <ion-header collapse="condense">
+    <ion-toolbar>
+      <ion-title size="large">Help & Support</ion-title>
+    </ion-toolbar>
+  </ion-header>
+
+  <ion-searchbar
+    placeholder="Search FAQs..."
+    [debounce]="300"
+    (ionInput)="onSearchChange($event)"
+    class="faq-search">
+  </ion-searchbar>
+
+  @if (filteredCategories().length > 0) {
+    <ion-accordion-group class="faq-accordion">
+      @for (category of filteredCategories(); track category.title) {
+        <ion-accordion [value]="category.title">
+          <ion-item slot="header" class="category-header">
+            <ion-icon [name]="category.icon" slot="start"></ion-icon>
+            <ion-label>{{ category.title }}</ion-label>
+          </ion-item>
+
+          <div slot="content" class="category-content">
+            @for (faq of category.items; track faq.question) {
+              <ion-accordion-group class="nested-accordion">
+                <ion-accordion [value]="faq.question">
+                  <ion-item slot="header" class="faq-header">
+                    <ion-label class="ion-text-wrap">{{ faq.question }}</ion-label>
+                  </ion-item>
+                  <div slot="content" class="faq-answer">
+                    <ion-text color="medium">
+                      <p>{{ faq.answer }}</p>
+                    </ion-text>
+                  </div>
+                </ion-accordion>
+              </ion-accordion-group>
+            }
+          </div>
+        </ion-accordion>
+      }
+    </ion-accordion-group>
+  } @else {
+    <div class="no-results">
+      <ion-icon name="search-outline"></ion-icon>
+      <ion-text color="medium">
+        <p>No results found for "{{ searchQuery() }}"</p>
+      </ion-text>
+    </div>
+  }
+
+  <ion-list [inset]="true" class="contact-section">
+    <ion-list-header>
+      <ion-label>Contact Us</ion-label>
+    </ion-list-header>
+
+    @for (contact of contactOptions; track contact.label) {
+      <ion-item
+        [button]="!contact.disabled"
+        [disabled]="contact.disabled"
+        (click)="!contact.disabled && onContactClick(contact.action)">
+        <ion-icon [name]="contact.icon" slot="start"></ion-icon>
+        <ion-label>
+          {{ contact.label }}
+          <ion-note>{{ contact.description }}</ion-note>
+        </ion-label>
+        @if (!contact.disabled) {
+          <ion-icon name="chevron-forward" slot="end" color="medium"></ion-icon>
+        }
+      </ion-item>
+    }
+  </ion-list>
+
+  <div class="support-footer">
+    <ion-text color="medium">
+      <small>Provider support is available 24/7 for urgent issues</small>
+    </ion-text>
+  </div>
+</ion-content>

@@ -1,0 +1,33 @@
+<ion-header>
+  <ion-toolbar>
+    <ion-buttons slot="start">
+      <ion-button fill="clear" (click)="goBack()">
+        <ion-icon name="arrow-back" slot="icon-only"></ion-icon>
+      </ion-button>
+    </ion-buttons>
+    <ion-title>Payment Methods</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content [fullscreen]="true">
+  <ion-header collapse="condense">
+    <ion-toolbar>
+      <ion-title size="large">Payment Methods</ion-title>
+    </ion-toolbar>
+  </ion-header>
+
+  <div class="placeholder-container">
+    <ion-icon name="construct-outline" class="placeholder-icon"></ion-icon>
+    <h2>Coming Soon</h2>
+    <p>
+      <ion-text color="medium">
+        Payment methods management is under development and will be available soon.
+      </ion-text>
+    </p>
+    <p class="info-text">
+      <ion-text color="medium">
+        For now, you can pay via cash or GCash at the time of service.
+      </ion-text>
+    </p>
+  </div>
+</ion-content>

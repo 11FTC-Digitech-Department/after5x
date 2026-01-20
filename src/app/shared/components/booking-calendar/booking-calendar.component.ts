@@ -166,7 +166,7 @@ export class BookingCalendarComponent implements OnInit, OnChanges {
     const date = this.currentDate();
     const hours: HourSlot[] = [];
 
-    for (let h = 6; h < 22; h++) { // 6 AM to 10 PM
+    for (let h = 0; h < 24; h++) { // 12 AM to 11 PM
       const hourJobs = this.jobs.filter(job => {
         const jobDate = new Date(job.date);
         return jobDate.toDateString() === date.toDateString() &&

@@ -1,0 +1,58 @@
+<ion-header>
+  <ion-toolbar>
+    <ion-buttons slot="start">
+      <ion-button fill="clear" (click)="goBack()">
+        <ion-icon name="arrow-back" slot="icon-only"></ion-icon>
+      </ion-button>
+    </ion-buttons>
+    <ion-title>Privacy Policy</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content [fullscreen]="true">
+  <ion-header collapse="condense">
+    <ion-toolbar>
+      <ion-title size="large">Privacy Policy</ion-title>
+    </ion-toolbar>
+  </ion-header>
+
+  <div class="policy-header">
+    <ion-text color="medium">
+      <p>Last updated: {{ lastUpdated }}</p>
+    </ion-text>
+    <ion-text>
+      <p class="intro-text">
+        After5 is committed to protecting your privacy. This summary highlights key points of our privacy practices.
+      </p>
+    </ion-text>
+  </div>
+
+  @for (section of sections; track section.title) {
+    <ion-card class="policy-section">
+      <ion-card-header>
+        <ion-card-title>{{ section.title }}</ion-card-title>
+      </ion-card-header>
+      <ion-card-content>
+        <ion-text color="medium">
+          <p class="section-content">{{ section.content }}</p>
+        </ion-text>
+      </ion-card-content>
+    </ion-card>
+  }
+
+  <div class="full-policy-section">
+    <ion-button expand="block" fill="outline" (click)="openFullPolicy()">
+      <ion-icon name="open-outline" slot="start"></ion-icon>
+      View Full Privacy Policy
+    </ion-button>
+  </div>
+
+  <div class="policy-footer">
+    <ion-text color="medium">
+      <small>
+        By using After5, you agree to our Privacy Policy.
+        If you have any questions, please contact us at privacy@after5.ph
+      </small>
+    </ion-text>
+  </div>
+</ion-content>

@@ -1,0 +1,55 @@
+<ion-header>
+  <ion-toolbar>
+    <ion-buttons slot="start">
+      <ion-button fill="clear" (click)="goBack()">
+        <ion-icon name="arrow-back" slot="icon-only"></ion-icon>
+      </ion-button>
+    </ion-buttons>
+    <ion-title>Notifications</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content [fullscreen]="true">
+  <ion-header collapse="condense">
+    <ion-toolbar>
+      <ion-title size="large">Notifications</ion-title>
+    </ion-toolbar>
+  </ion-header>
+
+  <div class="settings-intro">
+    <ion-text color="medium">
+      <p>Choose which notifications you'd like to receive. You can change these at any time.</p>
+    </ion-text>
+  </div>
+
+  @for (section of sections(); track section.title) {
+    <ion-list [inset]="true">
+      <ion-list-header>
+        <ion-label>{{ section.title }}</ion-label>
+      </ion-list-header>
+
+      @for (setting of section.settings; track setting.key) {
+        <ion-item>
+          <ion-toggle
+            [(ngModel)]="setting.enabled"
+            (ionChange)="onToggleChange(setting)"
+            [enableOnOffLabels]="true">
+            <ion-label>
+              {{ setting.label }}
+              <ion-note class="setting-description">{{ setting.description }}</ion-note>
+            </ion-label>
+          </ion-toggle>
+        </ion-item>
+      }
+    </ion-list>
+  }
+
+  <div class="settings-footer">
+    <ion-text color="medium">
+      <small>
+        Push notifications require permission from your device.
+        You can manage device permissions in your system settings.
+      </small>
+    </ion-text>
+  </div>
+</ion-content>
