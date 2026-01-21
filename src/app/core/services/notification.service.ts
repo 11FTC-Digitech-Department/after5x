@@ -10,6 +10,42 @@ export class NotificationService {
   private supabaseService = inject(SupabaseService);
   private sessionService = inject(SessionService);
 
+  // Toast deduplication - track recent toasts to prevent duplicates
+  private recentToasts = new Map<string, number>();
+  private readonly DEDUP_WINDOW_MS = 5000; // 5 second deduplication window
+
+  /**
+   * Check if a toast should be shown (deduplication)
+   * Returns true if toast should be shown, false if it's a duplicate
+   */
+  shouldShowToast(notificationId: string): boolean {
+    this.cleanupOldToasts();
+
+    const lastShown = this.recentToasts.get(notificationId);
+    const now = Date.now();
+
+    if (lastShown && (now - lastShown) < this.DEDUP_WINDOW_MS) {
+      // Duplicate within dedup window - skip
+      return false;
+    }
+
+    // Add/update entry and allow toast
+    this.recentToasts.set(notificationId, now);
+    return true;
+  }
+
+  /**
+   * Clean up toast entries older than the deduplication window
+   */
+  private cleanupOldToasts(): void {
+    const now = Date.now();
+    for (const [id, timestamp] of this.recentToasts.entries()) {
+      if (now - timestamp > this.DEDUP_WINDOW_MS) {
+        this.recentToasts.delete(id);
+      }
+    }
+  }
+
   async notifyBookingEvent(
     bookingId: string,
     type: NotificationType,

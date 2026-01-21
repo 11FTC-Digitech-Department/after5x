@@ -77,6 +77,10 @@ export const CUSTOMER_ROUTES: Routes = [
     loadComponent: () => import('./pages/profile/support/support.page').then(m => m.SupportPage),
   },
   {
+    path: 'notifications',
+    loadComponent: () => import('./pages/notifications/notifications.page').then(m => m.NotificationsPage),
+  },
+  {
     path: 'profile/about',
     loadComponent: () => import('./pages/profile/about/about.page').then(m => m.AboutPage),
   },

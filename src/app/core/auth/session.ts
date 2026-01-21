@@ -4,6 +4,8 @@ import { SupabaseService } from '../supabase/supabase';
 import { User, Session } from '@supabase/supabase-js';
 import { BiometricService } from './biometric.service';
 import { AuthFlowService } from './auth-flow.service';
+import { AuthEventsService } from './auth-events.service';
+import { AUTH_CONFIG } from './auth.config';
 import { ToastController } from '@ionic/angular/standalone';
 
 export interface UserProfile {
@@ -21,6 +23,7 @@ export class SessionService {
   private router = inject(Router);
   private biometricService = inject(BiometricService);
   private authFlowService = inject(AuthFlowService);
+  private authEventsService = inject(AuthEventsService);
   private toastController = inject(ToastController);
 
   // --- STATE (Signals) ---
@@ -56,8 +59,13 @@ export class SessionService {
       this._session.set(data.session);
 
       if (data.session) {
-        // Fetch profile - loading stays true until this completes
-        await this.fetchProfile(data.session.user.id);
+        // Fetch profile with timeout - loading stays true until this completes
+        try {
+          await this.fetchProfileWithTimeout(data.session.user.id);
+        } catch (error) {
+          console.error('SessionService: Initial profile fetch failed:', error);
+          // Continue - profile may be retried later
+        }
       }
     } catch (error) {
       console.error('Error during session initialization:', error);
@@ -75,18 +83,31 @@ export class SessionService {
       const wasAuthenticated = !!this._session();
 
       if (session) {
-        // Set loading state while we fetch the profile
-        this._loading.set(true);
+        // Always update the session
         this._session.set(session);
 
-        try {
-          await this.fetchProfile(session.user.id);
-          console.log('SessionService: Profile loaded successfully for event:', event);
-        } catch (error) {
-          console.error('SessionService: Error fetching profile during auth state change:', error);
-          // Don't clear the session on profile fetch error - profile might load on retry
-        } finally {
-          this._loading.set(false);
+        if (event === 'SIGNED_IN' || event === 'INITIAL_SESSION') {
+          // Initial auth - block UI while loading profile
+          this._loading.set(true);
+          try {
+            await this.fetchProfileWithTimeout(session.user.id);
+            console.log('SessionService: Profile loaded successfully for event:', event);
+            // Emit session started event
+            this.authEventsService.emit('SESSION_STARTED', session.user.id);
+          } catch (error) {
+            console.error('SessionService: Error fetching profile during auth state change:', error);
+            // Don't clear the session on profile fetch error - profile might load on retry
+          } finally {
+            this._loading.set(false);
+          }
+        } else if (event === 'TOKEN_REFRESHED') {
+          // Token refresh - update silently WITHOUT blocking UI
+          console.log('SessionService: Token refreshed silently, updating profile in background');
+          this.authEventsService.emit('SESSION_REFRESHED', session.user.id);
+          // Refresh profile in background without setting loading state
+          this.fetchProfile(session.user.id).catch(err =>
+            console.warn('SessionService: Silent profile refresh failed:', err)
+          );
         }
       } else {
         this._session.set(null);
@@ -98,15 +119,34 @@ export class SessionService {
           if (event === 'SIGNED_OUT') {
             // Manual logout - navigate to welcome
             console.log('SessionService: Manual logout - navigating to welcome page');
+            this.authEventsService.emit('SIGNED_OUT');
             this.router.navigateByUrl('/auth/welcome');
           } else {
             // Session expired or token became invalid
             console.log('SessionService: Session expired - handling redirect');
+            this.authEventsService.emit('SESSION_EXPIRED');
             await this.handleSessionExpiry();
           }
         }
       }
     });
+  }
+
+  /**
+   * Fetch profile with timeout to prevent indefinite hangs.
+   * Uses the configured timeout from AUTH_CONFIG.
+   */
+  private async fetchProfileWithTimeout(userId: string): Promise<void> {
+    const timeoutMs = AUTH_CONFIG.session.profileLoadTimeoutMs;
+
+    const timeoutPromise = new Promise<never>((_, reject) => {
+      setTimeout(() => reject(new Error(`Profile fetch timeout after ${timeoutMs}ms`)), timeoutMs);
+    });
+
+    await Promise.race([
+      this.fetchProfile(userId),
+      timeoutPromise
+    ]);
   }
 
   private async fetchProfile(userId: string) {

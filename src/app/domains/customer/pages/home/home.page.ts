@@ -21,6 +21,7 @@ import {
 } from '@ionic/angular/standalone';
 import { AddressService } from '@core/supabase/address.service';
 import { SessionService } from '@core/auth/session';
+import { NotificationService } from '@core/services/notification.service';
 
 interface ServiceCategory {
   id: string;
@@ -67,6 +68,7 @@ export class HomePage implements OnInit {
   private addressService = inject(AddressService);
   private router = inject(Router);
   private sessionService = inject(SessionService);
+  private notificationService = inject(NotificationService);
 
   // Track if initial data load happened (prevents duplicate loads from effect)
   private dataLoaded = signal(false);
@@ -77,6 +79,7 @@ export class HomePage implements OnInit {
   });
 
   currentLocation = signal('Select your location');
+  unreadNotificationCount = signal(0);
 
   categories: ServiceCategory[] = [
     { id: '1', name: 'Locksmithing', slug: 'locksmithing', icon: 'key' },
@@ -135,6 +138,7 @@ export class HomePage implements OnInit {
     // Otherwise, the effect will trigger when profile becomes available
     if (this.sessionService.profile()?.id) {
       await this.loadDefaultAddress();
+      await this.loadUnreadCount();
     }
   }
 
@@ -174,5 +178,19 @@ export class HomePage implements OnInit {
     // For now, navigate to catalog with a default category
     // In production, this would navigate to specific service details
     this.router.navigate(['/c/catalog', 'plumbing']); // Default to first category
+  }
+
+  navigateToNotifications() {
+    this.router.navigate(['/c/notifications']);
+  }
+
+  async loadUnreadCount() {
+    try {
+      const notifications = await this.notificationService.getUserNotifications(50);
+      const unreadCount = notifications.filter((n: any) => !n.read).length;
+      this.unreadNotificationCount.set(unreadCount);
+    } catch (error) {
+      console.error('Failed to load notification count:', error);
+    }
   }
 }

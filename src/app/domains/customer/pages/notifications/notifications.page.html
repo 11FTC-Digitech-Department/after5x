@@ -1,0 +1,82 @@
+<ion-header>
+  <ion-toolbar>
+    <ion-buttons slot="start">
+      <ion-back-button defaultHref="/c/bookings"></ion-back-button>
+    </ion-buttons>
+    <ion-title>Notifications</ion-title>
+    @if (hasUnread()) {
+      <ion-buttons slot="end">
+        <ion-button (click)="markAllAsRead()">
+          <ion-icon slot="icon-only" name="checkmark-done-outline"></ion-icon>
+        </ion-button>
+      </ion-buttons>
+    }
+  </ion-toolbar>
+</ion-header>
+
+<ion-content [fullscreen]="true">
+  <ion-refresher slot="fixed" (ionRefresh)="handleRefresh($event)">
+    <ion-refresher-content></ion-refresher-content>
+  </ion-refresher>
+
+  <!-- Filter Segment -->
+  <div class="filter-container">
+    <ion-segment [value]="selectedFilter()" (ionChange)="onFilterChange($event)">
+      <ion-segment-button value="all">
+        <ion-label>All</ion-label>
+      </ion-segment-button>
+      <ion-segment-button value="jobs">
+        <ion-label>Bookings</ion-label>
+      </ion-segment-button>
+      <ion-segment-button value="payments">
+        <ion-label>Payments</ion-label>
+      </ion-segment-button>
+      <ion-segment-button value="system">
+        <ion-label>System</ion-label>
+      </ion-segment-button>
+    </ion-segment>
+  </div>
+
+  @if (isLoading()) {
+    <div class="loading-container">
+      <ion-spinner name="crescent"></ion-spinner>
+      <p>Loading notifications...</p>
+    </div>
+  } @else if (filteredNotifications().length === 0) {
+    <div class="empty-state">
+      <ion-icon name="notifications-outline"></ion-icon>
+      <h3>No notifications</h3>
+      <p>You're all caught up!</p>
+    </div>
+  } @else {
+    <div class="notifications-list">
+      @for (notification of filteredNotifications(); track notification.id) {
+        <div
+          class="notification-item"
+          [class.unread]="!notification.read"
+          (click)="onNotificationClick(notification)"
+        >
+          <div class="notification-icon" [attr.data-color]="getNotificationColor(notification.type)">
+            <ion-icon [name]="getNotificationIcon(notification.type)"></ion-icon>
+          </div>
+
+          <div class="notification-content">
+            <div class="notification-header">
+              <span class="notification-title">{{ notification.title }}</span>
+              @if (!notification.read) {
+                <ion-icon name="ellipse" class="unread-indicator"></ion-icon>
+              }
+            </div>
+            <p class="notification-body">{{ notification.body || notification.message }}</p>
+            <span class="notification-time">
+              <ion-icon name="time-outline"></ion-icon>
+              {{ formatTimeAgo(notification.created_at) }}
+            </span>
+          </div>
+
+          <ion-icon name="chevron-forward" class="notification-arrow"></ion-icon>
+        </div>
+      }
+    </div>
+  }
+</ion-content>

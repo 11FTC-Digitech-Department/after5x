@@ -51,6 +51,19 @@
     <div class="booking-count">
       <ion-text color="medium">{{ filteredBookings().length }} bookings</ion-text>
     </div>
+    <!-- Connection Status Indicator -->
+    <div class="connection-indicator" [class.connected]="connectionMode() === 'realtime' && isConnected()" [class.polling]="connectionMode() === 'polling'" [class.disconnected]="connectionMode() === 'disconnected' || !isConnected()">
+      <span class="status-dot"></span>
+      <span class="status-label">
+        @if (connectionMode() === 'realtime' && isConnected()) {
+          Live
+        } @else if (connectionMode() === 'polling') {
+          Polling
+        } @else {
+          Offline
+        }
+      </span>
+    </div>
   </div>
 
   <!-- Loading State -->

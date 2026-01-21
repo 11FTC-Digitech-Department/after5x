@@ -188,23 +188,3 @@ capacitor-google-map {
     }
   }
 }
-
-// Dark mode support
-@media (prefers-color-scheme: dark) {
-  .search-results {
-    background: var(--ion-color-dark);
-  }
-
-  .search-loading {
-    background: var(--ion-color-dark);
-  }
-
-  .map-loading {
-    background: var(--ion-color-dark);
-  }
-
-  .selected-address {
-    background: var(--ion-color-dark);
-  }
-
-}

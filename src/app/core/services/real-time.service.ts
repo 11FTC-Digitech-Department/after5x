@@ -1,7 +1,17 @@
-import { Injectable, inject } from '@angular/core';
+import { Injectable, inject, signal, computed } from '@angular/core';
 import { SupabaseService } from '../supabase/supabase';
-import { RealtimeChannel, RealtimePostgresChangesPayload } from '@supabase/supabase-js';
+import { RealtimeChannel, RealtimePostgresChangesPayload, REALTIME_SUBSCRIBE_STATES } from '@supabase/supabase-js';
 import { BookingCallbacks, BookingTimelineEntry } from '../models/booking.model';
+
+export type ConnectionState = 'connected' | 'connecting' | 'disconnected' | 'error';
+
+export interface ConnectionStatus {
+  state: ConnectionState;
+  lastConnectedAt: Date | null;
+  lastErrorAt: Date | null;
+  lastError: string | null;
+  reconnectAttempts: number;
+}
 
 @Injectable({
   providedIn: 'root'
@@ -9,6 +19,154 @@ import { BookingCallbacks, BookingTimelineEntry } from '../models/booking.model'
 export class RealTimeService {
   private supabaseService = inject(SupabaseService);
   private channels = new Map<string, RealtimeChannel>();
+
+  // Connection monitoring
+  private _connectionState = signal<ConnectionState>('disconnected');
+  private _lastConnectedAt = signal<Date | null>(null);
+  private _lastErrorAt = signal<Date | null>(null);
+  private _lastError = signal<string | null>(null);
+  private _reconnectAttempts = signal(0);
+
+  // Debug mode toggle
+  private _debugMode = signal(false);
+
+  // Public signals
+  readonly connectionState = this._connectionState.asReadonly();
+  readonly isConnected = computed(() => this._connectionState() === 'connected');
+  readonly connectionStatus = computed<ConnectionStatus>(() => ({
+    state: this._connectionState(),
+    lastConnectedAt: this._lastConnectedAt(),
+    lastErrorAt: this._lastErrorAt(),
+    lastError: this._lastError(),
+    reconnectAttempts: this._reconnectAttempts()
+  }));
+
+  // Connection state change callbacks
+  private connectionCallbacks: Set<(state: ConnectionState) => void> = new Set();
+
+  // Exponential backoff settings
+  private readonly MAX_RECONNECT_ATTEMPTS = 10;
+  private readonly BASE_RECONNECT_DELAY = 1000; // 1 second
+  private readonly MAX_RECONNECT_DELAY = 30000; // 30 seconds
+
+  // Track active subscriptions for reconnection
+  private activeSubscriptions = new Map<string, () => void>();
+
+  /**
+   * Enable or disable debug logging
+   */
+  setDebugMode(enabled: boolean): void {
+    this._debugMode.set(enabled);
+  }
+
+  /**
+   * Register a callback for connection state changes
+   */
+  onConnectionStateChange(callback: (state: ConnectionState) => void): () => void {
+    this.connectionCallbacks.add(callback);
+    return () => this.connectionCallbacks.delete(callback);
+  }
+
+  private notifyConnectionStateChange(state: ConnectionState): void {
+    this._connectionState.set(state);
+    this.connectionCallbacks.forEach(cb => cb(state));
+  }
+
+  private log(message: string, ...args: any[]): void {
+    if (this._debugMode()) {
+      console.log(`[RealTimeService] ${message}`, ...args);
+    }
+  }
+
+  private logError(message: string, ...args: any[]): void {
+    console.error(`[RealTimeService] ${message}`, ...args);
+  }
+
+  private handleSubscriptionStatus(
+    channelName: string,
+    status: `${REALTIME_SUBSCRIBE_STATES}`,
+    err?: Error
+  ): void {
+    this.log(`Channel ${channelName} status:`, status);
+
+    switch (status) {
+      case REALTIME_SUBSCRIBE_STATES.SUBSCRIBED:
+        this._connectionState.set('connected');
+        this._lastConnectedAt.set(new Date());
+        this._reconnectAttempts.set(0);
+        this.notifyConnectionStateChange('connected');
+        break;
+
+      case REALTIME_SUBSCRIBE_STATES.CHANNEL_ERROR:
+        this._connectionState.set('error');
+        this._lastErrorAt.set(new Date());
+        this._lastError.set(err?.message || 'Channel error');
+        this.notifyConnectionStateChange('error');
+        this.logError(`Channel error for ${channelName}:`, err);
+        break;
+
+      case REALTIME_SUBSCRIBE_STATES.TIMED_OUT:
+        this._connectionState.set('error');
+        this._lastErrorAt.set(new Date());
+        this._lastError.set('Connection timed out');
+        this.notifyConnectionStateChange('error');
+        this.logError(`Channel ${channelName} timed out`);
+        break;
+
+      case REALTIME_SUBSCRIBE_STATES.CLOSED:
+        this._connectionState.set('disconnected');
+        this.notifyConnectionStateChange('disconnected');
+        break;
+    }
+  }
+
+  private calculateReconnectDelay(): number {
+    const attempts = this._reconnectAttempts();
+    // Exponential backoff with jitter
+    const delay = Math.min(
+      this.BASE_RECONNECT_DELAY * Math.pow(2, attempts),
+      this.MAX_RECONNECT_DELAY
+    );
+    // Add random jitter (0-25% of delay)
+    return delay + Math.random() * delay * 0.25;
+  }
+
+  /**
+   * Attempt to reconnect all active subscriptions
+   */
+  async reconnect(): Promise<void> {
+    const attempts = this._reconnectAttempts();
+
+    if (attempts >= this.MAX_RECONNECT_ATTEMPTS) {
+      this.logError('Max reconnection attempts reached');
+      this._connectionState.set('error');
+      this._lastError.set('Max reconnection attempts reached');
+      return;
+    }
+
+    this._reconnectAttempts.set(attempts + 1);
+    this._connectionState.set('connecting');
+    this.notifyConnectionStateChange('connecting');
+
+    const delay = this.calculateReconnectDelay();
+    this.log(`Reconnecting in ${delay}ms (attempt ${attempts + 1})`);
+
+    await new Promise(resolve => setTimeout(resolve, delay));
+
+    // Re-subscribe all active subscriptions
+    for (const [channelName, resubscribe] of this.activeSubscriptions) {
+      this.log(`Re-subscribing to ${channelName}`);
+      resubscribe();
+    }
+  }
+
+  /**
+   * Reset connection state (call after successful reconnection)
+   */
+  resetConnectionState(): void {
+    this._reconnectAttempts.set(0);
+    this._lastError.set(null);
+  }
 
   subscribeToBooking(bookingId: string, callbacks: BookingCallbacks): () => void {
     const client = this.supabaseService.client;
@@ -53,21 +211,26 @@ export class RealTimeService {
           callbacks.onTimelineUpdate?.(timelineEntry);
         }
       )
-      .subscribe((status) => {
-        console.log(`Booking subscription status for ${bookingId}:`, status);
+      .subscribe((status, err) => {
+        this.handleSubscriptionStatus(channelName, status, err);
       });
 
     this.channels.set(bookingId, channel);
+
+    // Store resubscribe function for reconnection
+    this.activeSubscriptions.set(channelName, () => this.subscribeToBooking(bookingId, callbacks));
 
     // Return unsubscribe function
     return () => this.unsubscribeFromBooking(bookingId);
   }
 
   unsubscribeFromBooking(bookingId: string): void {
+    const channelName = `booking-${bookingId}`;
     const channel = this.channels.get(bookingId);
     if (channel) {
       this.supabaseService.client.removeChannel(channel);
       this.channels.delete(bookingId);
+      this.activeSubscriptions.delete(channelName);
     }
   }
 
@@ -81,9 +244,12 @@ export class RealTimeService {
     const client = this.supabaseService.client;
     const channelName = `customer-bookings-${customerId}`;
 
+    this.log(`Setting up customer bookings subscription: ${channelName}`);
+
     // Remove existing subscription if any
     const existingChannel = this.channels.get(channelName);
     if (existingChannel) {
+      this.log(`Removing existing channel: ${channelName}`);
       client.removeChannel(existingChannel);
       this.channels.delete(channelName);
     }
@@ -101,6 +267,24 @@ export class RealTimeService {
         (payload: RealtimePostgresChangesPayload<any>) => {
           const oldStatus = (payload.old as any)?.status;
           const newStatus = payload.new.status;
+
+          this.log('UPDATE event received:', {
+            bookingId: payload.new.id,
+            oldStatus,
+            newStatus,
+            hasOldRecord: !!payload.old && Object.keys(payload.old).length > 0,
+            oldRecordKeys: payload.old ? Object.keys(payload.old) : []
+          });
+
+          // Warn if old record is missing (indicates REPLICA IDENTITY issue)
+          if (!payload.old || Object.keys(payload.old).length === 0) {
+            console.warn(
+              '[RealTimeService] UPDATE event missing old record data. ' +
+              'This may indicate REPLICA IDENTITY FULL is not set on the bookings table. ' +
+              'Run migration: ALTER TABLE public.bookings REPLICA IDENTITY FULL;'
+            );
+          }
+
           onBookingUpdate(payload.new, oldStatus, newStatus);
         }
       )
@@ -113,20 +297,35 @@ export class RealTimeService {
           filter: `customer_id=eq.${customerId}`
         },
         (payload: RealtimePostgresChangesPayload<any>) => {
+          this.log('INSERT event received:', {
+            bookingId: payload.new.id,
+            status: payload.new.status
+          });
+
           onBookingUpdate(payload.new, undefined, payload.new.status);
         }
       )
-      .subscribe((status) => {
-        console.log(`Customer bookings subscription status for ${customerId}:`, status);
+      .subscribe((status, err) => {
+        this.log(`Subscription status for ${channelName}:`, status);
+        this.handleSubscriptionStatus(channelName, status, err);
       });
 
     this.channels.set(channelName, channel);
 
+    // Store resubscribe function for reconnection
+    this.activeSubscriptions.set(channelName, () =>
+      this.subscribeToCustomerBookings(customerId, onBookingUpdate)
+    );
+
+    this.log(`Channel registered: ${channelName}, Total active: ${this.channels.size}`);
+
     return () => {
+      this.log(`Unsubscribing from channel: ${channelName}`);
       const ch = this.channels.get(channelName);
       if (ch) {
         client.removeChannel(ch);
         this.channels.delete(channelName);
+        this.activeSubscriptions.delete(channelName);
       }
     };
   }
@@ -141,9 +340,12 @@ export class RealTimeService {
     const client = this.supabaseService.client;
     const channelName = `provider-bookings-${providerId}`;
 
+    this.log(`Setting up provider bookings subscription: ${channelName}`);
+
     // Remove existing subscription if any
     const existingChannel = this.channels.get(channelName);
     if (existingChannel) {
+      this.log(`Removing existing channel: ${channelName}`);
       client.removeChannel(existingChannel);
       this.channels.delete(channelName);
     }
@@ -161,6 +363,14 @@ export class RealTimeService {
         (payload: RealtimePostgresChangesPayload<any>) => {
           const oldStatus = (payload.old as any)?.status;
           const newStatus = payload.new.status;
+
+          this.log('UPDATE event received (provider):', {
+            bookingId: payload.new.id,
+            oldStatus,
+            newStatus,
+            hasOldRecord: !!payload.old && Object.keys(payload.old).length > 0
+          });
+
           onBookingUpdate(payload.new, oldStatus, newStatus);
         }
       )
@@ -173,20 +383,35 @@ export class RealTimeService {
           filter: `provider_id=eq.${providerId}`
         },
         (payload: RealtimePostgresChangesPayload<any>) => {
+          this.log('INSERT event received (provider):', {
+            bookingId: payload.new.id,
+            status: payload.new.status
+          });
+
           onBookingUpdate(payload.new, undefined, payload.new.status);
         }
       )
-      .subscribe((status) => {
-        console.log(`Provider bookings subscription status for ${providerId}:`, status);
+      .subscribe((status, err) => {
+        this.log(`Subscription status for ${channelName}:`, status);
+        this.handleSubscriptionStatus(channelName, status, err);
       });
 
     this.channels.set(channelName, channel);
 
+    // Store resubscribe function for reconnection
+    this.activeSubscriptions.set(channelName, () =>
+      this.subscribeToProviderBookings(providerId, onBookingUpdate)
+    );
+
+    this.log(`Channel registered: ${channelName}, Total active: ${this.channels.size}`);
+
     return () => {
+      this.log(`Unsubscribing from channel: ${channelName}`);
       const ch = this.channels.get(channelName);
       if (ch) {
         client.removeChannel(ch);
         this.channels.delete(channelName);
+        this.activeSubscriptions.delete(channelName);
       }
     };
   }
@@ -382,5 +607,21 @@ export class RealTimeService {
       this.supabaseService.client.removeChannel(channel);
     }
     this.channels.clear();
+    this.activeSubscriptions.clear();
+    this._connectionState.set('disconnected');
+  }
+
+  /**
+   * Get the number of active subscriptions
+   */
+  getActiveSubscriptionCount(): number {
+    return this.channels.size;
+  }
+
+  /**
+   * Check if a specific channel is subscribed
+   */
+  isSubscribed(channelName: string): boolean {
+    return this.channels.has(channelName) || this.activeSubscriptions.has(channelName);
   }
 }

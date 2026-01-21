@@ -46,7 +46,7 @@ import {
 
 import { SessionService } from '@core/auth/session';
 import { BookingService } from '@core/services/booking.service';
-import { RealTimeService } from '@core/services/real-time.service';
+import { RealtimeManagerService, ConnectionMode } from '@core/services/realtime-manager.service';
 import { CustomerBooking, BookingStatus } from '@core/models/booking.model';
 
 type FilterStatus = 'all' | 'active' | 'completed' | 'cancelled';
@@ -122,7 +122,7 @@ const STATUS_CONFIG: Record<string, { label: string; color: string; icon: string
 export class BookingsPage implements OnInit, OnDestroy {
   private sessionService = inject(SessionService);
   private bookingService = inject(BookingService);
-  private realTimeService = inject(RealTimeService);
+  private realtimeManager = inject(RealtimeManagerService);
   private toastController = inject(ToastController);
   private router = inject(Router);
 
@@ -133,8 +133,16 @@ export class BookingsPage implements OnInit, OnDestroy {
   sortBy = signal<SortBy>('date');
   sortDirection = signal<SortDirection>('desc');
 
+  // Real-time connection state (for UI feedback)
+  connectionMode = this.realtimeManager.mode;
+  isConnected = this.realtimeManager.isConnected;
+
   // Real-time subscription cleanup
   private unsubscribeRealTime: (() => void) | null = null;
+  private isSubscribed = false; // Guard against duplicate subscriptions
+
+  // Debug mode for troubleshooting real-time issues
+  private debugMode = false;
 
   // Track if initial data load happened (prevents duplicate loads from effect)
   private dataLoaded = signal(false);
@@ -234,7 +242,9 @@ export class BookingsPage implements OnInit, OnDestroy {
   ngOnDestroy() {
     if (this.unsubscribeRealTime) {
       this.unsubscribeRealTime();
+      this.unsubscribeRealTime = null;
     }
+    this.isSubscribed = false;
   }
 
   async loadBookings() {
@@ -263,34 +273,117 @@ export class BookingsPage implements OnInit, OnDestroy {
     const profile = this.sessionService.profile();
     if (!profile?.id) return;
 
-    this.unsubscribeRealTime = this.realTimeService.subscribeToCustomerBookings(
+    // Guard against duplicate subscriptions
+    if (this.isSubscribed) {
+      this.debugLog('Subscription already active, skipping duplicate setup');
+      return;
+    }
+
+    this.debugLog('Setting up real-time subscription for customer:', profile.id);
+    this.isSubscribed = true;
+
+    this.unsubscribeRealTime = this.realtimeManager.subscribeToCustomerBookings(
       profile.id,
       async (updatedBooking, oldStatus, newStatus) => {
-        // Update local state
+        this.debugLog('Real-time event received:', {
+          bookingId: updatedBooking.id,
+          oldStatus,
+          newStatus
+        });
+
         const currentBookings = this.bookings();
         const index = currentBookings.findIndex(b => b.id === updatedBooking.id);
 
         if (index >= 0) {
-          // Update existing booking
-          const updated = [...currentBookings];
-          updated[index] = { ...updated[index], ...updatedBooking };
-          this.bookings.set(updated);
-
-          // Show toast if status changed
+          // Status changed - fetch full booking to get nested relations
           if (oldStatus && newStatus && oldStatus !== newStatus) {
-            const statusConfig = STATUS_CONFIG[newStatus];
-            await this.showToast(
-              `Booking ${statusConfig?.label || newStatus}`,
-              statusConfig?.color || 'primary'
-            );
+            this.debugLog('Status changed, fetching full booking data');
+
+            try {
+              // Fetch complete booking with all relations
+              const fullBooking = await this.bookingService.getBookingById(updatedBooking.id);
+
+              if (fullBooking) {
+                this.debugLog('Full booking fetched successfully');
+                const updated = [...currentBookings];
+                updated[index] = fullBooking;
+                this.bookings.set(updated);
+              } else {
+                // Fallback: merge partial data if full fetch fails
+                this.debugLog('Full fetch returned null, using partial merge');
+                const updated = [...currentBookings];
+                updated[index] = { ...updated[index], ...updatedBooking };
+                this.bookings.set(updated);
+              }
+            } catch (error) {
+              // Fallback: merge partial data on error
+              console.error('Failed to fetch full booking:', error);
+              this.debugLog('Fetch failed, using partial merge fallback');
+              const updated = [...currentBookings];
+              updated[index] = { ...updated[index], ...updatedBooking };
+              this.bookings.set(updated);
+            }
+
+            // Show status change notification
+            this.showStatusChangeToast(updatedBooking, oldStatus, newStatus);
+          } else {
+            // Non-status update - just merge the partial data
+            this.debugLog('Non-status update, merging partial data');
+            const updated = [...currentBookings];
+            updated[index] = { ...updated[index], ...updatedBooking };
+            this.bookings.set(updated);
           }
         } else {
           // New booking - reload full list to get related data
+          this.debugLog('New booking detected, reloading full list');
           await this.loadBookings();
-          await this.showToast('New booking created', 'success');
+          this.showToast('New booking received', 'primary');
         }
       }
     );
+
+    this.debugLog('Real-time subscription established');
+  }
+
+  private debugLog(message: string, ...args: any[]): void {
+    if (this.debugMode) {
+      console.log(`[BookingsPage] ${message}`, ...args);
+    }
+  }
+
+  /**
+   * Enable debug mode for troubleshooting real-time issues
+   */
+  enableDebugMode(): void {
+    this.debugMode = true;
+    this.realtimeManager.setDebugMode(true);
+    console.log('[BookingsPage] Debug mode enabled');
+  }
+
+  private async showStatusChangeToast(booking: any, oldStatus: string, newStatus: string) {
+    const config = STATUS_CONFIG[newStatus];
+    if (!config) return;
+
+    const serviceName = this.getServiceName(booking);
+    const message = `${serviceName}: ${config.label}`;
+
+    const toast = await this.toastController.create({
+      message,
+      duration: 3000,
+      position: 'top',
+      color: config.color,
+      icon: config.icon,
+      buttons: [
+        {
+          text: 'View',
+          handler: () => {
+            this.navigateToBookingDetails(booking);
+          }
+        },
+        { icon: 'close', role: 'cancel' }
+      ]
+    });
+    await toast.present();
   }
 
   async handleRefresh(event: RefresherCustomEvent) {

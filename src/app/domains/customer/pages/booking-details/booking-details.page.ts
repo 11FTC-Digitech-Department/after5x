@@ -49,7 +49,7 @@ import {
 import { SessionService } from '@core/auth/session';
 import { BookingService } from '@core/services/booking.service';
 import { BookingStatusService } from '@core/services/booking-status.service';
-import { RealTimeService } from '@core/services/real-time.service';
+import { RealtimeManagerService, ConnectionMode } from '@core/services/realtime-manager.service';
 import { CustomerBooking, BookingStatus, BookingTimelineRow } from '@core/models/booking.model';
 
 // Status display configuration
@@ -170,7 +170,7 @@ export class BookingDetailsPage implements OnInit, OnDestroy {
   private sessionService = inject(SessionService);
   private bookingService = inject(BookingService);
   private bookingStatusService = inject(BookingStatusService);
-  private realTimeService = inject(RealTimeService);
+  private realtimeManager = inject(RealtimeManagerService);
   private toastController = inject(ToastController);
   private alertController = inject(AlertController);
 
@@ -178,6 +178,10 @@ export class BookingDetailsPage implements OnInit, OnDestroy {
   booking = signal<CustomerBooking | null>(null);
   isLoading = signal(true);
   isCancelling = signal(false);
+
+  // Real-time connection state (for UI feedback)
+  connectionMode = this.realtimeManager.mode;
+  isConnected = this.realtimeManager.isConnected;
 
   // Real-time subscription
   private unsubscribeRealTime: (() => void) | null = null;
@@ -255,20 +259,24 @@ export class BookingDetailsPage implements OnInit, OnDestroy {
   }
 
   private setupRealTimeSubscription(bookingId: string) {
-    this.unsubscribeRealTime = this.realTimeService.subscribeToBooking(
+    this.unsubscribeRealTime = this.realtimeManager.subscribeToBooking(
       bookingId,
       {
         onBookingUpdate: (updatedBooking) => {
           const current = this.booking();
           if (current) {
+            const previousStatus = current.status;
             this.booking.set({ ...current, ...updatedBooking });
+
+            // Show visual feedback when update is received
+            if (previousStatus !== updatedBooking.status) {
+              this.showStatusUpdateFeedback(updatedBooking.status);
+            }
           }
         },
-        onStatusChange: async (newStatus) => {
-          const config = STATUS_CONFIG[newStatus];
-          if (config) {
-            await this.showToast(config.message, config.color);
-          }
+        onStatusChange: (newStatus, booking) => {
+          // Show status-specific toast notification
+          this.showStatusToast(newStatus);
         },
         onTimelineUpdate: (entry) => {
           const current = this.booking();
@@ -289,6 +297,30 @@ export class BookingDetailsPage implements OnInit, OnDestroy {
         }
       }
     );
+  }
+
+  private async showStatusUpdateFeedback(status: string) {
+    // Brief haptic/visual feedback that an update was received
+    const config = STATUS_CONFIG[status];
+    if (config) {
+      // The UI will update automatically via signals
+      console.log(`[BookingDetails] Status updated to: ${config.label}`);
+    }
+  }
+
+  private async showStatusToast(status: string) {
+    const config = STATUS_CONFIG[status];
+    if (!config) return;
+
+    const toast = await this.toastController.create({
+      message: config.message,
+      duration: 3000,
+      position: 'top',
+      color: config.color,
+      icon: config.icon,
+      buttons: [{ icon: 'close', role: 'cancel' }]
+    });
+    await toast.present();
   }
 
   async handleRefresh(event: RefresherCustomEvent) {

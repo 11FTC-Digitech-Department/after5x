@@ -111,6 +111,70 @@ ion-header {
       font-size: 12px;
     }
   }
+
+  // Connection status indicator
+  .connection-indicator {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 500;
+    transition: all 0.3s ease;
+
+    .status-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      transition: background-color 0.3s ease;
+    }
+
+    .status-label {
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    &.connected {
+      background-color: rgba(var(--ion-color-success-rgb), 0.15);
+      color: var(--ion-color-success-shade);
+
+      .status-dot {
+        background-color: var(--ion-color-success);
+        animation: pulse 2s ease-in-out infinite;
+      }
+    }
+
+    &.polling {
+      background-color: rgba(var(--ion-color-warning-rgb), 0.15);
+      color: var(--ion-color-warning-shade);
+
+      .status-dot {
+        background-color: var(--ion-color-warning);
+        animation: pulse 1s ease-in-out infinite;
+      }
+    }
+
+    &.disconnected {
+      background-color: rgba(var(--ion-color-medium-rgb), 0.15);
+      color: var(--ion-color-medium-shade);
+
+      .status-dot {
+        background-color: var(--ion-color-medium);
+      }
+    }
+  }
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.6;
+    transform: scale(1.2);
+  }
 }
 
 // Bookings list
