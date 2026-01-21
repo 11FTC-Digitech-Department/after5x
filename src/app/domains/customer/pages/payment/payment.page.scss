@@ -1,0 +1,403 @@
+// Animations
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes pulse {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.05);
+  }
+}
+
+// Loading state
+.loading-container {
+  padding: 16px;
+  animation: fadeIn 0.3s ease;
+
+  .status-header-skeleton {
+    background: var(--ion-color-light);
+    border-radius: 12px;
+    padding: 24px;
+    margin-bottom: 16px;
+    text-align: center;
+  }
+
+  .skeleton-card {
+    margin-bottom: 16px;
+    border-radius: 12px;
+  }
+}
+
+// Error state
+.error-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 48px 24px;
+  text-align: center;
+  animation: fadeIn 0.3s ease;
+
+  ion-icon {
+    font-size: 64px;
+    margin-bottom: 16px;
+  }
+
+  h3 {
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--ion-color-dark);
+    margin: 0 0 8px;
+  }
+
+  p {
+    font-size: 14px;
+    color: var(--ion-color-medium);
+    margin: 0 0 24px;
+  }
+}
+
+// Payment header
+.payment-header {
+  background: var(--ion-color-light);
+  padding: 32px 16px;
+  text-align: center;
+  animation: fadeIn 0.3s ease;
+
+  &[data-status="NONE"],
+  &[data-status="PENDING"] {
+    background: linear-gradient(135deg, var(--ion-color-warning-tint), var(--ion-color-warning));
+    color: var(--ion-color-warning-contrast);
+  }
+
+  &[data-status="PAID"] {
+    background: linear-gradient(135deg, var(--ion-color-success-tint), var(--ion-color-success));
+    color: var(--ion-color-success-contrast);
+  }
+
+  &[data-status="EXPIRED"],
+  &[data-status="FAILED"] {
+    background: linear-gradient(135deg, var(--ion-color-danger-tint), var(--ion-color-danger));
+    color: var(--ion-color-danger-contrast);
+  }
+
+  .status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 14px;
+    font-weight: 600;
+    padding: 8px 16px;
+    border-radius: 20px;
+
+    ion-icon {
+      font-size: 18px;
+    }
+  }
+
+  .status-message {
+    margin: 12px 0 0;
+    font-size: 14px;
+    opacity: 0.9;
+  }
+}
+
+// Cards
+ion-card {
+  --background: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  margin: 16px;
+  animation: fadeIn 0.3s ease;
+
+  ion-card-header {
+    padding: 16px 16px 8px;
+
+    ion-card-title {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--ion-color-dark);
+
+      ion-icon {
+        font-size: 20px;
+        color: var(--ion-color-primary);
+      }
+    }
+  }
+
+  ion-card-content {
+    padding: 8px 16px 16px;
+  }
+}
+
+// Amount card
+.amount-card {
+  ion-card-content {
+    padding: 24px 16px;
+  }
+
+  .amount-display {
+    text-align: center;
+    margin-bottom: 16px;
+
+    .amount-label {
+      display: block;
+      font-size: 13px;
+      color: var(--ion-color-medium);
+      margin-bottom: 4px;
+    }
+
+    .amount-value {
+      font-size: 36px;
+      font-weight: 700;
+      color: var(--ion-color-primary);
+    }
+  }
+
+  .booking-info {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-top: 16px;
+    border-top: 1px solid var(--ion-color-light);
+
+    .service-name {
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--ion-color-dark);
+    }
+
+    .booking-date {
+      font-size: 13px;
+      color: var(--ion-color-medium);
+    }
+  }
+}
+
+// Price card
+.price-card {
+  .price-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--ion-color-light);
+
+    &:last-child {
+      border-bottom: none;
+    }
+
+    .price-label {
+      font-size: 14px;
+      color: var(--ion-color-medium-shade);
+    }
+
+    .price-value {
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--ion-color-dark);
+    }
+
+    &.total {
+      padding-top: 16px;
+      margin-top: 8px;
+      border-top: 2px solid var(--ion-color-light);
+      border-bottom: none;
+
+      .price-label {
+        font-size: 16px;
+        font-weight: 600;
+        color: var(--ion-color-dark);
+      }
+
+      .price-value {
+        font-size: 18px;
+        font-weight: 700;
+        color: var(--ion-color-primary);
+      }
+    }
+  }
+}
+
+// Success card
+.success-card {
+  ion-card-content {
+    text-align: center;
+    padding: 32px 16px;
+  }
+
+  .success-icon {
+    margin-bottom: 16px;
+    animation: pulse 2s ease infinite;
+
+    ion-icon {
+      font-size: 72px;
+    }
+  }
+
+  h3 {
+    font-size: 20px;
+    font-weight: 600;
+    color: var(--ion-color-success);
+    margin: 0 0 8px;
+  }
+
+  .paid-info {
+    font-size: 14px;
+    color: var(--ion-color-medium);
+    margin: 0;
+    line-height: 1.5;
+  }
+}
+
+// Pending card
+.pending-card {
+  .pending-info {
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+
+    ion-icon {
+      font-size: 28px;
+      flex-shrink: 0;
+    }
+
+    h4 {
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--ion-color-dark);
+      margin: 0 0 4px;
+    }
+
+    p {
+      font-size: 14px;
+      color: var(--ion-color-medium);
+      margin: 0;
+    }
+
+    .expiry-note {
+      font-size: 12px;
+      color: var(--ion-color-warning-shade);
+      margin-top: 8px;
+    }
+  }
+}
+
+// Payment methods card
+.methods-card {
+  .payment-methods-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+
+    .method-item {
+      background: var(--ion-color-light);
+      border-radius: 8px;
+      padding: 12px;
+
+      .method-label {
+        display: block;
+        font-size: 12px;
+        font-weight: 600;
+        color: var(--ion-color-dark);
+        margin-bottom: 4px;
+      }
+
+      .method-options {
+        font-size: 11px;
+        color: var(--ion-color-medium);
+      }
+    }
+  }
+}
+
+// Security note
+.security-note {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 20px;
+  margin: 0 16px 16px;
+  background: var(--ion-color-light);
+  border-radius: 8px;
+  animation: fadeIn 0.3s ease;
+
+  ion-icon {
+    font-size: 20px;
+    color: var(--ion-color-success);
+    flex-shrink: 0;
+  }
+
+  span {
+    font-size: 12px;
+    color: var(--ion-color-medium-shade);
+    line-height: 1.4;
+  }
+}
+
+// Footer
+ion-footer {
+  ion-toolbar {
+    --border-width: 0;
+    padding: 8px 16px 16px;
+
+    ion-button {
+      --border-radius: 8px;
+      margin: 0;
+      font-weight: 600;
+    }
+
+    .footer-buttons {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+
+      ion-button {
+        margin: 0;
+      }
+    }
+  }
+}
+
+.footer-spacer {
+  height: 140px;
+}
+
+// Responsive
+@media (min-width: 768px) {
+  ion-card {
+    max-width: 500px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  .payment-header {
+    border-radius: 0 0 24px 24px;
+    max-width: 500px;
+    margin: 0 auto;
+  }
+
+  .security-note {
+    max-width: 468px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  ion-footer ion-toolbar {
+    max-width: 500px;
+    margin: 0 auto;
+  }
+}

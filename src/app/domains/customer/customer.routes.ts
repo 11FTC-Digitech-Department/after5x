@@ -40,6 +40,10 @@ export const CUSTOMER_ROUTES: Routes = [
   },
   // Full screen pages (outside tabs)
   {
+    path: 'payment/:bookingId',
+    loadComponent: () => import('./pages/payment/payment.page').then(m => m.PaymentPage),
+  },
+  {
     path: 'catalog/:catId',
     loadComponent: () => import('./pages/catalog/catalog.page').then(m => m.CatalogPage),
   },

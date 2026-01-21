@@ -1,13 +1,225 @@
 <ion-header [translucent]="true">
   <ion-toolbar>
-    <ion-title>payment</ion-title>
+    <ion-buttons slot="start">
+      <ion-back-button [defaultHref]="'/c/bookings/' + booking()?.id"></ion-back-button>
+    </ion-buttons>
+    <ion-title>Payment {{ getShortBookingId() }}</ion-title>
   </ion-toolbar>
 </ion-header>
 
 <ion-content [fullscreen]="true">
-  <ion-header collapse="condense">
-    <ion-toolbar>
-      <ion-title size="large">payment</ion-title>
-    </ion-toolbar>
-  </ion-header>
+  <!-- Pull to refresh -->
+  <ion-refresher slot="fixed" (ionRefresh)="handleRefresh($event)">
+    <ion-refresher-content pullingIcon="chevron-down-circle-outline" refreshingSpinner="circles">
+    </ion-refresher-content>
+  </ion-refresher>
+
+  <!-- Loading State -->
+  @if (isLoading()) {
+    <div class="loading-container">
+      <div class="status-header-skeleton">
+        <ion-skeleton-text [animated]="true" style="width: 120px; height: 28px; border-radius: 14px;"></ion-skeleton-text>
+        <ion-skeleton-text [animated]="true" style="width: 200px; height: 20px; margin-top: 8px;"></ion-skeleton-text>
+      </div>
+
+      <ion-card class="skeleton-card">
+        <ion-card-content>
+          <ion-skeleton-text [animated]="true" style="width: 100%; height: 80px;"></ion-skeleton-text>
+        </ion-card-content>
+      </ion-card>
+
+      <ion-card class="skeleton-card">
+        <ion-card-content>
+          <ion-skeleton-text [animated]="true" style="width: 60%; height: 18px;"></ion-skeleton-text>
+          <ion-skeleton-text [animated]="true" style="width: 80%; height: 14px; margin-top: 12px;"></ion-skeleton-text>
+        </ion-card-content>
+      </ion-card>
+    </div>
+  }
+
+  <!-- Error State -->
+  @else if (error()) {
+    <div class="error-container">
+      <ion-icon name="alert-circle" color="danger"></ion-icon>
+      <h3>Something went wrong</h3>
+      <p>{{ error() }}</p>
+      <ion-button fill="outline" (click)="loadData(booking()?.id || '')">
+        <ion-icon name="refresh-outline" slot="start"></ion-icon>
+        Try Again
+      </ion-button>
+    </div>
+  }
+
+  <!-- Payment Content -->
+  @else if (booking()) {
+    <!-- Payment Status Header -->
+    <div class="payment-header" [attr.data-status]="paymentStatus()?.invoiceStatus || 'NONE'">
+      <ion-badge [color]="statusConfig()?.color" class="status-badge">
+        <ion-icon [name]="statusConfig()?.icon"></ion-icon>
+        {{ statusConfig()?.label }}
+      </ion-badge>
+      <p class="status-message">{{ statusConfig()?.message }}</p>
+    </div>
+
+    <!-- Amount Card -->
+    <ion-card class="amount-card">
+      <ion-card-content>
+        <div class="amount-display">
+          <span class="amount-label">Total Amount</span>
+          <span class="amount-value">{{ formatPrice(booking()?.grand_total) }}</span>
+        </div>
+        <div class="booking-info">
+          <span class="service-name">{{ getServiceName() }}</span>
+          <span class="booking-date">{{ formatDate(booking()?.scheduled_for || null) }}</span>
+        </div>
+      </ion-card-content>
+    </ion-card>
+
+    <!-- Price Breakdown Card -->
+    <ion-card class="price-card">
+      <ion-card-header>
+        <ion-card-title>
+          <ion-icon name="receipt-outline"></ion-icon>
+          Price Breakdown
+        </ion-card-title>
+      </ion-card-header>
+      <ion-card-content>
+        <div class="price-row">
+          <span class="price-label">Service Fee</span>
+          <span class="price-value">{{ formatPrice(booking()?.total_labor_base || 0) }}</span>
+        </div>
+        @if (booking()?.total_transport_fees) {
+          <div class="price-row">
+            <span class="price-label">Transportation</span>
+            <span class="price-value">{{ formatPrice(booking()?.total_transport_fees || 0) }}</span>
+          </div>
+        }
+        @if (booking()?.total_materials_amount) {
+          <div class="price-row">
+            <span class="price-label">Materials</span>
+            <span class="price-value">{{ formatPrice(booking()?.total_materials_amount || 0) }}</span>
+          </div>
+        }
+        @if (booking()?.total_vat_amount) {
+          <div class="price-row">
+            <span class="price-label">VAT (12%)</span>
+            <span class="price-value">{{ formatPrice(booking()?.total_vat_amount || 0) }}</span>
+          </div>
+        }
+        <div class="price-row total">
+          <span class="price-label">Total</span>
+          <span class="price-value">{{ formatPrice(booking()?.grand_total || 0) }}</span>
+        </div>
+      </ion-card-content>
+    </ion-card>
+
+    <!-- Payment Success Card -->
+    @if (isPaid()) {
+      <ion-card class="success-card">
+        <ion-card-content>
+          <div class="success-icon">
+            <ion-icon name="checkmark-circle" color="success"></ion-icon>
+          </div>
+          <h3>Payment Successful</h3>
+          <p class="paid-info">
+            Paid on {{ formatDate(paymentStatus()?.paidAt || null) }}
+            @if (paymentStatus()?.paymentMethod) {
+              <br />via {{ formatPaymentMethod() }}
+            }
+          </p>
+        </ion-card-content>
+      </ion-card>
+    }
+
+    <!-- Pending Invoice Card -->
+    @if (hasPendingInvoice() && !isPaid()) {
+      <ion-card class="pending-card">
+        <ion-card-content>
+          <div class="pending-info">
+            <ion-icon name="time-outline" color="warning"></ion-icon>
+            <div>
+              <h4>Invoice Ready</h4>
+              <p>Your payment invoice is ready. Click below to complete payment.</p>
+              @if (paymentStatus()?.expiresAt && !isInvoiceExpired()) {
+                <p class="expiry-note">Expires at {{ getExpiryTime() }}</p>
+              }
+            </div>
+          </div>
+        </ion-card-content>
+      </ion-card>
+    }
+
+    <!-- Payment Methods Info -->
+    @if (!isPaid()) {
+      <ion-card class="methods-card">
+        <ion-card-header>
+          <ion-card-title>
+            <ion-icon name="card-outline"></ion-icon>
+            Payment Methods
+          </ion-card-title>
+        </ion-card-header>
+        <ion-card-content>
+          <div class="payment-methods-grid">
+            <div class="method-item">
+              <span class="method-label">E-Wallets</span>
+              <span class="method-options">GCash, GrabPay, PayMaya</span>
+            </div>
+            <div class="method-item">
+              <span class="method-label">Online Banking</span>
+              <span class="method-options">BPI, UnionBank, & more</span>
+            </div>
+            <div class="method-item">
+              <span class="method-label">Cards</span>
+              <span class="method-options">Visa, Mastercard</span>
+            </div>
+            <div class="method-item">
+              <span class="method-label">Over-the-Counter</span>
+              <span class="method-options">Cebuana, ECPay</span>
+            </div>
+          </div>
+        </ion-card-content>
+      </ion-card>
+
+      <!-- Security Note -->
+      <div class="security-note">
+        <ion-icon name="shield-checkmark-outline"></ion-icon>
+        <span>Secure payment powered by Xendit. Your payment details are encrypted and protected.</span>
+      </div>
+    }
+
+    <!-- Footer spacer -->
+    @if (!isPaid()) {
+      <div class="footer-spacer"></div>
+    }
+  }
 </ion-content>
+
+<!-- Payment Action Footer -->
+@if (booking() && !isLoading() && !error() && !isPaid()) {
+  <ion-footer class="ion-no-border">
+    <ion-toolbar>
+      @if (isProcessing()) {
+        <ion-button expand="block" color="primary" disabled>
+          <ion-spinner name="crescent" slot="start"></ion-spinner>
+          Processing...
+        </ion-button>
+      } @else if (canPay()) {
+        <ion-button expand="block" color="primary" (click)="initiatePayment()">
+          <ion-icon name="card-outline" slot="start"></ion-icon>
+          {{ canRetryPayment() ? 'Retry Payment' : 'Pay Now' }} - {{ formatPrice(booking()?.grand_total) }}
+        </ion-button>
+      } @else if (hasPendingInvoice()) {
+        <div class="footer-buttons">
+          <ion-button expand="block" color="primary" (click)="continuePayment()">
+            <ion-icon name="open-outline" slot="start"></ion-icon>
+            Continue Payment
+          </ion-button>
+          <ion-button expand="block" fill="outline" color="medium" (click)="syncPaymentStatus()">
+            <ion-icon name="refresh-outline" slot="start"></ion-icon>
+            Check Status
+          </ion-button>
+        </div>
+      }
+    </ion-toolbar>
+  </ion-footer>
+}

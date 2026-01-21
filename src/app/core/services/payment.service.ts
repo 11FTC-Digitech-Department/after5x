@@ -1,0 +1,236 @@
+import { Injectable, inject } from '@angular/core';
+import { SupabaseService } from '../supabase/supabase';
+import { SessionService } from '../auth/session';
+import {
+  PaymentStatus,
+  CreateInvoiceResponse,
+  CheckInvoiceStatusResponse,
+  InvoiceStatus
+} from '../models/payment.model';
+import { RealtimeChannel } from '@supabase/supabase-js';
+
+@Injectable({
+  providedIn: 'root'
+})
+export class PaymentService {
+  private supabaseService = inject(SupabaseService);
+  private sessionService = inject(SessionService);
+
+  private invoiceChannels = new Map<string, RealtimeChannel>();
+
+  /**
+   * Create a Xendit invoice and get the payment URL
+   */
+  async initiatePayment(bookingId: string): Promise<CreateInvoiceResponse> {
+    const session = await this.supabaseService.client.auth.getSession();
+    const accessToken = session.data.session?.access_token;
+
+    if (!accessToken) {
+      throw new Error('Not authenticated');
+    }
+
+    const response = await this.supabaseService.client.functions.invoke('create-xendit-invoice', {
+      body: { bookingId },
+      headers: {
+        Authorization: `Bearer ${accessToken}`
+      }
+    });
+
+    if (response.error) {
+      console.error('Failed to create invoice:', response.error);
+      throw new Error(response.error.message || 'Failed to create payment invoice');
+    }
+
+    return response.data as CreateInvoiceResponse;
+  }
+
+  /**
+   * Get current payment status for a booking
+   */
+  async getPaymentStatus(bookingId: string): Promise<PaymentStatus> {
+    const client = this.supabaseService.client;
+
+    // Get booking status
+    const { data: booking, error: bookingError } = await client
+      .from('bookings')
+      .select('id, status, grand_total')
+      .eq('id', bookingId)
+      .single();
+
+    if (bookingError || !booking) {
+      throw new Error('Booking not found');
+    }
+
+    // Get latest invoice for this booking
+    // Cast to any to handle columns that may not be in generated types yet
+    const { data: invoice, error: invoiceError } = await client
+      .from('invoices')
+      .select('*')
+      .eq('booking_id', bookingId)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .single() as { data: any; error: any };
+
+    if (invoiceError || !invoice) {
+      // No invoice exists yet
+      return {
+        bookingId,
+        invoiceId: null,
+        invoiceUrl: null,
+        invoiceStatus: 'NONE',
+        bookingStatus: booking.status || 'unknown',
+        amount: booking.grand_total,
+        paidAt: null,
+        paymentMethod: null,
+        paymentChannel: null,
+        expiresAt: null
+      };
+    }
+
+    return {
+      bookingId,
+      invoiceId: invoice.id,
+      invoiceUrl: invoice.xendit_invoice_url,
+      invoiceStatus: (invoice.status || 'PENDING') as InvoiceStatus,
+      bookingStatus: booking.status || 'unknown',
+      amount: invoice.amount,
+      paidAt: invoice.paid_at,
+      paymentMethod: invoice.payment_method,
+      paymentChannel: invoice.payment_channel || null,
+      expiresAt: invoice.expires_at || null
+    };
+  }
+
+  /**
+   * Sync invoice status with Xendit (polling fallback)
+   */
+  async syncInvoiceStatus(bookingId: string): Promise<CheckInvoiceStatusResponse> {
+    const session = await this.supabaseService.client.auth.getSession();
+    const accessToken = session.data.session?.access_token;
+
+    if (!accessToken) {
+      throw new Error('Not authenticated');
+    }
+
+    const response = await this.supabaseService.client.functions.invoke('check-invoice-status', {
+      body: { bookingId },
+      headers: {
+        Authorization: `Bearer ${accessToken}`
+      }
+    });
+
+    if (response.error) {
+      console.error('Failed to check invoice status:', response.error);
+      throw new Error(response.error.message || 'Failed to check payment status');
+    }
+
+    return response.data as CheckInvoiceStatusResponse;
+  }
+
+  /**
+   * Subscribe to real-time payment status updates
+   */
+  subscribeToPaymentStatus(
+    bookingId: string,
+    callback: (status: PaymentStatus) => void
+  ): () => void {
+    const client = this.supabaseService.client;
+
+    // Create channel for invoice updates
+    const channel = client
+      .channel(`invoice-${bookingId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'invoices',
+          filter: `booking_id=eq.${bookingId}`
+        },
+        async (payload) => {
+          console.log('[Payment] Invoice update received:', payload);
+          // Fetch full status on any change
+          try {
+            const status = await this.getPaymentStatus(bookingId);
+            callback(status);
+          } catch (error) {
+            console.error('[Payment] Error fetching status:', error);
+          }
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'bookings',
+          filter: `id=eq.${bookingId}`
+        },
+        async (payload) => {
+          console.log('[Payment] Booking update received:', payload);
+          // Fetch full status on booking change
+          try {
+            const status = await this.getPaymentStatus(bookingId);
+            callback(status);
+          } catch (error) {
+            console.error('[Payment] Error fetching status:', error);
+          }
+        }
+      )
+      .subscribe((status) => {
+        console.log('[Payment] Subscription status:', status);
+      });
+
+    this.invoiceChannels.set(bookingId, channel);
+
+    // Return unsubscribe function
+    return () => {
+      channel.unsubscribe();
+      this.invoiceChannels.delete(bookingId);
+    };
+  }
+
+  /**
+   * Check if booking requires payment
+   */
+  bookingRequiresPayment(bookingStatus: string): boolean {
+    return bookingStatus === 'payment_pending';
+  }
+
+  /**
+   * Check if invoice is expired
+   */
+  isInvoiceExpired(expiresAt: string | null): boolean {
+    if (!expiresAt) return false;
+    return new Date(expiresAt) < new Date();
+  }
+
+  /**
+   * Format payment method for display
+   */
+  formatPaymentMethod(method: string | null, channel: string | null): string {
+    if (!method && !channel) return 'Unknown';
+
+    const methodDisplayMap: Record<string, string> = {
+      'CREDIT_CARD': 'Credit Card',
+      'DEBIT_CARD': 'Debit Card',
+      'GCASH': 'GCash',
+      'GRAB_PAY': 'GrabPay',
+      'PAYMAYA': 'PayMaya',
+      'BPI': 'BPI Online',
+      'UNIONBANK': 'UnionBank',
+      'CEBUANA': 'Cebuana',
+      'ECPAY': 'ECPay',
+      '7ELEVEN': '7-Eleven'
+    };
+
+    const displayMethod = methodDisplayMap[method || ''] || method;
+    const displayChannel = methodDisplayMap[channel || ''] || channel;
+
+    if (displayChannel && displayChannel !== displayMethod) {
+      return `${displayMethod} (${displayChannel})`;
+    }
+
+    return displayMethod || displayChannel || 'Unknown';
+  }
+}

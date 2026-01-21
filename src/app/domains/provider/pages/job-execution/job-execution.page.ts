@@ -44,7 +44,9 @@ import {
   chevronForward,
   playCircle,
   stopCircle,
-  checkmarkDone
+  checkmarkDone,
+  cardOutline,
+  walletOutline
 } from 'ionicons/icons';
 import { Geolocation, Position, WatchPositionCallback } from '@capacitor/geolocation';
 
@@ -86,10 +88,10 @@ const STATUS_CONFIG: Record<string, { label: string; color: string; icon: string
     message: 'Service work in progress'
   },
   [BookingStatus.PAYMENT_PENDING]: {
-    label: 'Payment Due',
+    label: 'Awaiting Payment',
     color: 'warning',
-    icon: 'alert-circle',
-    message: 'Waiting for customer payment'
+    icon: 'card-outline',
+    message: 'Customer is completing payment via app'
   },
   [BookingStatus.PAID]: {
     label: 'Paid',
@@ -247,6 +249,18 @@ export class JobExecutionPage implements OnInit, OnDestroy {
     ].includes(status);
   });
 
+  // Check if waiting for payment
+  isAwaitingPayment = computed(() => {
+    const status = this.booking()?.status as BookingStatus;
+    return status === BookingStatus.PAYMENT_PENDING;
+  });
+
+  // Check if payment is complete
+  isPaid = computed(() => {
+    const status = this.booking()?.status as BookingStatus;
+    return status === BookingStatus.PAID || status === BookingStatus.COMPLETED;
+  });
+
   constructor() {
     addIcons({
       calendarOutline,
@@ -266,7 +280,9 @@ export class JobExecutionPage implements OnInit, OnDestroy {
       chevronForward,
       playCircle,
       stopCircle,
-      checkmarkDone
+      checkmarkDone,
+      cardOutline,
+      walletOutline
     });
   }
 

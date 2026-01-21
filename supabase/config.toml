@@ -344,8 +344,9 @@ inspector_port = 8083
 # The Deno major version to use.
 deno_version = 2
 
-# [edge_runtime.secrets]
-# secret_key = "env(SECRET_VALUE)"
+[edge_runtime.secrets]
+XENDIT_SECRET_KEY = "env(XENDIT_SECRET_KEY)"
+XENDIT_CALLBACK_TOKEN = "env(XENDIT_CALLBACK_TOKEN)"
 
 [analytics]
 enabled = true

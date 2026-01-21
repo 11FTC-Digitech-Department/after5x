@@ -26,7 +26,8 @@ export const AUTH_CONFIG = {
   // Session configuration
   session: {
     // How long to wait for profile to load before navigating
-    profileLoadTimeoutMs: 3000,
+    // Increased from 3000ms to handle slower connections (e.g., ngrok tunnels)
+    profileLoadTimeoutMs: 8000,
     // Check interval when waiting for profile
     profileCheckIntervalMs: 100
   }

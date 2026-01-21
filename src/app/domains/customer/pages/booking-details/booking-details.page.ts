@@ -43,7 +43,9 @@ import {
   imageOutline,
   chatbubbleOutline,
   arrowBack,
-  chevronForward
+  chevronForward,
+  cardOutline,
+  walletOutline
 } from 'ionicons/icons';
 
 import { SessionService } from '@core/auth/session';
@@ -204,6 +206,12 @@ export class BookingDetailsPage implements OnInit, OnDestroy {
     );
   });
 
+  // Check if payment is required
+  requiresPayment = computed(() => {
+    const status = this.booking()?.status as BookingStatus;
+    return status === BookingStatus.PAYMENT_PENDING;
+  });
+
   constructor() {
     addIcons({
       calendarOutline,
@@ -222,7 +230,9 @@ export class BookingDetailsPage implements OnInit, OnDestroy {
       imageOutline,
       chatbubbleOutline,
       arrowBack,
-      chevronForward
+      chevronForward,
+      cardOutline,
+      walletOutline
     });
   }
 
@@ -377,6 +387,13 @@ export class BookingDetailsPage implements OnInit, OnDestroy {
     const phone = this.booking()?.providers?.profiles?.phone_number;
     if (phone) {
       window.location.href = `tel:${phone}`;
+    }
+  }
+
+  goToPayment() {
+    const bookingId = this.booking()?.id;
+    if (bookingId) {
+      this.router.navigate(['/c/payment', bookingId]);
     }
   }
 
