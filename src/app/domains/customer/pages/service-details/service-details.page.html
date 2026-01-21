@@ -74,29 +74,55 @@
                 </ion-col>
               </ion-row>
 
-              <!-- Provider Info -->
-              <ion-row>
-                <ion-col size="12">
-                  @if (isLoading()) {
-                    <ion-skeleton-text animated style="height: 20px; width: 70%;"></ion-skeleton-text>
-                  } @else {
-                    <div class="provider-info" (click)="navigateToProvider()">
-                      <ion-avatar slot="start" class="provider-avatar">
-                        <img [src]="serviceData()?.provider?.profile?.avatar_url || 'assets/logo/main-logo.png'" alt="Provider avatar" />
-                      </ion-avatar>
-                      <div class="provider-details">
-                        <ion-text class="provider-name">{{ providerName() }}</ion-text>
-                        <div class="provider-rating">
-                          <ion-icon name="star" color="warning"></ion-icon>
-                          <ion-text>{{ providerRating() | number:'1.1-1' }}</ion-text>
-                          <ion-text color="medium">({{ serviceData()?.provider?.rating_count || 0 }} reviews)</ion-text>
-                        </div>
-                      </div>
-                    </div>
-                  }
-                </ion-col>
-              </ion-row>
             </ion-grid>
+          </ion-card-content>
+        </ion-card>
+      </ion-col>
+    </ion-row>
+
+    <!-- Provider Selection List -->
+    <ion-row>
+      <ion-col size="12">
+        <ion-card class="providers-card">
+          <ion-card-content>
+            <ion-card-title>Choose a Provider</ion-card-title>
+            @if (isLoading()) {
+              <ion-skeleton-text animated style="height: 60px; width: 100%; margin-bottom: 8px;"></ion-skeleton-text>
+              <ion-skeleton-text animated style="height: 60px; width: 100%;"></ion-skeleton-text>
+            } @else {
+              <ion-text color="medium" class="provider-hint">
+                {{ availableProviders().length }} provider(s) available
+              </ion-text>
+
+              <ion-list class="provider-list">
+                @for (provider of availableProviders(); track provider.providerId) {
+                  <ion-item
+                    button
+                    [class.selected]="selectedProvider()?.providerId === provider.providerId"
+                    (click)="selectProvider(provider)">
+                    <ion-avatar slot="start">
+                      <img [src]="provider.avatarUrl || 'assets/logo/main-logo.png'" alt="Provider" />
+                    </ion-avatar>
+                    <ion-label>
+                      <h2>
+                        {{ provider.providerName }}
+                        @if (provider.isDefault) {
+                          <ion-badge color="success">Recommended</ion-badge>
+                        }
+                      </h2>
+                      <p>
+                        <ion-icon name="star" color="warning"></ion-icon>
+                        {{ provider.rating | number:'1.1-1' }} ({{ provider.reviewCount }} reviews)
+                        &bull; {{ provider.yearsExperience }} yrs exp
+                      </p>
+                    </ion-label>
+                    @if (selectedProvider()?.providerId === provider.providerId) {
+                      <ion-icon name="checkmark-circle" color="primary" slot="end"></ion-icon>
+                    }
+                  </ion-item>
+                }
+              </ion-list>
+            }
           </ion-card-content>
         </ion-card>
       </ion-col>
@@ -191,21 +217,28 @@
                 <ion-skeleton-text animated style="height: 16px; width: 85%;"></ion-skeleton-text>
               } @else {
                 <div class="provider-about">
-                  <ion-text class="provider-bio">
-                    {{ serviceData()?.provider?.bio || 'No bio available.' }}
-                  </ion-text>
+                  <div class="provider-stats-summary">
+                    <ion-avatar class="provider-avatar-large">
+                      <img [src]="selectedProvider()?.avatarUrl || 'assets/logo/main-logo.png'" alt="Provider" />
+                    </ion-avatar>
+                    <div class="provider-rating-large">
+                      <ion-icon name="star" color="warning"></ion-icon>
+                      <ion-text class="rating-value">{{ selectedProvider()?.rating | number:'1.1-1' }}</ion-text>
+                      <ion-text color="medium">({{ selectedProvider()?.reviewCount || 0 }} reviews)</ion-text>
+                    </div>
+                  </div>
 
                   <ion-grid class="provider-stats">
                     <ion-row>
                       <ion-col size="6">
                         <div class="stat-item">
-                          <ion-text class="stat-value">{{ serviceData()?.provider?.years_of_experience || 0 }}</ion-text>
+                          <ion-text class="stat-value">{{ selectedProvider()?.yearsExperience || 0 }}</ion-text>
                           <ion-text class="stat-label">Years Experience</ion-text>
                         </div>
                       </ion-col>
                       <ion-col size="6">
                         <div class="stat-item">
-                          <ion-text class="stat-value">{{ serviceData()?.provider?.service_radius_km || 10 }}</ion-text>
+                          <ion-text class="stat-value">{{ selectedProvider()?.serviceRadius || 10 }}</ion-text>
                           <ion-text class="stat-label">Service Radius (km)</ion-text>
                         </div>
                       </ion-col>

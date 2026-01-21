@@ -1,0 +1,33 @@
+<ion-header>
+  <ion-toolbar>
+    <ion-buttons slot="start">
+      <ion-button fill="clear" (click)="goBack()">
+        <ion-icon name="arrow-back" slot="icon-only"></ion-icon>
+      </ion-button>
+    </ion-buttons>
+    <ion-title>Documents</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content [fullscreen]="true">
+  <ion-header collapse="condense">
+    <ion-toolbar>
+      <ion-title size="large">Documents</ion-title>
+    </ion-toolbar>
+  </ion-header>
+
+  <div class="placeholder-container">
+    <ion-icon name="document-text-outline" class="placeholder-icon"></ion-icon>
+    <h2>Coming Soon</h2>
+    <p>
+      <ion-text color="medium">
+        Document management is under development. You'll be able to upload and manage your verification documents here.
+      </ion-text>
+    </p>
+    <p class="info-text">
+      <ion-text color="medium">
+        For now, please contact support to submit documents for verification.
+      </ion-text>
+    </p>
+  </div>
+</ion-content>

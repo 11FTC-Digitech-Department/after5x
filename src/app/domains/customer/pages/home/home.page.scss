@@ -18,9 +18,24 @@ ion-content {
     color: var(--ion-color-primary);
   }
 
-  .notification-icon {
-    font-size: 20px;
-    color: var(--ion-color-primary);
+  .notification-button {
+    position: relative;
+
+    .notification-icon {
+      font-size: 20px;
+      color: var(--ion-color-primary);
+    }
+
+    .notification-badge {
+      position: absolute;
+      top: 2px;
+      right: 2px;
+      min-width: 16px;
+      height: 16px;
+      font-size: 10px;
+      padding: 0 4px;
+      border-radius: 8px;
+    }
   }
 
   ion-title {

@@ -1,0 +1,123 @@
+<div class="booking-calendar">
+  <!-- View Toggle -->
+  <div class="calendar-controls">
+    <ion-segment [value]="currentView()" (ionChange)="onViewChange($event)">
+      <ion-segment-button value="day">
+        <ion-label>Day</ion-label>
+      </ion-segment-button>
+      <ion-segment-button value="week">
+        <ion-label>Week</ion-label>
+      </ion-segment-button>
+      <ion-segment-button value="month">
+        <ion-label>Month</ion-label>
+      </ion-segment-button>
+    </ion-segment>
+  </div>
+
+  <!-- Navigation Header -->
+  <div class="calendar-header">
+    <button class="nav-btn" (click)="goToPrevious()">
+      <ion-icon name="chevron-back-outline"></ion-icon>
+    </button>
+    <div class="header-title">{{ headerTitle() }}</div>
+    <button class="nav-btn" (click)="goToNext()">
+      <ion-icon name="chevron-forward-outline"></ion-icon>
+    </button>
+    <button class="today-btn" (click)="goToToday()">
+      <ion-icon name="today-outline"></ion-icon>
+    </button>
+  </div>
+
+  @if (loading) {
+    <div class="loading-container">
+      <ion-spinner name="crescent"></ion-spinner>
+    </div>
+  } @else {
+    <!-- Week View -->
+    @if (currentView() === 'week') {
+      <div class="week-view">
+        <div class="week-grid">
+          @for (day of weekDaysData(); track day.date.getTime()) {
+            <div
+              class="day-column"
+              [class.today]="day.isToday"
+              (click)="selectDay({ date: day.date, dayNumber: day.dayNumber, isToday: day.isToday, isCurrentMonth: true, jobs: day.jobs })"
+            >
+              <div class="day-name">{{ day.dayName }}</div>
+              <div class="day-number">{{ day.dayNumber }}</div>
+              <div class="day-jobs">
+                @if (day.jobs.length > 0) {
+                  <div class="job-count" [attr.data-color]="getStatusColor(day.jobs[0].status)">
+                    {{ day.jobs.length }}
+                  </div>
+                } @else {
+                  <div class="no-jobs">-</div>
+                }
+              </div>
+            </div>
+          }
+        </div>
+      </div>
+    }
+
+    <!-- Day View -->
+    @if (currentView() === 'day') {
+      <div class="day-view">
+        <div class="hour-list">
+          @for (slot of dayHoursData(); track slot.hour) {
+            <div class="hour-row">
+              <div class="hour-label">{{ slot.label }}</div>
+              <div class="hour-content">
+                @for (job of slot.jobs; track job.id) {
+                  <div
+                    class="job-slot"
+                    [attr.data-status]="getStatusColor(job.status)"
+                    (click)="onJobClick(job, $event)"
+                  >
+                    <div class="job-time">{{ job.time }}</div>
+                    <div class="job-title">{{ job.title }}</div>
+                    <div class="job-customer">{{ job.customerName }}</div>
+                  </div>
+                }
+              </div>
+            </div>
+          }
+        </div>
+      </div>
+    }
+
+    <!-- Month View -->
+    @if (currentView() === 'month') {
+      <div class="month-view">
+        <div class="weekday-header">
+          @for (day of weekDays; track day) {
+            <div class="weekday-name">{{ day }}</div>
+          }
+        </div>
+        <div class="month-grid">
+          @for (day of monthDaysData(); track day.date.getTime()) {
+            <div
+              class="month-day"
+              [class.today]="day.isToday"
+              [class.other-month]="!day.isCurrentMonth"
+              [class.has-jobs]="day.jobs.length > 0"
+              (click)="selectDay(day)"
+            >
+              <div class="day-number">{{ day.dayNumber }}</div>
+              @if (day.jobs.length > 0) {
+                <div class="job-dots">
+                  @for (job of day.jobs.slice(0, 3); track job.id) {
+                    <span class="dot" [attr.data-color]="getStatusColor(job.status)"></span>
+                  }
+                  @if (day.jobs.length > 3) {
+                    <span class="more-indicator">+{{ day.jobs.length - 3 }}</span>
+                  }
+                </div>
+              }
+            </div>
+          }
+        </div>
+      </div>
+    }
+  }
+</div>

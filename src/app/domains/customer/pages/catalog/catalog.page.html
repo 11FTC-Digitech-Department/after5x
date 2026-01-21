@@ -20,66 +20,93 @@
             <ion-skeleton-text animated style="height: 32px; width: 200px; margin-bottom: 8px;"></ion-skeleton-text>
             <ion-skeleton-text animated style="height: 20px; width: 300px;"></ion-skeleton-text>
           } @else {
-            <h2>{{ categoryData()?.name }}</h2>
-            <p>Browse our comprehensive range of {{ categoryData()?.name?.toLowerCase() }} services</p>
+            <h2>{{ categoryInfo()?.name }}</h2>
+            <p>Browse our comprehensive range of {{ categoryInfo()?.name?.toLowerCase() }} services</p>
           }
         </div>
       </ion-col>
     </ion-row>
 
-    <!-- Services Grid -->
+    <!-- Services Grid - Grouped by Service -->
     <ion-row>
       @if (isLoading()) {
         <ion-col size="12">
-          <ion-list class="service-list">
-            @for (i of [1,2,3,4,5,6]; track i) {
-              <ion-item class="service-item skeleton-item">
-                <ion-thumbnail slot="start">
-                  <ion-skeleton-text animated style="width: 80px; height: 80px; border-radius: 8px;"></ion-skeleton-text>
-                </ion-thumbnail>
-                <ion-label>
-                  <ion-skeleton-text animated style="height: 16px; width: 70%; margin-bottom: 8px;"></ion-skeleton-text>
-                  <ion-skeleton-text animated style="height: 14px; width: 90%; margin-bottom: 8px;"></ion-skeleton-text>
-                  <ion-skeleton-text animated style="height: 12px; width: 50%;"></ion-skeleton-text>
-                </ion-label>
-                <div slot="end" class="badges-container">
-                  <ion-skeleton-text animated style="height: 20px; width: 60px; border-radius: 12px;"></ion-skeleton-text>
-                  <ion-skeleton-text animated style="height: 20px; width: 50px; border-radius: 12px;"></ion-skeleton-text>
-                </div>
-              </ion-item>
+          <div class="service-cards">
+            @for (i of [1,2,3,4]; track i) {
+              <ion-card class="service-card skeleton-card">
+                <ion-card-header>
+                  <ion-skeleton-text animated style="height: 20px; width: 70%;"></ion-skeleton-text>
+                  <ion-skeleton-text animated style="height: 14px; width: 90%; margin-top: 8px;"></ion-skeleton-text>
+                </ion-card-header>
+                <ion-card-content>
+                  <ion-skeleton-text animated style="height: 24px; width: 50%;"></ion-skeleton-text>
+                </ion-card-content>
+              </ion-card>
             }
-          </ion-list>
+          </div>
         </ion-col>
-      } @else if (categoryData()?.serviceVariants?.length) {
+      } @else if (serviceGroups().length > 0) {
         <ion-col size="12">
-          <ion-list class="service-list">
-            @for (serviceVariant of categoryData()!.serviceVariants; track serviceVariant.id) {
-              <ion-item class="service-item" (click)="navigateToService(serviceVariant.id)" detail="true" button>
-                <ion-thumbnail slot="start">
-                  <img
-                    [src]="serviceVariant.service?.image_url || 'assets/splash/main-splash.png'"
-                    alt="{{ serviceVariant.name }}"
-                    loading="lazy"
-                  />
-                </ion-thumbnail>
-                <ion-label>
-                  <h2>
-                    {{ serviceVariant.name }} 
-                  </h2>
-                  <p>{{ serviceVariant.description || serviceVariant.service?.description || 'No description available' }} • {{ serviceVariant.duration_minutes }} min</p>
-                  <ion-badge color="primary">
-                    ₱{{ serviceVariant.price_min === serviceVariant.price_max ? serviceVariant.price_min : (serviceVariant.price_min + ' - ₱' + serviceVariant.price_max) }}
-                  </ion-badge>
-                </ion-label>
-                <div slot="end" class="badges-container">
-                  <ion-badge color="warning">
-                    <ion-icon name="star"></ion-icon>
-                    {{ (serviceVariant.provider_offerings?.[0]?.provider?.rating_avg || 0) | number:'1.1-1' }}
-                  </ion-badge>
+          <div class="service-cards">
+            @for (group of serviceGroups(); track group.service.id) {
+              <ion-card class="service-card" [class.expanded]="isExpanded(group.service.id)">
+                <!-- Card Header - Always clickable -->
+                <div class="card-header-clickable" (click)="selectService(group)">
+                  <ion-card-header>
+                    <div class="card-title-row">
+                      <ion-card-title>{{ group.service.name }}</ion-card-title>
+                      @if (group.hasMultipleVariants && group.service.variant_selection_schema) {
+                        <ion-icon
+                          name="chevron-forward"
+                          class="expand-icon"
+                          [class.rotated]="isExpanded(group.service.id)">
+                        </ion-icon>
+                      }
+                    </div>
+                    @if (group.service.description) {
+                      <ion-card-subtitle>{{ group.service.description }}</ion-card-subtitle>
+                    }
+                  </ion-card-header>
+
+                  <ion-card-content>
+                    <div class="price-info">
+                      <ion-badge color="primary">
+                        {{ formatPriceRange(group.priceRange.min, group.priceRange.max) }}
+                      </ion-badge>
+                      @if (group.hasMultipleVariants) {
+                        <ion-badge color="medium" class="variant-count">
+                          <ion-icon name="options-outline"></ion-icon>
+                          {{ group.variants.length }} options
+                        </ion-badge>
+                      }
+                    </div>
+                  </ion-card-content>
                 </div>
-              </ion-item>
+
+                <!-- Expanded Variant Selector -->
+                @if (isExpanded(group.service.id) && group.service.variant_selection_schema) {
+                  <div class="variant-selector-container">
+                    <app-variant-selector
+                      [schema]="group.service.variant_selection_schema"
+                      [variants]="getGroupVariants(group)"
+                      [showAfter5Pricing]="true"
+                      (variantSelected)="onVariantSelected($event)">
+                    </app-variant-selector>
+
+                    @if (selectedVariantResult()) {
+                      <ion-button
+                        expand="block"
+                        class="proceed-button"
+                        (click)="proceedWithVariant()">
+                        Continue with {{ selectedVariantResult()!.variant.name }}
+                        <ion-icon name="chevron-forward" slot="end"></ion-icon>
+                      </ion-button>
+                    }
+                  </div>
+                }
+              </ion-card>
             }
-          </ion-list>
+          </div>
         </ion-col>
       } @else {
         <ion-col size="12">

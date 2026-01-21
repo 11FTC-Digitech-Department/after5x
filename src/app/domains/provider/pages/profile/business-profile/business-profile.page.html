@@ -1,0 +1,89 @@
+<ion-header>
+  <ion-toolbar>
+    <ion-buttons slot="start">
+      <ion-button fill="clear" (click)="goBack()">
+        <ion-icon name="arrow-back" slot="icon-only"></ion-icon>
+      </ion-button>
+    </ion-buttons>
+    <ion-title>Business Profile</ion-title>
+    <ion-buttons slot="end">
+      <ion-button
+        fill="clear"
+        (click)="saveProfile()"
+        [disabled]="isSaving() || isLoading() || !hasChanges">
+        @if (isSaving()) {
+          <ion-spinner name="crescent"></ion-spinner>
+        } @else {
+          Save
+        }
+      </ion-button>
+    </ion-buttons>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content [fullscreen]="true">
+  <ion-header collapse="condense">
+    <ion-toolbar>
+      <ion-title size="large">Business Profile</ion-title>
+    </ion-toolbar>
+  </ion-header>
+
+  @if (isLoading()) {
+    <div class="loading-container">
+      <ion-spinner name="crescent"></ion-spinner>
+      <ion-text color="medium">Loading business profile...</ion-text>
+    </div>
+  } @else {
+    <div class="section-intro">
+      <ion-text color="medium">
+        <p>This information helps customers understand your expertise and experience.</p>
+      </ion-text>
+    </div>
+
+    <ion-list [inset]="true">
+      <ion-item>
+        <ion-textarea
+          label="Bio / About You"
+          labelPlacement="stacked"
+          placeholder="Tell customers about yourself, your skills, and what makes your service special..."
+          [value]="bio()"
+          (ionInput)="bio.set($any($event).target.value)"
+          [autoGrow]="true"
+          [rows]="4"
+          [maxlength]="500"
+          counter="true">
+        </ion-textarea>
+      </ion-item>
+    </ion-list>
+
+    <ion-list [inset]="true">
+      <ion-item>
+        <ion-input
+          label="Years of Experience"
+          labelPlacement="stacked"
+          placeholder="e.g., 5"
+          [value]="yearsOfExperience()?.toString() || ''"
+          (ionInput)="onYearsChange($event)"
+          type="number"
+          min="0"
+          max="50">
+        </ion-input>
+        <ion-note slot="helper">How many years have you been doing this work?</ion-note>
+      </ion-item>
+    </ion-list>
+
+    <div class="tips-section">
+      <ion-text>
+        <h4>Tips for a great bio:</h4>
+      </ion-text>
+      <ion-text color="medium">
+        <ul>
+          <li>Mention your specializations and skills</li>
+          <li>Highlight any certifications or training</li>
+          <li>Keep it professional but friendly</li>
+          <li>Be honest about your experience</li>
+        </ul>
+      </ion-text>
+    </div>
+  }
+</ion-content>

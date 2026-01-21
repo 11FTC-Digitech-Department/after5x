@@ -97,6 +97,29 @@
                     <ion-icon name="document-text" class="section-icon"></ion-icon>
                     Describe your service needs
                   </ion-text>
+
+                  <!-- Urgency Selection -->
+                  <div class="urgency-section">
+                    <ion-text class="section-subtitle" color="medium">
+                      <small>How urgent is this?</small>
+                    </ion-text>
+                    <div class="urgency-scroll-container">
+                      <div class="urgency-options-horizontal">
+                        @for (level of urgencyLevels; track level.value) {
+                          <ion-chip
+                            [color]="level.value === bookingForm.get('urgency')?.value ? level.color : 'light'"
+                            [outline]="level.value !== bookingForm.get('urgency')?.value"
+                            (click)="onUrgencyChange(level.value)"
+                            class="urgency-chip-horizontal"
+                          >
+                            <ion-icon name="alert-circle" [color]="level.color"></ion-icon>
+                            <ion-label>{{ level.label }}</ion-label>
+                          </ion-chip>
+                        }
+                      </div>
+                    </div>
+                  </div>
+
                 <ion-list>
                   <ion-item lines="none">
                     <ion-label position="stacked">Description *</ion-label>
@@ -203,27 +226,6 @@
                 </ion-card-title>
               </ion-card-header>
               <ion-card-content>
-                <!-- Urgency Selection -->
-                <div class="urgency-section">
-                  <ion-text class="section-subtitle" color="medium">
-                    <small>How urgent is this?</small>
-                  </ion-text>
-                  <div class="urgency-scroll-container">
-                    <div class="urgency-options-horizontal">
-                      @for (level of urgencyLevels; track level.value) {
-                        <ion-chip
-                          [color]="level.value === bookingForm.get('urgency')?.value ? level.color : 'light'"
-                          [outline]="level.value !== bookingForm.get('urgency')?.value"
-                          (click)="onUrgencyChange(level.value)"
-                          class="urgency-chip-horizontal"
-                        >
-                          <ion-icon name="alert-circle" [color]="level.color"></ion-icon>
-                          <ion-label>{{ level.label }}</ion-label>
-                        </ion-chip>
-                      }
-                    </div>
-                  </div>
-                </div>
 
                 <!-- Date Selection -->
                 <ion-list>
@@ -267,10 +269,11 @@
                       <ion-chip
                         [color]="timeslot.value === bookingForm.get('preferredTimeslot')?.value ? 'primary' : 'light'"
                         [outline]="timeslot.value !== bookingForm.get('preferredTimeslot')?.value"
-                        (click)="isAsapSelected() ? null : bookingForm.get('preferredTimeslot')?.setValue(timeslot.value)"
+                        (click)="isAsapSelected() ? null : (disabledTimeslots().has(timeslot.value) ? null : bookingForm.get('preferredTimeslot')?.setValue(timeslot.value))"
                         class="timeslot-chip"
                         [class.recommended]="!isAsapSelected() && timeslot.value === recommendedTimeslotForUrgency()"
-                        [class.disabled]="isAsapSelected() && timeslot.value !== bookingForm.get('preferredTimeslot')?.value"
+                        [class.disabled]="isAsapSelected() && timeslot.value !== bookingForm.get('preferredTimeslot')?.value || disabledTimeslots().has(timeslot.value)"
+                        [class.past-timeslot]="disabledTimeslots().has(timeslot.value)"
                       >
                         <ion-icon [name]="timeslot.icon" class="timeslot-icon"></ion-icon>
                         <ion-label>{{ timeslot.label }}</ion-label>
@@ -472,6 +475,30 @@
                 </ion-text>
               </div>
 
+              @if (assignedProvider()) {
+                <div class="summary-item">
+                  <ion-text class="summary-label">Assigned Provider:</ion-text>
+                  <div class="provider-summary">
+                    <ion-avatar class="provider-avatar-small">
+                      <img [src]="assignedProvider().profile?.avatar_url || 'assets/logo/main-logo.png'" alt="Provider" />
+                    </ion-avatar>
+                    <div class="provider-info">
+                      <ion-text class="provider-name">{{ assignedProvider().profile?.full_name }}</ion-text>
+                      <ion-text class="provider-rating" color="medium">
+                        <ion-icon name="star"></ion-icon>
+                        {{ assignedProvider().rating?.toFixed(1) || 'N/A' }}
+                      </ion-text>
+                      @if (assignedProvider().estimatedArrival) {
+                        <ion-text class="arrival-time" color="primary">
+                          <ion-icon name="time"></ion-icon>
+                          ~{{ assignedProvider().estimatedArrival }} min away
+                        </ion-text>
+                      }
+                    </div>
+                  </div>
+                </div>
+              }
+
               <div class="summary-item">
                 <ion-text class="summary-label">Urgency:</ion-text>
                 <ion-chip [color]="selectedUrgencyColor()" class="urgency-chip-small">
@@ -627,6 +654,14 @@
     </ion-grid>
   }
 </ion-content>
+
+<!-- Error Message Display -->
+@if (errorMessage()) {
+  <div class="error-banner">
+    <ion-icon name="alert-circle" color="danger"></ion-icon>
+    <ion-text color="danger">{{ errorMessage() }}</ion-text>
+  </div>
+}
 
 <ion-footer class="ion-no-border">
   @if (currentStep() === 1) {

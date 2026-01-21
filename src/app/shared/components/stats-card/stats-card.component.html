@@ -1,0 +1,27 @@
+<ion-card
+  class="stats-card"
+  [class.clickable]="clickable"
+  [class.loading]="loading"
+  [attr.data-color]="color"
+  (click)="onCardClick()"
+  button="false"
+>
+  <div class="stats-content">
+    @if (loading) {
+      <div class="loading-state">
+        <ion-spinner name="crescent"></ion-spinner>
+      </div>
+    } @else {
+      @if (icon) {
+        <div class="stats-icon">
+          <ion-icon [name]="icon"></ion-icon>
+        </div>
+      }
+      <div class="stats-value">{{ value }}</div>
+      <div class="stats-label">{{ label }}</div>
+      @if (subtitle) {
+        <div class="stats-subtitle">{{ subtitle }}</div>
+      }
+    }
+  </div>
+</ion-card>

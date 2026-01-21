@@ -108,7 +108,15 @@ export class AddressSelectorPage implements ViewWillEnter, OnInit, OnDestroy {
     this.isLoading.set(true);
 
     try {
-      const result = await this.addressService.getUserAddresses();
+      // Add timeout to prevent hanging
+      const timeoutPromise = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('Request timeout')), 10000)
+      );
+
+      const result = await Promise.race([
+        this.addressService.getUserAddresses(),
+        timeoutPromise
+      ]) as any;
 
       if (result.error) {
         console.error('Error loading user addresses:', result.error);
@@ -148,7 +156,15 @@ export class AddressSelectorPage implements ViewWillEnter, OnInit, OnDestroy {
     this.locationError.set(null);
 
     try {
-      const position = await this.googleMapsService.getCurrentPosition();
+      // Add timeout to prevent hanging
+      const timeoutPromise = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('Location request timeout')), 15000)
+      );
+
+      const position = await Promise.race([
+        this.googleMapsService.getCurrentPosition(),
+        timeoutPromise
+      ]) as any;
 
       if (!position) {
         this.locationError.set('Unable to get your location. Please check your location settings.');
@@ -157,8 +173,15 @@ export class AddressSelectorPage implements ViewWillEnter, OnInit, OnDestroy {
 
       this.currentLocation.set(position);
 
-      // Reverse geocode to get the address
-      const geocodeResult = await this.googleMapsService.reverseGeocode(position.lat, position.lng);
+      // Reverse geocode to get the address with timeout
+      const geocodeTimeoutPromise = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('Geocode timeout')), 10000)
+      );
+
+      const geocodeResult = await Promise.race([
+        this.googleMapsService.reverseGeocode(position.lat, position.lng),
+        geocodeTimeoutPromise
+      ]).catch(() => null) as any;
 
       if (geocodeResult) {
         this.selectedLocation.set(geocodeResult);
@@ -205,8 +228,18 @@ export class AddressSelectorPage implements ViewWillEnter, OnInit, OnDestroy {
     try {
       // Get current location for better search results (if available)
       const currentLoc = this.currentLocation();
-      const results = await this.googleMapsService.searchPlaces(query, currentLoc || undefined);
-      this.searchResults.set(results);
+
+      // Add timeout to prevent hanging
+      const timeoutPromise = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('Search timeout')), 10000)
+      );
+
+      const results = await Promise.race([
+        this.googleMapsService.searchPlaces(query, currentLoc || undefined),
+        timeoutPromise
+      ]) as any;
+
+      this.searchResults.set(results || []);
     } catch (error) {
       console.error('Error searching places:', error);
       this.searchResults.set([]);
@@ -221,8 +254,15 @@ export class AddressSelectorPage implements ViewWillEnter, OnInit, OnDestroy {
     this.searchQuery.set(place.description);
 
     try {
-      // Get place details to get coordinates
-      const placeDetails = await this.googleMapsService.getPlaceDetails(place.place_id);
+      // Get place details to get coordinates with timeout
+      const timeoutPromise = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('Place details request timeout')), 10000)
+      );
+
+      const placeDetails = await Promise.race([
+        this.googleMapsService.getPlaceDetails(place.place_id),
+        timeoutPromise
+      ]) as any;
 
       if (placeDetails) {
         this.currentLocation.set({ lat: placeDetails.lat, lng: placeDetails.lng });

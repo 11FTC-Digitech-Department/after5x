@@ -4,15 +4,32 @@
 -- ================================================================
 
 -- Enable required extensions
-CREATE EXTENSION IF NOT EXISTS "pgcrypto";
+CREATE EXTENSION IF NOT EXISTS "pgcrypto" WITH SCHEMA extensions;
 
 -- DEFINE HELPER FUNCTION FIRST (Standalone, not in DO block)
 CREATE OR REPLACE FUNCTION public.create_seed_user(user_id UUID, user_email TEXT, user_full_name TEXT)
 RETURNS void AS $$
 BEGIN
-    -- For development seeding, create user without password (they can reset via Supabase Auth)
-    INSERT INTO auth.users (id, instance_id, email, email_confirmed_at, raw_app_meta_data, raw_user_meta_data, created_at, updated_at, role, aud)
-    VALUES (user_id, '00000000-0000-0000-0000-000000000000', user_email, NOW(), '{"provider":"email","providers":["email"]}', jsonb_build_object('full_name', user_full_name), NOW(), NOW(), 'authenticated', 'authenticated')
+    -- For development seeding, create user with password and required token fields
+    -- Token fields must be empty strings, not NULL, for GoTrue compatibility
+    INSERT INTO auth.users (
+        id, instance_id, email, encrypted_password, email_confirmed_at,
+        raw_app_meta_data, raw_user_meta_data, created_at, updated_at, role, aud,
+        confirmation_token, recovery_token, email_change_token_new,
+        email_change_token_current, reauthentication_token, phone_change_token
+    )
+    VALUES (
+        user_id,
+        '00000000-0000-0000-0000-000000000000',
+        user_email,
+        extensions.crypt('Test123!', extensions.gen_salt('bf')),  -- Default dev password
+        NOW(),
+        '{"provider":"email","providers":["email"]}',
+        jsonb_build_object('full_name', user_full_name),
+        NOW(), NOW(),
+        'authenticated', 'authenticated',
+        '', '', '', '', '', ''  -- Empty strings for token fields
+    )
     ON CONFLICT (id) DO NOTHING;
 END;
 $$ LANGUAGE plpgsql;

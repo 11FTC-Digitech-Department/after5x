@@ -1,0 +1,399 @@
+.booking-calendar {
+  background: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  overflow: hidden;
+}
+
+// Controls
+.calendar-controls {
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--ion-color-light);
+
+  ion-segment {
+    --background: var(--ion-color-light);
+    border-radius: 8px;
+
+    ion-segment-button {
+      --border-radius: 6px;
+      --indicator-box-shadow: none;
+      --indicator-color: var(--ion-color-primary);
+      min-height: 32px;
+      font-size: 13px;
+      font-weight: 500;
+
+
+    }
+  }
+}
+
+// Header
+.calendar-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--ion-color-light);
+}
+
+.nav-btn,
+.today-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  border: none;
+  background: var(--ion-color-light);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.2s ease;
+
+  &:hover {
+    background: var(--ion-color-light-shade);
+  }
+
+  ion-icon {
+    font-size: 18px;
+    color: var(--ion-color-dark);
+  }
+}
+
+.today-btn {
+  margin-left: auto;
+}
+
+.header-title {
+  flex: 1;
+  text-align: center;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--ion-color-dark);
+}
+
+// Loading
+.loading-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px;
+
+  ion-spinner {
+    width: 32px;
+    height: 32px;
+  }
+}
+
+// Week View
+.week-view {
+  padding: 16px;
+}
+
+.week-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 8px;
+}
+
+.day-column {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 12px 8px;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: background 0.2s ease;
+
+  &:hover {
+    background: var(--ion-color-light);
+  }
+
+  &.today {
+    background: rgba(var(--ion-color-primary-rgb), 0.1);
+
+    .day-number {
+      background: var(--ion-color-primary);
+      color: #ffffff;
+    }
+  }
+}
+
+.day-name {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--ion-color-medium);
+  text-transform: uppercase;
+  margin-bottom: 4px;
+}
+
+.day-column .day-number {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ion-color-dark);
+  margin-bottom: 8px;
+}
+
+.day-jobs {
+  min-height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.job-count {
+  font-size: 12px;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 12px;
+
+  &[data-color="warning"] {
+    background: rgba(var(--ion-color-warning-rgb), 0.2);
+    color: var(--ion-color-warning-shade);
+  }
+
+  &[data-color="primary"] {
+    background: rgba(var(--ion-color-primary-rgb), 0.2);
+    color: var(--ion-color-primary);
+  }
+
+  &[data-color="tertiary"] {
+    background: rgba(var(--ion-color-tertiary-rgb), 0.2);
+    color: var(--ion-color-tertiary);
+  }
+
+  &[data-color="secondary"] {
+    background: rgba(var(--ion-color-secondary-rgb), 0.2);
+    color: var(--ion-color-secondary);
+  }
+
+  &[data-color="success"] {
+    background: rgba(var(--ion-color-success-rgb), 0.2);
+    color: var(--ion-color-success);
+  }
+
+  &[data-color="danger"] {
+    background: rgba(var(--ion-color-danger-rgb), 0.2);
+    color: var(--ion-color-danger);
+  }
+}
+
+.no-jobs {
+  color: var(--ion-color-light-shade);
+  font-size: 14px;
+}
+
+// Day View
+.day-view {
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.hour-list {
+  padding: 8px 0;
+}
+
+.hour-row {
+  display: flex;
+  min-height: 60px;
+  border-bottom: 1px solid var(--ion-color-light);
+
+  &:last-child {
+    border-bottom: none;
+  }
+}
+
+.hour-label {
+  width: 60px;
+  padding: 8px;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--ion-color-medium);
+  text-align: right;
+  flex-shrink: 0;
+}
+
+.hour-content {
+  flex: 1;
+  padding: 4px 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.job-slot {
+  padding: 8px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: transform 0.2s ease;
+  border-left: 3px solid;
+
+  &:hover {
+    transform: translateX(2px);
+  }
+
+  &[data-status="warning"] {
+    background: rgba(var(--ion-color-warning-rgb), 0.1);
+    border-left-color: var(--ion-color-warning);
+  }
+
+  &[data-status="primary"] {
+    background: rgba(var(--ion-color-primary-rgb), 0.1);
+    border-left-color: var(--ion-color-primary);
+  }
+
+  &[data-status="tertiary"] {
+    background: rgba(var(--ion-color-tertiary-rgb), 0.1);
+    border-left-color: var(--ion-color-tertiary);
+  }
+
+  &[data-status="secondary"] {
+    background: rgba(var(--ion-color-secondary-rgb), 0.1);
+    border-left-color: var(--ion-color-secondary);
+  }
+
+  &[data-status="success"] {
+    background: rgba(var(--ion-color-success-rgb), 0.1);
+    border-left-color: var(--ion-color-success);
+  }
+
+  &[data-status="danger"] {
+    background: rgba(var(--ion-color-danger-rgb), 0.1);
+    border-left-color: var(--ion-color-danger);
+  }
+}
+
+.job-time {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--ion-color-medium);
+}
+
+.job-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ion-color-dark);
+}
+
+.job-customer {
+  font-size: 11px;
+  color: var(--ion-color-medium);
+}
+
+// Month View
+.month-view {
+  padding: 12px;
+}
+
+.weekday-header {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  margin-bottom: 8px;
+}
+
+.weekday-name {
+  text-align: center;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--ion-color-medium);
+  text-transform: uppercase;
+  padding: 8px 0;
+}
+
+.month-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 2px;
+}
+
+.month-day {
+  aspect-ratio: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  cursor: pointer;
+  position: relative;
+  transition: background 0.2s ease;
+
+  &:hover {
+    background: var(--ion-color-light);
+  }
+
+  &.other-month {
+    opacity: 0.4;
+  }
+
+  &.today {
+    background: rgba(var(--ion-color-primary-rgb), 0.1);
+
+    .day-number {
+      background: var(--ion-color-primary);
+      color: #ffffff;
+      border-radius: 50%;
+      width: 24px;
+      height: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+  }
+
+  &.has-jobs {
+    font-weight: 600;
+  }
+}
+
+.month-day .day-number {
+  font-size: 13px;
+  color: var(--ion-color-dark);
+}
+
+.job-dots {
+  display: flex;
+  gap: 2px;
+  margin-top: 4px;
+  align-items: center;
+}
+
+.dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+
+  &[data-color="warning"] {
+    background: var(--ion-color-warning);
+  }
+
+  &[data-color="primary"] {
+    background: var(--ion-color-primary);
+  }
+
+  &[data-color="tertiary"] {
+    background: var(--ion-color-tertiary);
+  }
+
+  &[data-color="secondary"] {
+    background: var(--ion-color-secondary);
+  }
+
+  &[data-color="success"] {
+    background: var(--ion-color-success);
+  }
+
+  &[data-color="danger"] {
+    background: var(--ion-color-danger);
+  }
+}
+
+.more-indicator {
+  font-size: 9px;
+  color: var(--ion-color-medium);
+  margin-left: 2px;
+}

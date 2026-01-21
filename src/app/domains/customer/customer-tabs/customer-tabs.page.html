@@ -8,6 +8,9 @@
       <ion-tab-button tab="bookings">
         <ion-icon name="calendar-outline"></ion-icon>
         <ion-label>Bookings</ion-label>
+        @if (unreadNotificationCount() > 0) {
+          <ion-badge color="danger">{{ unreadNotificationCount() > 9 ? '9+' : unreadNotificationCount() }}</ion-badge>
+        }
       </ion-tab-button>
 
       <ion-tab-button tab="categories">

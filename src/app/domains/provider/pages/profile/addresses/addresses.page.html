@@ -1,0 +1,85 @@
+<ion-header [translucent]="true">
+  <ion-toolbar>
+    <ion-buttons slot="start">
+      <ion-button fill="clear" (click)="goBack()">
+        <ion-icon name="arrow-back" slot="icon-only"></ion-icon>
+      </ion-button>
+    </ion-buttons>
+    <ion-title>My Addresses</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content [fullscreen]="true">
+  <ion-header collapse="condense">
+    <ion-toolbar>
+      <ion-title size="large">My Addresses</ion-title>
+    </ion-toolbar>
+  </ion-header>
+
+  @if (isLoading()) {
+    <div class="loading-container">
+      <ion-spinner name="crescent"></ion-spinner>
+      <ion-text>Loading addresses...</ion-text>
+    </div>
+  } @else {
+    @if (!hasAddresses()) {
+      <div class="empty-state">
+        <ion-icon name="location" class="empty-icon"></ion-icon>
+        <h3>No addresses yet</h3>
+        <p>Add your work address or other locations</p>
+        <ion-button (click)="addNewAddress()" class="add-first-btn">
+          <ion-icon name="add" slot="start"></ion-icon>
+          Add Address
+        </ion-button>
+      </div>
+    } @else {
+      <ion-refresher slot="fixed" (ionRefresh)="onRefresh($event)">
+        <ion-refresher-content></ion-refresher-content>
+      </ion-refresher>
+
+      <ion-list>
+        @for (address of addresses(); track address.id) {
+          <ion-item button (click)="editAddress(address)" class="address-item">
+            <ion-icon [name]="getAddressIcon(address.label)" slot="start" class="address-icon"></ion-icon>
+            <ion-label>
+              <h3 class="address-label">
+                {{ address.label }}
+                @if (address.is_default) {
+                  <ion-badge color="primary" class="default-badge">Default</ion-badge>
+                }
+              </h3>
+              <p class="address-text">{{ address.full_address }}</p>
+              @if (address.unit_details) {
+                <p class="unit-details">{{ address.unit_details }}</p>
+              }
+            </ion-label>
+            <ion-buttons slot="end">
+              @if (!address.is_default) {
+                <ion-button fill="clear" (click)="setAsDefault(address); $event.stopPropagation()">
+                  <ion-icon name="star-outline" color="medium"></ion-icon>
+                </ion-button>
+              }
+              <ion-button fill="clear" (click)="deleteAddress(address); $event.stopPropagation()">
+                <ion-icon name="trash" color="danger"></ion-icon>
+              </ion-button>
+            </ion-buttons>
+          </ion-item>
+        }
+      </ion-list>
+
+      <div class="help-text">
+        <ion-text color="medium">
+          <small>Tap an address to edit, or use the buttons to set as default or delete</small>
+        </ion-text>
+      </div>
+    }
+  }
+
+  @if (!isLoading()) {
+    <ion-fab slot="fixed" vertical="bottom" horizontal="end">
+      <ion-fab-button (click)="addNewAddress()">
+        <ion-icon name="add"></ion-icon>
+      </ion-fab-button>
+    </ion-fab>
+  }
+</ion-content>

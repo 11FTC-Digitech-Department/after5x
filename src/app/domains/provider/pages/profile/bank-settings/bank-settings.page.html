@@ -1,0 +1,33 @@
+<ion-header>
+  <ion-toolbar>
+    <ion-buttons slot="start">
+      <ion-button fill="clear" (click)="goBack()">
+        <ion-icon name="arrow-back" slot="icon-only"></ion-icon>
+      </ion-button>
+    </ion-buttons>
+    <ion-title>Bank & Payouts</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content [fullscreen]="true">
+  <ion-header collapse="condense">
+    <ion-toolbar>
+      <ion-title size="large">Bank & Payouts</ion-title>
+    </ion-toolbar>
+  </ion-header>
+
+  <div class="placeholder-container">
+    <ion-icon name="wallet-outline" class="placeholder-icon"></ion-icon>
+    <h2>Coming Soon</h2>
+    <p>
+      <ion-text color="medium">
+        Bank account and payout settings are under development. You'll be able to manage your payout preferences here.
+      </ion-text>
+    </p>
+    <p class="info-text">
+      <ion-text color="medium">
+        Currently, payouts are processed through your registered GCash account.
+      </ion-text>
+    </p>
+  </div>
+</ion-content>

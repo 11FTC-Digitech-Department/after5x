@@ -1,0 +1,159 @@
+<ion-header>
+  <ion-toolbar>
+    <ion-buttons slot="start">
+      <ion-button fill="clear" (click)="goBack()">
+        <ion-icon name="arrow-back" slot="icon-only"></ion-icon>
+      </ion-button>
+    </ion-buttons>
+    <ion-title>Service Settings</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content [fullscreen]="true">
+  <ion-header collapse="condense">
+    <ion-toolbar>
+      <ion-title size="large">Service Settings</ion-title>
+    </ion-toolbar>
+  </ion-header>
+
+  @if (isLoading()) {
+    <div class="loading-container">
+      <ion-spinner name="crescent"></ion-spinner>
+      <ion-text color="medium">Loading settings...</ion-text>
+    </div>
+  } @else {
+    <!-- Availability -->
+    <ion-list [inset]="true">
+      <ion-list-header>
+        <ion-label>Availability</ion-label>
+      </ion-list-header>
+
+      <ion-item>
+        <ion-toggle
+          [checked]="isAvailable()"
+          (ionChange)="onAvailabilityChange()"
+          [enableOnOffLabels]="true">
+          <ion-label>
+            Available for Jobs
+            <ion-note class="status-note">
+              {{ isAvailable() ? 'You can receive new job requests' : 'You will not receive new jobs' }}
+            </ion-note>
+          </ion-label>
+        </ion-toggle>
+      </ion-item>
+    </ion-list>
+
+    <!-- Service Radius -->
+    <ion-list [inset]="true">
+      <ion-list-header>
+        <ion-label>Service Area</ion-label>
+      </ion-list-header>
+
+      <ion-item class="radius-item">
+        <ion-label>
+          <h3>Service Radius</h3>
+          <p class="radius-value">{{ serviceRadius() }} km from your location</p>
+        </ion-label>
+      </ion-item>
+
+      <ion-item class="range-item">
+        <ion-range
+          [min]="radiusOptions.min"
+          [max]="radiusOptions.max"
+          [step]="radiusOptions.step"
+          [value]="serviceRadius()"
+          (ionChange)="onRadiusChange($event)"
+          (ionKnobMoveEnd)="saveRadius()"
+          [pin]="true"
+          [pinFormatter]="formatRadius">
+          <ion-label slot="start">{{ radiusOptions.min }}km</ion-label>
+          <ion-label slot="end">{{ radiusOptions.max }}km</ion-label>
+        </ion-range>
+      </ion-item>
+
+      <ion-item lines="none" class="radius-note">
+        <ion-text color="medium">
+          <small>Jobs outside this radius won't be shown to you</small>
+        </ion-text>
+      </ion-item>
+    </ion-list>
+
+    <!-- Working Hours -->
+    <ion-list [inset]="true">
+      <ion-list-header>
+        <ion-label>Working Hours</ion-label>
+      </ion-list-header>
+
+      <ion-item button (click)="showStartTimePicker.set(true)">
+        <ion-label>Start Time</ion-label>
+        <ion-note slot="end">{{ formatTime(workingHoursStart()) }}</ion-note>
+      </ion-item>
+
+      <ion-item button (click)="showEndTimePicker.set(true)">
+        <ion-label>End Time</ion-label>
+        <ion-note slot="end">{{ formatTime(workingHoursEnd()) }}</ion-note>
+      </ion-item>
+
+      <ion-item lines="none" class="hours-note">
+        <ion-text color="medium">
+          <small>You'll receive job requests within these hours</small>
+        </ion-text>
+      </ion-item>
+    </ion-list>
+
+    <!-- Info -->
+    <div class="info-section">
+      <ion-text color="medium">
+        <p>
+          <ion-icon name="information-circle-outline"></ion-icon>
+          Service categories are managed through your verified credentials.
+          Contact support to update your service offerings.
+        </p>
+      </ion-text>
+    </div>
+  }
+
+  <!-- Start Time Picker Modal -->
+  <ion-modal [isOpen]="showStartTimePicker()" (didDismiss)="showStartTimePicker.set(false)">
+    <ng-template>
+      <ion-header>
+        <ion-toolbar>
+          <ion-title>Start Time</ion-title>
+          <ion-buttons slot="end">
+            <ion-button (click)="showStartTimePicker.set(false)">Done</ion-button>
+          </ion-buttons>
+        </ion-toolbar>
+      </ion-header>
+      <ion-content>
+        <ion-datetime
+          presentation="time"
+          [value]="workingHoursStart()"
+          (ionChange)="onStartTimeChange($event)"
+          [minuteValues]="'0,15,30,45'">
+        </ion-datetime>
+      </ion-content>
+    </ng-template>
+  </ion-modal>
+
+  <!-- End Time Picker Modal -->
+  <ion-modal [isOpen]="showEndTimePicker()" (didDismiss)="showEndTimePicker.set(false)">
+    <ng-template>
+      <ion-header>
+        <ion-toolbar>
+          <ion-title>End Time</ion-title>
+          <ion-buttons slot="end">
+            <ion-button (click)="showEndTimePicker.set(false)">Done</ion-button>
+          </ion-buttons>
+        </ion-toolbar>
+      </ion-header>
+      <ion-content>
+        <ion-datetime
+          presentation="time"
+          [value]="workingHoursEnd()"
+          (ionChange)="onEndTimeChange($event)"
+          [minuteValues]="'0,15,30,45'">
+        </ion-datetime>
+      </ion-content>
+    </ng-template>
+  </ion-modal>
+</ion-content>

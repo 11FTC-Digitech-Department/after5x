@@ -1,13 +1,257 @@
 <ion-header [translucent]="true">
   <ion-toolbar>
-    <ion-title>job-execution</ion-title>
+    <ion-buttons slot="start">
+      <ion-back-button defaultHref="/p/schedule"></ion-back-button>
+    </ion-buttons>
+    <ion-title>Job {{ getShortBookingId() }}</ion-title>
   </ion-toolbar>
 </ion-header>
 
 <ion-content [fullscreen]="true">
-  <ion-header collapse="condense">
-    <ion-toolbar>
-      <ion-title size="large">job-execution</ion-title>
-    </ion-toolbar>
-  </ion-header>
+  <!-- Pull to refresh -->
+  <ion-refresher slot="fixed" (ionRefresh)="handleRefresh($event)">
+    <ion-refresher-content pullingIcon="chevron-down-circle-outline" refreshingSpinner="circles">
+    </ion-refresher-content>
+  </ion-refresher>
+
+  <!-- Loading State -->
+  @if (isLoading()) {
+    <div class="loading-container">
+      <div class="status-header-skeleton">
+        <ion-skeleton-text [animated]="true" style="width: 100px; height: 28px; border-radius: 14px;"></ion-skeleton-text>
+        <ion-skeleton-text [animated]="true" style="width: 200px; height: 20px; margin-top: 8px;"></ion-skeleton-text>
+      </div>
+
+      <ion-card class="skeleton-card">
+        <ion-card-content>
+          <ion-skeleton-text [animated]="true" style="width: 60%; height: 18px;"></ion-skeleton-text>
+          <ion-skeleton-text [animated]="true" style="width: 80%; height: 14px; margin-top: 12px;"></ion-skeleton-text>
+          <ion-skeleton-text [animated]="true" style="width: 40%; height: 14px; margin-top: 8px;"></ion-skeleton-text>
+        </ion-card-content>
+      </ion-card>
+
+      <ion-card class="skeleton-card">
+        <ion-card-content>
+          <ion-skeleton-text [animated]="true" style="width: 50%; height: 18px;"></ion-skeleton-text>
+          <ion-skeleton-text [animated]="true" style="width: 70%; height: 14px; margin-top: 12px;"></ion-skeleton-text>
+        </ion-card-content>
+      </ion-card>
+    </div>
+  }
+
+  <!-- Booking Content -->
+  @else if (booking()) {
+    <!-- Status Header -->
+    <div class="status-header" [attr.data-status]="booking()?.status">
+      <ion-badge [color]="statusConfig()?.color" class="status-badge">
+        <ion-icon [name]="statusConfig()?.icon"></ion-icon>
+        {{ statusConfig()?.label }}
+      </ion-badge>
+      <p class="status-message">{{ statusConfig()?.message }}</p>
+      @if (isTrackingLocation()) {
+        <div class="tracking-indicator">
+          <ion-icon name="location-outline"></ion-icon>
+          GPS Tracking Active
+        </div>
+      }
+    </div>
+
+    <!-- Customer Card -->
+    <ion-card class="customer-card">
+      <ion-card-header>
+        <ion-card-title>
+          <ion-icon name="person-outline"></ion-icon>
+          Customer
+        </ion-card-title>
+      </ion-card-header>
+      <ion-card-content>
+        <div class="customer-info">
+          @if (getCustomerAvatar()) {
+            <ion-avatar class="customer-avatar">
+              <img [src]="getCustomerAvatar()" [alt]="getCustomerName()" />
+            </ion-avatar>
+          } @else {
+            <div class="customer-avatar-placeholder">
+              <ion-icon name="person-outline"></ion-icon>
+            </div>
+          }
+          <div class="customer-details">
+            <h3 class="customer-name">{{ getCustomerName() }}</h3>
+            @if (getCustomerPhone()) {
+              <p class="customer-phone">{{ getCustomerPhone() }}</p>
+            }
+          </div>
+        </div>
+        @if (getCustomerPhone()) {
+          <ion-button expand="block" fill="outline" (click)="callCustomer()" class="contact-btn">
+            <ion-icon name="call-outline" slot="start"></ion-icon>
+            Call Customer
+          </ion-button>
+        }
+      </ion-card-content>
+    </ion-card>
+
+    <!-- Service Info Card -->
+    <ion-card class="info-card">
+      <ion-card-header>
+        <ion-card-title>
+          <ion-icon [name]="getServiceIcon()"></ion-icon>
+          Service Details
+        </ion-card-title>
+      </ion-card-header>
+      <ion-card-content>
+        <div class="info-row">
+          <span class="info-label">Service</span>
+          <span class="info-value">{{ getServiceName() }}</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">Description</span>
+          <span class="info-value description">{{ getDescription() }}</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">Scheduled</span>
+          <span class="info-value">
+            {{ formatDate(booking()?.scheduled_for || null) }}
+            <br />
+            <small>{{ formatTime(booking()?.scheduled_for || null) }}</small>
+          </span>
+        </div>
+      </ion-card-content>
+    </ion-card>
+
+    <!-- Location Card -->
+    <ion-card class="location-card">
+      <ion-card-header>
+        <ion-card-title>
+          <ion-icon name="location-outline"></ion-icon>
+          Location
+        </ion-card-title>
+      </ion-card-header>
+      <ion-card-content>
+        <p class="address-text">{{ getAddress() }}</p>
+        <ion-button expand="block" fill="outline" (click)="openNavigation()" class="nav-btn">
+          <ion-icon name="navigate-outline" slot="start"></ion-icon>
+          Open in Maps
+        </ion-button>
+      </ion-card-content>
+    </ion-card>
+
+    <!-- Timeline Card -->
+    @if (timeline().length > 0) {
+      <ion-card class="timeline-card">
+        <ion-card-header>
+          <ion-card-title>
+            <ion-icon name="time-outline"></ion-icon>
+            Timeline
+          </ion-card-title>
+        </ion-card-header>
+        <ion-card-content>
+          <div class="timeline">
+            @for (entry of timeline(); track entry.id; let first = $first; let last = $last) {
+              <div class="timeline-item" [class.first]="first" [class.last]="last">
+                <div class="timeline-marker">
+                  <div class="timeline-icon">
+                    <ion-icon [name]="getTimelineIcon(entry.icon_name)"></ion-icon>
+                  </div>
+                  @if (!last) {
+                    <div class="timeline-line"></div>
+                  }
+                </div>
+                <div class="timeline-content">
+                  <h4 class="timeline-title">{{ entry.title }}</h4>
+                  @if (entry.description) {
+                    <p class="timeline-description">{{ entry.description }}</p>
+                  }
+                  <span class="timeline-time">{{ formatRelativeTime(entry.created_at) }}</span>
+                </div>
+              </div>
+            }
+          </div>
+        </ion-card-content>
+      </ion-card>
+    }
+
+    <!-- Price Breakdown Card -->
+    <ion-card class="price-card">
+      <ion-card-header>
+        <ion-card-title>
+          <ion-icon name="receipt-outline"></ion-icon>
+          Price Breakdown
+        </ion-card-title>
+      </ion-card-header>
+      <ion-card-content>
+        <div class="price-row">
+          <span class="price-label">Service Fee</span>
+          <span class="price-value">{{ formatPrice(booking()?.total_labor_base || 0) }}</span>
+        </div>
+        @if (booking()?.total_transport_fees) {
+          <div class="price-row">
+            <span class="price-label">Transportation</span>
+            <span class="price-value">{{ formatPrice(booking()?.total_transport_fees || 0) }}</span>
+          </div>
+        }
+        @if (booking()?.total_materials_amount) {
+          <div class="price-row">
+            <span class="price-label">Materials</span>
+            <span class="price-value">{{ formatPrice(booking()?.total_materials_amount || 0) }}</span>
+          </div>
+        }
+        @if (booking()?.total_vat_amount) {
+          <div class="price-row">
+            <span class="price-label">VAT (12%)</span>
+            <span class="price-value">{{ formatPrice(booking()?.total_vat_amount || 0) }}</span>
+          </div>
+        }
+        <div class="price-row total">
+          <span class="price-label">Total</span>
+          <span class="price-value">{{ formatPrice(booking()?.grand_total || 0) }}</span>
+        </div>
+        @if (booking()?.provider_earnings) {
+          <div class="price-row earnings">
+            <span class="price-label">Your Earnings</span>
+            <span class="price-value">{{ formatPrice(booking()?.provider_earnings || 0) }}</span>
+          </div>
+        }
+      </ion-card-content>
+    </ion-card>
+
+    <!-- Spacer for footer -->
+    @if (hasActionFooter()) {
+      <div class="footer-spacer"></div>
+    }
+  }
 </ion-content>
+
+<!-- Action Footer -->
+@if (booking() && currentAction()) {
+  <ion-footer class="ion-no-border">
+    <ion-toolbar>
+      <div class="action-buttons">
+        @if (currentAction()?.secondaryAction) {
+          <ion-button
+            fill="outline"
+            color="danger"
+            (click)="currentAction()?.secondaryAction!()"
+            [disabled]="isExecutingAction()"
+            class="secondary-btn">
+            {{ currentAction()?.secondaryLabel }}
+          </ion-button>
+        }
+        <ion-button
+          expand="block"
+          [color]="currentAction()?.color"
+          (click)="currentAction()?.action()"
+          [disabled]="isExecutingAction()"
+          class="primary-btn">
+          @if (isExecutingAction()) {
+            <ion-spinner name="crescent" slot="start"></ion-spinner>
+            Processing...
+          } @else {
+            <ion-icon [name]="currentAction()?.icon" slot="start"></ion-icon>
+            {{ currentAction()?.label }}
+          }
+        </ion-button>
+      </div>
+    </ion-toolbar>
+  </ion-footer>
+}

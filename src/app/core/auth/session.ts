@@ -4,6 +4,8 @@ import { SupabaseService } from '../supabase/supabase';
 import { User, Session } from '@supabase/supabase-js';
 import { BiometricService } from './biometric.service';
 import { AuthFlowService } from './auth-flow.service';
+import { AuthEventsService } from './auth-events.service';
+import { AUTH_CONFIG } from './auth.config';
 import { ToastController } from '@ionic/angular/standalone';
 
 export interface UserProfile {
@@ -21,6 +23,7 @@ export class SessionService {
   private router = inject(Router);
   private biometricService = inject(BiometricService);
   private authFlowService = inject(AuthFlowService);
+  private authEventsService = inject(AuthEventsService);
   private toastController = inject(ToastController);
 
   // --- STATE (Signals) ---
@@ -48,6 +51,7 @@ export class SessionService {
     try {
       console.log('SessionService: Getting initial session');
       const { data, error } = await this.supabase.auth.getSession();
+
       if (error) {
         console.error('Error getting session:', error);
       }
@@ -55,34 +59,72 @@ export class SessionService {
       this._session.set(data.session);
 
       if (data.session) {
-        await this.fetchProfile(data.session.user.id);
+        // Fetch profile with timeout - loading stays true until this completes
+        try {
+          await this.fetchProfileWithTimeout(data.session.user.id);
+        } catch (error) {
+          console.error('SessionService: Initial profile fetch failed:', error);
+          // Continue - profile may be retried later
+        }
       }
     } catch (error) {
       console.error('Error during session initialization:', error);
+      this._session.set(null);
+      this._profile.set(null);
+    } finally {
+      // Only set loading false AFTER profile is resolved (or no session)
+      this._loading.set(false);
+      this._initialized.set(true);
     }
 
-    this._loading.set(false);
-    this._initialized.set(true);
-
-    // 2. Listen for changes (Login/Logout)
+    // Setup listener AFTER initialization is complete
     this.supabase.auth.onAuthStateChange(async (event, session) => {
       console.log('SessionService: Auth state changed:', event, 'session:', !!session);
       const wasAuthenticated = !!this._session();
-      this._session.set(session);
 
       if (session) {
-        await this.fetchProfile(session.user.id);
+        // Always update the session
+        this._session.set(session);
+
+        if (event === 'SIGNED_IN' || event === 'INITIAL_SESSION') {
+          // Initial auth - block UI while loading profile
+          this._loading.set(true);
+          try {
+            await this.fetchProfileWithTimeout(session.user.id);
+            console.log('SessionService: Profile loaded successfully for event:', event);
+            // Emit session started event
+            this.authEventsService.emit('SESSION_STARTED', session.user.id);
+          } catch (error) {
+            console.error('SessionService: Error fetching profile during auth state change:', error);
+            // Don't clear the session on profile fetch error - profile might load on retry
+          } finally {
+            this._loading.set(false);
+          }
+        } else if (event === 'TOKEN_REFRESHED') {
+          // Token refresh - update silently WITHOUT blocking UI
+          console.log('SessionService: Token refreshed silently, updating profile in background');
+          this.authEventsService.emit('SESSION_REFRESHED', session.user.id);
+          // Refresh profile in background without setting loading state
+          this.fetchProfile(session.user.id).catch(err =>
+            console.warn('SessionService: Silent profile refresh failed:', err)
+          );
+        }
       } else {
+        this._session.set(null);
         this._profile.set(null);
+        this._loading.set(false);
+
         // Handle different logout scenarios
         if (wasAuthenticated && this._initialized()) {
           if (event === 'SIGNED_OUT') {
             // Manual logout - navigate to welcome
             console.log('SessionService: Manual logout - navigating to welcome page');
+            this.authEventsService.emit('SIGNED_OUT');
             this.router.navigateByUrl('/auth/welcome');
           } else {
             // Session expired or token became invalid
             console.log('SessionService: Session expired - handling redirect');
+            this.authEventsService.emit('SESSION_EXPIRED');
             await this.handleSessionExpiry();
           }
         }
@@ -90,8 +132,26 @@ export class SessionService {
     });
   }
 
+  /**
+   * Fetch profile with timeout to prevent indefinite hangs.
+   * Uses the configured timeout from AUTH_CONFIG.
+   */
+  private async fetchProfileWithTimeout(userId: string): Promise<void> {
+    const timeoutMs = AUTH_CONFIG.session.profileLoadTimeoutMs;
+
+    const timeoutPromise = new Promise<never>((_, reject) => {
+      setTimeout(() => reject(new Error(`Profile fetch timeout after ${timeoutMs}ms`)), timeoutMs);
+    });
+
+    await Promise.race([
+      this.fetchProfile(userId),
+      timeoutPromise
+    ]);
+  }
+
   private async fetchProfile(userId: string) {
     try {
+      console.log('SessionService: Fetching profile for user:', userId);
       const { data, error } = await this.supabase
         .from('profiles')
         .select('*')
@@ -99,19 +159,21 @@ export class SessionService {
         .maybeSingle();
 
       if (error) {
-        console.error('Error fetching profile:', error);
-        return;
+        console.error('SessionService: Error fetching profile:', error);
+        throw new Error(`Failed to fetch profile: ${error.message}`);
       }
 
       if (data) {
         this._profile.set(data as UserProfile);
+        console.log('SessionService: Profile set successfully, role:', data.role);
       } else {
-        console.warn('Profile not found for user:', userId);
+        console.warn('SessionService: Profile not found for user:', userId);
         // Try to create profile for OAuth users
         await this.createProfileIfNeeded(userId);
       }
     } catch (error) {
-      console.error('Unexpected error fetching profile:', error);
+      console.error('SessionService: Unexpected error fetching profile:', error);
+      throw error; // Re-throw to be handled by caller
     }
   }
 
@@ -151,13 +213,34 @@ export class SessionService {
         updated_at: new Date().toISOString()
       };
 
-      const { error: insertError } = await this.supabase
+      // Create profile
+      const { error: profileError } = await this.supabase
         .from('profiles')
         .insert(profileData);
 
-      if (insertError) {
-        console.error('Error creating profile:', insertError);
+      if (profileError) {
+        console.error('Error creating profile:', profileError);
         return;
+      }
+
+      // Create customer record if role is customer
+      if (profileData.role === 'customer') {
+        const customerData = {
+          id: userId,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        };
+
+        const { error: customerError } = await this.supabase
+          .from('customers')
+          .insert(customerData);
+
+        if (customerError) {
+          console.error('Error creating customer record:', customerError);
+          // Don't return here - profile was created successfully
+        } else {
+          console.log('Customer record created successfully for user:', userId);
+        }
       }
 
       console.log('Profile created successfully for user:', userId);

@@ -1,32 +1,26 @@
-<ion-header>
-  <ion-toolbar>
-    <ion-title>Provider</ion-title>
-  </ion-toolbar>
-</ion-header>
+<ion-tabs>
+  <ion-tab-bar slot="bottom">
+    <ion-tab-button tab="dashboard" href="/p/dashboard">
+      <ion-icon name="stats-chart"></ion-icon>
+      <ion-label>Dashboard</ion-label>
+      @if (unreadNotificationCount() > 0) {
+        <ion-badge color="danger">{{ unreadNotificationCount() > 9 ? '9+' : unreadNotificationCount() }}</ion-badge>
+      }
+    </ion-tab-button>
 
-<ion-content [fullscreen]="true">
-  <ion-tabs>
-    <ion-router-outlet></ion-router-outlet>
-    <ion-tab-bar slot="bottom">
-      <ion-tab-button tab="dashboard" href="/p/dashboard">
-        <ion-icon name="stats-chart"></ion-icon>
-        <ion-label>Dashboard</ion-label>
-      </ion-tab-button>
+    <ion-tab-button tab="schedule" href="/p/schedule">
+      <ion-icon name="calendar"></ion-icon>
+      <ion-label>Schedule</ion-label>
+    </ion-tab-button>
 
-      <ion-tab-button tab="schedule" href="/p/schedule">
-        <ion-icon name="calendar"></ion-icon>
-        <ion-label>Schedule</ion-label>
-      </ion-tab-button>
+    <ion-tab-button tab="wallet" href="/p/wallet">
+      <ion-icon name="wallet"></ion-icon>
+      <ion-label>Wallet</ion-label>
+    </ion-tab-button>
 
-      <ion-tab-button tab="wallet" href="/p/wallet">
-        <ion-icon name="wallet"></ion-icon>
-        <ion-label>Wallet</ion-label>
-      </ion-tab-button>
-
-      <ion-tab-button tab="profile" href="/p/profile">
-        <ion-icon name="person"></ion-icon>
-        <ion-label>Profile</ion-label>
-      </ion-tab-button>
-    </ion-tab-bar>
-  </ion-tabs>
-</ion-content>
+    <ion-tab-button tab="profile" href="/p/profile">
+      <ion-icon name="person"></ion-icon>
+      <ion-label>Profile</ion-label>
+    </ion-tab-button>
+  </ion-tab-bar>
+</ion-tabs>

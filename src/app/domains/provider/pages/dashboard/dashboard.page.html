@@ -1,47 +1,191 @@
 <ion-header>
   <ion-toolbar>
     <ion-title>Dashboard</ion-title>
+    <div slot="end" class="toolbar-end">
+      <button class="notification-btn" (click)="goToNotifications()">
+        <ion-icon name="notifications-outline"></ion-icon>
+        @if (unreadNotificationCount() > 0) {
+          <span class="notification-badge">{{ unreadNotificationCount() > 9 ? '9+' : unreadNotificationCount() }}</span>
+        }
+      </button>
+    </div>
   </ion-toolbar>
 </ion-header>
 
 <ion-content [fullscreen]="true">
-  <ion-grid fixed class="ion-no-padding">
-    <ion-row>
-      <ion-col size="12">
-        <div style="padding: 20px;">
-          <h2>Provider Dashboard</h2>
+  <ion-refresher slot="fixed" (ionRefresh)="handleRefresh($event)">
+    <ion-refresher-content></ion-refresher-content>
+  </ion-refresher>
 
-          <ion-grid>
-            <ion-row>
-              <ion-col size="6">
-                <ion-card>
-                  <ion-card-header>
-                    <ion-card-title>Today's Jobs</ion-card-title>
-                  </ion-card-header>
-                  <ion-card-content>
-                    <h1>5</h1>
-                  </ion-card-content>
-                </ion-card>
-              </ion-col>
+  <div class="dashboard-container">
+    <!-- Header Section -->
+    <div class="dashboard-header">
+      <div class="provider-info">
+        <h1 class="provider-name">Hello, {{ providerName() }}</h1>
+        <p class="provider-greeting">Let's get to work!</p>
+      </div>
+      <div class="online-toggle">
+        <span class="toggle-label" [class.online]="isOnline()">
+          {{ isOnline() ? 'Online' : 'Offline' }}
+        </span>
+        <ion-toggle
+          [checked]="isOnline()"
+          [disabled]="isTogglingStatus()"
+          (ionChange)="toggleOnlineStatus()"
+          mode="ios"
+        ></ion-toggle>
+      </div>
+    </div>
 
-              <ion-col size="6">
-                <ion-card>
-                  <ion-card-header>
-                    <ion-card-title>Earnings</ion-card-title>
-                  </ion-card-header>
-                  <ion-card-content>
-                    <h1>$250</h1>
-                  </ion-card-content>
-                </ion-card>
-              </ion-col>
-            </ion-row>
-          </ion-grid>
+    <!-- Urgent Notices Carousel -->
+    <app-notice-carousel
+      [notices]="urgentNotices()"
+      (noticeClick)="onNoticeClick($event)"
+      (noticeDismiss)="onNoticeDismiss($event)"
+    ></app-notice-carousel>
 
-          <ion-button expand="block" routerLink="/p/schedule" style="margin-top: 20px;">
-            View Schedule
-          </ion-button>
+    <!-- Quick Stats Section -->
+    <div class="section">
+      <div class="section-header">
+        <h2 class="section-title">Job Overview</h2>
+      </div>
+      <div class="stats-grid">
+        <app-stats-card
+          icon="hourglass"
+          [value]="stats().pendingJobsCount"
+          label="Pending"
+          subtitle="Need action"
+          color="warning"
+          [loading]="isStatsLoading()"
+          [clickable]="true"
+          (cardClick)="goToSchedule()"
+        ></app-stats-card>
+
+        <app-stats-card
+          icon="briefcase-outline"
+          [value]="stats().activeJobsCount"
+          label="Active"
+          subtitle="In progress"
+          color="tertiary"
+          [loading]="isStatsLoading()"
+          [clickable]="true"
+          (cardClick)="goToSchedule()"
+        ></app-stats-card>
+
+        <app-stats-card
+          icon="today-outline"
+          [value]="stats().todayJobsCount"
+          label="Today"
+          subtitle="Scheduled"
+          color="primary"
+          [loading]="isStatsLoading()"
+          [clickable]="true"
+          (cardClick)="goToSchedule()"
+        ></app-stats-card>
+      </div>
+    </div>
+
+    <!-- Earnings Summary -->
+    <div class="section">
+      <div class="earnings-card">
+        <div class="earnings-header">
+          <ion-icon name="cash-outline"></ion-icon>
+          <span>Earnings Summary</span>
         </div>
-      </ion-col>
-    </ion-row>
-  </ion-grid>
+        <div class="earnings-content">
+          <div class="earning-item">
+            <span class="earning-label">Today</span>
+            <span class="earning-value">{{ formattedTodayEarnings() }}</span>
+          </div>
+          <div class="earning-divider"></div>
+          <div class="earning-item">
+            <span class="earning-label">This Week</span>
+            <span class="earning-value">{{ formattedWeekEarnings() }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Calendar Section -->
+    <div class="section">
+      <div class="section-header">
+        <h2 class="section-title">Schedule</h2>
+      </div>
+      <app-booking-calendar
+        [jobs]="calendarJobs()"
+        [loading]="isLoading()"
+        initialView="week"
+        (dateChange)="onCalendarDateChange($event)"
+        (jobClick)="onCalendarJobClick($event)"
+      ></app-booking-calendar>
+    </div>
+
+    <!-- Pending Jobs Section -->
+    @if (pendingJobs().length > 0) {
+      <div class="section">
+        <div class="section-header">
+          <h2 class="section-title">Pending Jobs</h2>
+          <span class="section-badge">{{ pendingJobs().length }}</span>
+        </div>
+        <div class="pending-jobs-list">
+          @for (job of pendingJobs(); track job.id) {
+            <ion-card class="job-card" (click)="openJob(job)">
+              <ion-card-content>
+                <div class="job-header">
+                  <span class="job-id">{{ getShortBookingId(job.id) }}</span>
+                  <ion-badge color="warning">Pending</ion-badge>
+                </div>
+
+                <h3 class="service-name">{{ getServiceName(job) }}</h3>
+
+                <div class="info-row">
+                  <ion-icon name="person-outline"></ion-icon>
+                  <span>{{ getCustomerName(job) }}</span>
+                </div>
+
+                <div class="info-row">
+                  <ion-icon name="time-outline"></ion-icon>
+                  <span>{{ formatDateTime(job.scheduled_for) }}</span>
+                </div>
+
+                <div class="info-row location">
+                  <ion-icon name="location-outline"></ion-icon>
+                  <span>{{ getAddress(job) }}</span>
+                </div>
+
+                <div class="job-footer">
+                  <span class="job-price">{{ formatPrice(job.grand_total) }}</span>
+                </div>
+
+                <div class="job-actions">
+                  <ion-button fill="outline" color="danger" size="small" (click)="rejectJob(job); $event.stopPropagation()">
+                    <ion-icon slot="start" name="close-circle"></ion-icon>
+                    Reject
+                  </ion-button>
+                  <ion-button fill="solid" color="success" size="small" (click)="acceptJob(job); $event.stopPropagation()">
+                    <ion-icon slot="start" name="checkmark-circle"></ion-icon>
+                    Accept
+                  </ion-button>
+                  @if (getCustomerPhone(job)) {
+                    <ion-button fill="clear" size="small" (click)="callCustomer(getCustomerPhone(job), $event)">
+                      <ion-icon slot="icon-only" name="call-outline"></ion-icon>
+                    </ion-button>
+                  }
+                </div>
+              </ion-card-content>
+            </ion-card>
+          }
+        </div>
+      </div>
+    }
+
+    <!-- Quick Actions -->
+    <div class="section">
+      <ion-button expand="block" fill="outline" (click)="goToSchedule()">
+        <ion-icon slot="start" name="calendar-outline"></ion-icon>
+        View Full Schedule
+        <ion-icon slot="end" name="chevron-forward"></ion-icon>
+      </ion-button>
+    </div>
+  </div>
 </ion-content>

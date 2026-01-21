@@ -119,20 +119,3 @@
     font-size: 12px;
   }
 }
-
-// Dark mode support
-@media (prefers-color-scheme: dark) {
-  .address-item {
-    --background: var(--ion-color-dark);
-  }
-
-  .empty-state {
-    h3 {
-      color: var(--ion-color-light);
-    }
-
-    p {
-      color: var(--ion-color-medium);
-    }
-  }
-}

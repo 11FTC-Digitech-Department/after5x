@@ -7,8 +7,11 @@
     </ion-buttons>
     <ion-title>Welcome, {{ userName() }}!</ion-title>
     <ion-buttons slot="end">
-      <ion-button fill="clear">
+      <ion-button fill="clear" (click)="navigateToNotifications()" class="notification-button">
         <ion-icon name="notifications" class="notification-icon"></ion-icon>
+        @if (unreadNotificationCount() > 0) {
+          <ion-badge color="danger" class="notification-badge">{{ unreadNotificationCount() > 9 ? '9+' : unreadNotificationCount() }}</ion-badge>
+        }
       </ion-button>
     </ion-buttons>
   </ion-toolbar>

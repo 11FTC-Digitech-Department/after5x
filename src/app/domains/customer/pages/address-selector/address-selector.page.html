@@ -62,13 +62,13 @@
         </div>
       </div>
 
+      <!-- Saved Addresses Section -->
       @if (isLoading() || !hasLoaded()) {
         <div class="loading-container">
           <ion-spinner name="crescent"></ion-spinner>
           <ion-text color="medium">Loading addresses...</ion-text>
         </div>
       } @else {
-        <!-- Saved Addresses Section -->
         @if (userAddresses().length > 0) {
           <div class="section">
             <ion-text class="section-title" color="medium">
@@ -103,43 +103,43 @@
             </ion-text>
           </div>
         }
-
-        <!-- Current Location Option -->
-        <div class="section current-location-section">
-          <ion-text class="section-title" color="medium">
-            <small>Use your current location</small>
-          </ion-text>
-          <ion-button
-            expand="block"
-            (click)="useCurrentLocation()"
-            [disabled]="isGettingLocation()"
-            class="current-location-button">
-            @if (isGettingLocation()) {
-              <ion-spinner name="crescent" slot="start"></ion-spinner>
-              Getting Location...
-            } @else {
-              <ion-icon name="navigate" slot="start"></ion-icon>
-              Use Current Location
-            }
-          </ion-button>
-          @if (locationError()) {
-            <ion-text color="danger" class="error-text">
-              <small>{{ locationError() }}</small>
-            </ion-text>
-          }
-        </div>
-
-        <!-- Map Selection Option -->
-        <div class="section map-option-section">
-          <ion-text class="section-title" color="medium">
-            <small>Or choose a new location</small>
-          </ion-text>
-          <ion-button expand="block" fill="outline" (click)="openMapSelector()" class="map-button">
-            <ion-icon name="map" slot="start"></ion-icon>
-            Select Location on Map
-          </ion-button>
-        </div>
       }
+
+      <!-- Current Location Option - Always Available -->
+      <div class="section current-location-section">
+        <ion-text class="section-title" color="medium">
+          <small>Use your current location</small>
+        </ion-text>
+        <ion-button
+          expand="block"
+          (click)="useCurrentLocation()"
+          [disabled]="isGettingLocation()"
+          class="current-location-button">
+          @if (isGettingLocation()) {
+            <ion-spinner name="crescent" slot="start"></ion-spinner>
+            Getting Location...
+          } @else {
+            <ion-icon name="navigate" slot="start"></ion-icon>
+            Use Current Location
+          }
+        </ion-button>
+        @if (locationError()) {
+          <ion-text color="danger" class="error-text">
+            <small>{{ locationError() }}</small>
+          </ion-text>
+        }
+      </div>
+
+      <!-- Map Selection Option - Always Available -->
+      <div class="section map-option-section">
+        <ion-text class="section-title" color="medium">
+          <small>Or choose a new location</small>
+        </ion-text>
+        <ion-button expand="block" fill="outline" (click)="openMapSelector()" class="map-button">
+          <ion-icon name="map" slot="start"></ion-icon>
+          Select Location on Map
+        </ion-button>
+      </div>
     </div>
   } @else {
     <!-- Map View -->

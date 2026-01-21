@@ -1,3 +1,46 @@
 ion-content {
-  --background: white;
+  --background: var(--ion-background-color, #f4f5f8);
+}
+
+.menu-section {
+  margin-top: 8px;
+
+  ion-list-header {
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--ion-color-medium);
+    padding-bottom: 4px;
+  }
+
+  ion-item {
+    --padding-start: 16px;
+    --inner-padding-end: 12px;
+
+    ion-icon[slot="start"] {
+      font-size: 22px;
+      margin-right: 16px;
+    }
+  }
+}
+
+.logout-loading {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+
+  ion-spinner {
+    width: 18px;
+    height: 18px;
+  }
+}
+
+.version-info {
+  text-align: center;
+  padding: 24px 16px 32px;
+
+  small {
+    font-size: 12px;
+  }
 }

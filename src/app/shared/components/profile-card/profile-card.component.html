@@ -1,0 +1,82 @@
+<ion-card class="profile-card">
+  <ion-card-content>
+    @if (isLoading) {
+      <!-- Loading Skeleton -->
+      <div class="profile-content skeleton">
+        <div class="avatar-container">
+          <ion-skeleton-text [animated]="true" class="avatar-skeleton"></ion-skeleton-text>
+        </div>
+        <div class="profile-info">
+          <ion-skeleton-text [animated]="true" style="width: 60%; height: 24px; margin-bottom: 8px;"></ion-skeleton-text>
+          <ion-skeleton-text [animated]="true" style="width: 40%; height: 18px; margin-bottom: 8px;"></ion-skeleton-text>
+          <ion-skeleton-text [animated]="true" style="width: 50%; height: 14px;"></ion-skeleton-text>
+        </div>
+      </div>
+    } @else {
+      <!-- Actual Content -->
+      <div class="profile-content">
+        <!-- Avatar with Camera Overlay -->
+        <div class="avatar-container" (click)="onAvatarClick()">
+          <ion-avatar class="profile-avatar">
+            @if (avatarUrl) {
+              <img [src]="avatarUrl" [alt]="fullName" />
+            } @else {
+              <div class="avatar-initials">{{ initials }}</div>
+            }
+          </ion-avatar>
+          <div class="camera-overlay" [class.uploading]="isUploadingAvatar">
+            @if (isUploadingAvatar) {
+              <ion-icon name="sync" class="spin"></ion-icon>
+            } @else {
+              <ion-icon name="camera"></ion-icon>
+            }
+          </div>
+        </div>
+
+        <!-- Profile Info -->
+        <div class="profile-info">
+          <h2 class="profile-name">{{ fullName || 'User' }}</h2>
+
+          <!-- Role Badge -->
+          <div class="role-badges">
+            <ion-badge [color]="role === 'provider' ? 'secondary' : 'primary'" class="role-badge">
+              {{ roleLabel }}
+            </ion-badge>
+            @if (role === 'provider' && isVerified) {
+              <ion-badge color="success" class="verified-badge">
+                <ion-icon name="checkmark-circle"></ion-icon>
+                Verified
+              </ion-badge>
+            }
+          </div>
+
+          <!-- Rating (Provider only) -->
+          @if (role === 'provider') {
+            <div class="rating-container">
+              @if (hasRating) {
+                <div class="stars">
+                  @for (star of getStarIcons(); track $index) {
+                    <ion-icon [name]="star" color="warning"></ion-icon>
+                  }
+                </div>
+                <span class="rating-text">{{ formattedRating }} ({{ totalReviews }} {{ totalReviews === 1 ? 'review' : 'reviews' }})</span>
+              } @else {
+                <ion-text color="medium">
+                  <small>No reviews yet</small>
+                </ion-text>
+              }
+            </div>
+          }
+
+          <!-- Member Since -->
+          @if (memberSince) {
+            <p class="member-since">
+              <ion-icon name="calendar-outline"></ion-icon>
+              {{ memberSince }}
+            </p>
+          }
+        </div>
+      </div>
+    }
+  </ion-card-content>
+</ion-card>

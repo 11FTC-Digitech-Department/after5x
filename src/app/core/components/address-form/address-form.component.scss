@@ -22,10 +22,3 @@
     --color: white;
   }
 }
-
-// Dark mode support
-@media (prefers-color-scheme: dark) {
-  .error-text {
-    color: var(--ion-color-danger-light);
-  }
-}
