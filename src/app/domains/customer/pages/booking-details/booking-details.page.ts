@@ -43,7 +43,9 @@ import {
   imageOutline,
   chatbubbleOutline,
   arrowBack,
-  chevronForward
+  chevronForward,
+  cardOutline,
+  walletOutline
 } from 'ionicons/icons';
 
 import { SessionService } from '@core/auth/session';
@@ -204,6 +206,12 @@ export class BookingDetailsPage implements OnInit, OnDestroy {
     );
   });
 
+  // Check if payment is required
+  requiresPayment = computed(() => {
+    const status = this.booking()?.status as BookingStatus;
+    return status === BookingStatus.PAYMENT_PENDING;
+  });
+
   constructor() {
     addIcons({
       calendarOutline,
@@ -222,7 +230,9 @@ export class BookingDetailsPage implements OnInit, OnDestroy {
       imageOutline,
       chatbubbleOutline,
       arrowBack,
-      chevronForward
+      chevronForward,
+      cardOutline,
+      walletOutline
     });
   }
 
@@ -231,6 +241,33 @@ export class BookingDetailsPage implements OnInit, OnDestroy {
     if (bookingId) {
       await this.loadBooking(bookingId);
       this.setupRealTimeSubscription(bookingId);
+    }
+  }
+
+  /**
+   * Ionic lifecycle hook - fires every time page becomes visible
+   * Used to refresh booking data when navigating back from payment page
+   */
+  ionViewWillEnter() {
+    const bookingId = this.route.snapshot.paramMap.get('bookingId');
+    // Refresh booking data if already loaded (handles navigation back from payment)
+    if (bookingId && this.booking()) {
+      this.refreshBookingSilently(bookingId);
+    }
+  }
+
+  /**
+   * Refresh booking without showing loading spinner
+   * Used for background refresh when returning to page
+   */
+  private async refreshBookingSilently(bookingId: string) {
+    try {
+      const booking = await this.bookingService.getBookingById(bookingId);
+      if (booking) {
+        this.booking.set(booking);
+      }
+    } catch (error) {
+      console.error('[BookingDetails] Silent refresh failed:', error);
     }
   }
 
@@ -377,6 +414,13 @@ export class BookingDetailsPage implements OnInit, OnDestroy {
     const phone = this.booking()?.providers?.profiles?.phone_number;
     if (phone) {
       window.location.href = `tel:${phone}`;
+    }
+  }
+
+  goToPayment() {
+    const bookingId = this.booking()?.id;
+    if (bookingId) {
+      this.router.navigate(['/c/payment', bookingId]);
     }
   }
 

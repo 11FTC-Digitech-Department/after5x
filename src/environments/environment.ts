@@ -11,6 +11,13 @@ export const environment = {
   },
   googleMaps: {
     apiKey: 'AIzaSyC6UXRkbdChigjhccoNb4WOWptb6IWLLg4',
+  },
+  // Xendit configuration (keys stored in Supabase secrets, URLs for reference)
+  xendit: {
+    // Success redirect after payment
+    successRedirectUrl: 'http://localhost:8100/c/payment',
+    // Failure redirect after payment
+    failureRedirectUrl: 'http://localhost:8100/c/payment',
   }
 };
 

@@ -171,6 +171,38 @@
       </ion-card>
     }
 
+    <!-- Payment Waiting Card -->
+    @if (isAwaitingPayment()) {
+      <ion-card class="payment-waiting-card">
+        <ion-card-content>
+          <div class="waiting-indicator">
+            <ion-icon name="card-outline" color="warning"></ion-icon>
+            <div class="waiting-info">
+              <h4>Waiting for Payment</h4>
+              <p>The customer is completing payment through the app. You'll be notified when the payment is received.</p>
+              <span class="earnings">Your earnings: {{ formatPrice(booking()?.provider_earnings || 0) }}</span>
+            </div>
+          </div>
+        </ion-card-content>
+      </ion-card>
+    }
+
+    <!-- Payment Complete Card -->
+    @if (isPaid()) {
+      <ion-card class="payment-complete-card">
+        <ion-card-content>
+          <div class="complete-indicator">
+            <ion-icon name="checkmark-circle" color="success"></ion-icon>
+            <div class="complete-info">
+              <h4>Payment Received</h4>
+              <p>The customer has completed payment. Your earnings have been added to your wallet.</p>
+              <span class="earnings">Earned: {{ formatPrice(booking()?.provider_earnings || 0) }}</span>
+            </div>
+          </div>
+        </ion-card-content>
+      </ion-card>
+    }
+
     <!-- Price Breakdown Card -->
     <ion-card class="price-card">
       <ion-card-header>

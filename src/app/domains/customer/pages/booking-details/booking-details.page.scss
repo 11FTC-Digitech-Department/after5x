@@ -313,6 +313,54 @@ ion-card {
   }
 }
 
+// Payment required card
+.payment-required-card {
+  border: 2px solid var(--ion-color-warning);
+  background: linear-gradient(135deg, var(--ion-color-warning-tint) 0%, #ffffff 100%);
+
+  ion-card-content {
+    padding: 20px 16px;
+  }
+
+  .payment-prompt {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 16px;
+
+    > ion-icon {
+      font-size: 32px;
+      flex-shrink: 0;
+    }
+
+    .payment-info {
+      h4 {
+        font-size: 16px;
+        font-weight: 600;
+        color: var(--ion-color-dark);
+        margin: 0 0 4px;
+      }
+
+      p {
+        font-size: 13px;
+        color: var(--ion-color-medium);
+        margin: 0 0 8px;
+      }
+
+      .amount {
+        font-size: 24px;
+        font-weight: 700;
+        color: var(--ion-color-primary);
+      }
+    }
+  }
+
+  ion-button {
+    --border-radius: 8px;
+    margin-top: 8px;
+    font-weight: 600;
+  }
+}
+
 // Price card
 .price-card {
   .price-row {

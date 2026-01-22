@@ -154,6 +154,26 @@
       </ion-card>
     }
 
+    <!-- Payment Required Card -->
+    @if (requiresPayment()) {
+      <ion-card class="payment-required-card">
+        <ion-card-content>
+          <div class="payment-prompt">
+            <ion-icon name="wallet-outline" color="warning"></ion-icon>
+            <div class="payment-info">
+              <h4>Payment Required</h4>
+              <p>The service has been completed. Please complete your payment.</p>
+              <span class="amount">{{ formatPrice(booking()?.grand_total || 0) }}</span>
+            </div>
+          </div>
+          <ion-button expand="block" color="primary" (click)="goToPayment()">
+            <ion-icon name="card-outline" slot="start"></ion-icon>
+            Pay Now
+          </ion-button>
+        </ion-card-content>
+      </ion-card>
+    }
+
     <!-- Price Breakdown Card -->
     <ion-card class="price-card">
       <ion-card-header>

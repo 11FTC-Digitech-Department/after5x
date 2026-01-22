@@ -6,7 +6,7 @@ const config: CapacitorConfig = {
   webDir: 'www',
   plugins: {
     CapacitorHttp: {
-      enabled: true,
+      enabled: false,  // Disabled: was stripping Authorization headers, causing 401 on Edge Functions
     },
     GoogleMaps: {
       // Uncomment when you have the API key configured
