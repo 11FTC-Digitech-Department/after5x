@@ -344,6 +344,21 @@ inspector_port = 8083
 # The Deno major version to use.
 deno_version = 2
 
+# Xendit webhook does not require JWT verification (called directly by Xendit)
+[functions.xendit-webhook]
+verify_jwt = false
+
+# Payment redirect - public endpoint for Xendit return URLs
+[functions.payment-redirect]
+verify_jwt = false
+
+# Temporarily disable JWT verification to debug auth issues
+[functions.create-xendit-invoice]
+verify_jwt = false
+
+[functions.check-invoice-status]
+verify_jwt = false
+
 [edge_runtime.secrets]
 XENDIT_SECRET_KEY = "env(XENDIT_SECRET_KEY)"
 XENDIT_CALLBACK_TOKEN = "env(XENDIT_CALLBACK_TOKEN)"

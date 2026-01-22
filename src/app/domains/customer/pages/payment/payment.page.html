@@ -223,3 +223,29 @@
     </ion-toolbar>
   </ion-footer>
 }
+
+<!-- Processing Overlay - blocks UI during payment operations -->
+@if (isProcessing()) {
+  <div class="processing-overlay">
+    <div class="processing-content">
+      <ion-spinner name="crescent" color="light"></ion-spinner>
+      @if (processingType() === 'initiating') {
+        <p>Loading secure payment gateway...</p>
+        <span class="processing-hint">You'll be redirected shortly</span>
+      } @else {
+        <p>Verifying payment...</p>
+        <span class="processing-hint">Please wait</span>
+      }
+    </div>
+  </div>
+}
+
+<!-- Payment Success Modal -->
+@if (showSuccessModal()) {
+  <app-payment-success-modal
+    [amount]="successModalData()?.amount ?? null"
+    [paymentMethod]="successModalData()?.paymentMethod ?? null"
+    [bookingId]="successModalData()?.bookingId ?? ''"
+    (dismissed)="onSuccessModalDismiss()">
+  </app-payment-success-modal>
+}

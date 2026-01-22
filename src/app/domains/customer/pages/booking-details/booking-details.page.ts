@@ -244,6 +244,33 @@ export class BookingDetailsPage implements OnInit, OnDestroy {
     }
   }
 
+  /**
+   * Ionic lifecycle hook - fires every time page becomes visible
+   * Used to refresh booking data when navigating back from payment page
+   */
+  ionViewWillEnter() {
+    const bookingId = this.route.snapshot.paramMap.get('bookingId');
+    // Refresh booking data if already loaded (handles navigation back from payment)
+    if (bookingId && this.booking()) {
+      this.refreshBookingSilently(bookingId);
+    }
+  }
+
+  /**
+   * Refresh booking without showing loading spinner
+   * Used for background refresh when returning to page
+   */
+  private async refreshBookingSilently(bookingId: string) {
+    try {
+      const booking = await this.bookingService.getBookingById(bookingId);
+      if (booking) {
+        this.booking.set(booking);
+      }
+    } catch (error) {
+      console.error('[BookingDetails] Silent refresh failed:', error);
+    }
+  }
+
   ngOnDestroy() {
     if (this.unsubscribeRealTime) {
       this.unsubscribeRealTime();

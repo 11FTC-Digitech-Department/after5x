@@ -22,19 +22,20 @@ export class PaymentService {
    * Create a Xendit invoice and get the payment URL
    */
   async initiatePayment(bookingId: string): Promise<CreateInvoiceResponse> {
+    // Check if user is authenticated
     const session = await this.supabaseService.client.auth.getSession();
-    const accessToken = session.data.session?.access_token;
-
-    if (!accessToken) {
+    if (!session.data.session) {
       throw new Error('Not authenticated');
     }
 
+    console.log('[PaymentService] Calling create-xendit-invoice for booking:', bookingId);
+
+    // Supabase client automatically includes auth token when user is authenticated
     const response = await this.supabaseService.client.functions.invoke('create-xendit-invoice', {
-      body: { bookingId },
-      headers: {
-        Authorization: `Bearer ${accessToken}`
-      }
+      body: { bookingId }
     });
+
+    console.log('[PaymentService] Response:', response);
 
     if (response.error) {
       console.error('Failed to create invoice:', response.error);
@@ -105,22 +106,46 @@ export class PaymentService {
    * Sync invoice status with Xendit (polling fallback)
    */
   async syncInvoiceStatus(bookingId: string): Promise<CheckInvoiceStatusResponse> {
-    const session = await this.supabaseService.client.auth.getSession();
-    const accessToken = session.data.session?.access_token;
+    console.log('[PaymentService] syncInvoiceStatus called for booking:', bookingId);
 
-    if (!accessToken) {
+    // Try to refresh the session first (in case we just returned from external browser)
+    const { data: refreshData, error: refreshError } = await this.supabaseService.client.auth.refreshSession();
+
+    if (refreshError) {
+      console.warn('[PaymentService] Session refresh failed:', refreshError.message);
+      // Continue anyway - getSession might still work
+    } else {
+      console.log('[PaymentService] Session refreshed successfully');
+    }
+
+    const session = await this.supabaseService.client.auth.getSession();
+
+    console.log('[PaymentService] Session state:', {
+      hasSession: !!session.data.session,
+      tokenExpiry: session.data.session?.expires_at
+        ? new Date(session.data.session.expires_at * 1000).toISOString()
+        : null
+    });
+
+    if (!session.data.session) {
+      console.error('[PaymentService] Not authenticated - no session');
       throw new Error('Not authenticated');
     }
 
+    console.log('[PaymentService] Invoking check-invoice-status edge function');
+
+    // Supabase client automatically includes auth token when user is authenticated
     const response = await this.supabaseService.client.functions.invoke('check-invoice-status', {
-      body: { bookingId },
-      headers: {
-        Authorization: `Bearer ${accessToken}`
-      }
+      body: { bookingId }
+    });
+
+    console.log('[PaymentService] Edge function response:', {
+      data: response.data,
+      error: response.error
     });
 
     if (response.error) {
-      console.error('Failed to check invoice status:', response.error);
+      console.error('[PaymentService] Failed to check invoice status:', response.error);
       throw new Error(response.error.message || 'Failed to check payment status');
     }
 

@@ -239,6 +239,34 @@ export class BookingsPage implements OnInit, OnDestroy {
     }
   }
 
+  /**
+   * Ionic lifecycle hook - fires every time page becomes visible
+   * Used to refresh bookings when navigating back from payment page
+   */
+  ionViewWillEnter() {
+    // Only refresh if data was already loaded (page was visited before)
+    // This ensures we get fresh data after payment completion
+    if (this.dataLoaded() && this.sessionService.profile()?.id) {
+      this.refreshBookingsSilently();
+    }
+  }
+
+  /**
+   * Refresh bookings without showing loading spinner
+   * Used for background refresh when returning to page
+   */
+  private async refreshBookingsSilently() {
+    const profile = this.sessionService.profile();
+    if (!profile?.id) return;
+
+    try {
+      const bookings = await this.bookingService.getCustomerBookings(profile.id);
+      this.bookings.set(bookings);
+    } catch (error) {
+      console.error('[BookingsPage] Silent refresh failed:', error);
+    }
+  }
+
   ngOnDestroy() {
     if (this.unsubscribeRealTime) {
       this.unsubscribeRealTime();

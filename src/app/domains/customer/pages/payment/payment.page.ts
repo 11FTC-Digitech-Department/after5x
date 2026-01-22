@@ -38,12 +38,15 @@ import {
   shieldCheckmarkOutline,
   arrowBack
 } from 'ionicons/icons';
-import { Browser } from '@capacitor/browser';
+import { Browser, BrowserOpenOptions } from '@capacitor/browser';
+import { App } from '@capacitor/app';
 
 import { BookingService } from '@core/services/booking.service';
 import { PaymentService } from '@core/services/payment.service';
+import { PaymentContextService } from '@core/services/payment-context.service';
 import { CustomerBooking, BookingStatus } from '@core/models/booking.model';
 import { PaymentStatus, InvoiceStatus } from '@core/models/payment.model';
+import { PaymentSuccessModalComponent, PaymentSuccessData } from '@shared/components/payment-success-modal/payment-success-modal.component';
 
 // Status display configuration
 const PAYMENT_STATUS_CONFIG: Record<InvoiceStatus | 'NONE', { label: string; color: string; icon: string; message: string }> = {
@@ -103,7 +106,8 @@ const PAYMENT_STATUS_CONFIG: Record<InvoiceStatus | 'NONE', { label: string; col
     IonSpinner,
     IonSkeletonText,
     IonRefresher,
-    IonRefresherContent
+    IonRefresherContent,
+    PaymentSuccessModalComponent
   ]
 })
 export class PaymentPage implements OnInit, OnDestroy {
@@ -111,6 +115,7 @@ export class PaymentPage implements OnInit, OnDestroy {
   private router = inject(Router);
   private bookingService = inject(BookingService);
   private paymentService = inject(PaymentService);
+  private paymentContextService = inject(PaymentContextService);
   private toastController = inject(ToastController);
   private alertController = inject(AlertController);
 
@@ -119,10 +124,19 @@ export class PaymentPage implements OnInit, OnDestroy {
   paymentStatus = signal<PaymentStatus | null>(null);
   isLoading = signal(true);
   isProcessing = signal(false);
+  processingType = signal<'initiating' | 'verifying'>('verifying');
   error = signal<string | null>(null);
 
-  // Real-time subscription
+  // Success modal state
+  showSuccessModal = signal(false);
+  successModalData = signal<PaymentSuccessData | null>(null);
+
+  // Real-time subscription and listeners
   private unsubscribePayment: (() => void) | null = null;
+  private appStateListener: { remove: () => Promise<void> } | null = null;
+  private syncRetryCount = 0;
+  private readonly MAX_SYNC_RETRIES = 2;
+  private readonly SYNC_RETRY_DELAY = 1000;
 
   // Computed
   statusConfig = computed(() => {
@@ -175,25 +189,37 @@ export class PaymentPage implements OnInit, OnDestroy {
   async ngOnInit() {
     const bookingId = this.route.snapshot.paramMap.get('bookingId');
 
-    // Check for return status from Xendit
+    // Check for return status from Xendit deeplink
     const queryStatus = this.route.snapshot.queryParamMap.get('status');
-    if (queryStatus === 'success' || queryStatus === 'failed') {
-      // Clear query params
-      this.router.navigate([], { relativeTo: this.route, queryParams: {} });
+    const isReturningFromPayment = queryStatus === 'success' || queryStatus === 'failed';
+    const wasInPaymentFlow = this.paymentContextService.isInPaymentFlow();
 
+    console.log('[Payment] ngOnInit - bookingId:', bookingId, 'queryStatus:', queryStatus, 'wasInPaymentFlow:', wasInPaymentFlow);
+
+    if (isReturningFromPayment) {
+      // Show feedback immediately
       if (queryStatus === 'success') {
-        // Show success feedback while we sync
         await this.showToast('Verifying payment...', 'primary');
       }
+      // Clear query params after reading them
+      this.router.navigate([], { 
+        relativeTo: this.route, 
+        queryParams: {},
+        replaceUrl: true // Don't add to history
+      });
     }
 
     if (bookingId) {
       await this.loadData(bookingId);
       this.setupRealTimeSubscription(bookingId);
+      this.setupAppStateListener(bookingId);
 
-      // If returning from payment, sync status
-      if (queryStatus) {
-        await this.syncPaymentStatus();
+      // Sync status if returning from payment OR if we were in payment flow
+      if (isReturningFromPayment || wasInPaymentFlow) {
+        console.log('[Payment] Returning from payment flow, syncing status...');
+        this.paymentContextService.exitPaymentFlow();
+        this.syncRetryCount = 0;
+        await this.syncPaymentStatusWithRetry();
       }
     } else {
       this.error.set('Invalid booking ID');
@@ -202,8 +228,17 @@ export class PaymentPage implements OnInit, OnDestroy {
   }
 
   ngOnDestroy() {
+    // Clean up payment flow context
+    this.paymentContextService.exitPaymentFlow();
+
     if (this.unsubscribePayment) {
       this.unsubscribePayment();
+    }
+
+    // Clean up app state listener
+    if (this.appStateListener) {
+      this.appStateListener.remove();
+      this.appStateListener = null;
     }
   }
 
@@ -248,16 +283,122 @@ export class PaymentPage implements OnInit, OnDestroy {
         console.log('[Payment] Real-time status update:', status);
         this.paymentStatus.set(status);
 
-        // Show toast for status changes
-        if (status.invoiceStatus === 'PAID') {
-          this.showToast('Payment successful!', 'success');
-          // Redirect to booking details after short delay
-          setTimeout(() => {
-            this.router.navigate(['/c/bookings', bookingId]);
-          }, 2000);
+        // Show success modal when payment is confirmed via real-time
+        if (status.invoiceStatus === 'PAID' && !this.showSuccessModal()) {
+          console.log('[Payment] Real-time: Payment confirmed! Showing success modal...');
+          this.successModalData.set({
+            amount: status.amount,
+            paymentMethod: status.paymentMethod,
+            bookingId: bookingId
+          });
+          this.showSuccessModal.set(true);
         }
       }
     );
+  }
+
+  /**
+   * Set up app state listener to detect when app resumes after payment
+   */
+  private async setupAppStateListener(bookingId: string) {
+    try {
+      this.appStateListener = await App.addListener('appStateChange', async ({ isActive }) => {
+        console.log('[Payment] App state changed, isActive:', isActive);
+        
+        // When app becomes active and we were in payment flow, sync status
+        if (isActive && this.paymentContextService.isInPaymentFlow()) {
+          console.log('[Payment] App resumed during payment flow, syncing...');
+          this.paymentContextService.exitPaymentFlow();
+          this.syncRetryCount = 0;
+          await this.syncPaymentStatusWithRetry();
+        }
+      });
+    } catch (err) {
+      // App listener might not work on web
+      console.log('[Payment] Could not set up app state listener:', err);
+    }
+  }
+
+  /**
+   * Sync payment status with retry logic
+   * Xendit may have a slight delay between payment and status update
+   */
+  private async syncPaymentStatusWithRetry() {
+    const bookingId = this.booking()?.id;
+    if (!bookingId) {
+      console.warn('[Payment] syncPaymentStatusWithRetry: No bookingId');
+      return;
+    }
+
+    this.processingType.set('verifying');
+    this.isProcessing.set(true);
+
+    try {
+      console.log(`[Payment] Sync attempt ${this.syncRetryCount + 1}/${this.MAX_SYNC_RETRIES + 1}`);
+      const result = await this.paymentService.syncInvoiceStatus(bookingId);
+      console.log('[Payment] syncInvoiceStatus result:', result);
+
+      if (result.success) {
+        this.paymentStatus.set({
+          bookingId: result.bookingId,
+          invoiceId: result.invoiceId,
+          invoiceUrl: result.invoiceUrl,
+          invoiceStatus: result.invoiceStatus,
+          bookingStatus: result.bookingStatus,
+          amount: result.amount,
+          paidAt: result.paidAt || null,
+          paymentMethod: result.paymentMethod || null,
+          paymentChannel: result.paymentChannel || null,
+          expiresAt: result.expiresAt || null
+        });
+
+        // If payment confirmed, show success modal
+        if (result.invoiceStatus === 'PAID') {
+          console.log('[Payment] Payment confirmed! Showing success modal...');
+          this.isProcessing.set(false);
+          this.successModalData.set({
+            amount: result.amount,
+            paymentMethod: result.paymentMethod ?? null,
+            bookingId: bookingId
+          });
+          this.showSuccessModal.set(true);
+          return;
+        }
+
+        // If still PENDING and we haven't maxed out retries, try again
+        if (result.invoiceStatus === 'PENDING' && this.syncRetryCount < this.MAX_SYNC_RETRIES) {
+          this.syncRetryCount++;
+          console.log(`[Payment] Status still PENDING, retrying in ${this.SYNC_RETRY_DELAY}ms...`);
+          setTimeout(() => {
+            this.syncPaymentStatusWithRetry();
+          }, this.SYNC_RETRY_DELAY);
+          return;
+        }
+
+        // Max retries reached or non-PENDING status
+        if (result.invoiceStatus === 'PENDING') {
+          console.log('[Payment] Max sync retries reached, status still PENDING');
+          await this.showToast('Payment verification in progress. Please wait or pull to refresh.', 'warning');
+        }
+      }
+    } catch (err) {
+      console.error('[Payment] Sync error:', err);
+      
+      // Retry on error if we haven't maxed out
+      if (this.syncRetryCount < this.MAX_SYNC_RETRIES) {
+        this.syncRetryCount++;
+        console.log(`[Payment] Sync error, retrying in ${this.SYNC_RETRY_DELAY}ms...`);
+        setTimeout(() => {
+          this.syncPaymentStatusWithRetry();
+        }, this.SYNC_RETRY_DELAY);
+        return;
+      }
+    } finally {
+      // Only clear processing if we're done retrying
+      if (this.syncRetryCount >= this.MAX_SYNC_RETRIES) {
+        this.isProcessing.set(false);
+      }
+    }
   }
 
   async handleRefresh(event: RefresherCustomEvent) {
@@ -272,6 +413,7 @@ export class PaymentPage implements OnInit, OnDestroy {
     const bookingId = this.booking()?.id;
     if (!bookingId) return;
 
+    this.processingType.set('initiating');
     this.isProcessing.set(true);
     this.error.set(null);
 
@@ -311,53 +453,57 @@ export class PaymentPage implements OnInit, OnDestroy {
 
   private async openPaymentUrl(url: string) {
     try {
-      // Open in-app browser
+      // Mark that we're entering payment flow (for auth state handling on return)
+      this.paymentContextService.enterPaymentFlow();
+      this.syncRetryCount = 0;
+
+      // Listen for browser close - sync status when user returns
+      const browserFinishedListener = await Browser.addListener('browserFinished', async () => {
+        console.log('[Payment] Browser closed, syncing payment status...');
+        browserFinishedListener.remove();
+        
+        // Exit payment flow and sync with retry logic
+        this.paymentContextService.exitPaymentFlow();
+        
+        // Give a moment for any deeplink handling to complete
+        setTimeout(() => {
+          this.syncPaymentStatusWithRetry();
+        }, 500);
+      });
+
+      // Open in-app browser - use fullscreen for better redirect handling
       await Browser.open({
         url,
-        presentationStyle: 'popover',
-        toolbarColor: '#ffffff'
+        presentationStyle: 'fullscreen',
+        toolbarColor: '#667eea'
       });
     } catch (err) {
       // Fallback to window.open for web
+      console.log('[Payment] Opening payment URL in browser window');
       window.open(url, '_blank');
+      
+      // For web, show a message to manually refresh
+      await this.showToast('Complete payment in the new tab, then refresh this page', 'primary');
     }
   }
 
+  /**
+   * Public sync method - uses the retry logic internally
+   */
   async syncPaymentStatus() {
-    const bookingId = this.booking()?.id;
-    if (!bookingId) return;
+    console.log('[Payment] syncPaymentStatus called');
+    this.syncRetryCount = 0;
+    await this.syncPaymentStatusWithRetry();
+  }
 
-    this.isProcessing.set(true);
-
-    try {
-      const result = await this.paymentService.syncInvoiceStatus(bookingId);
-
-      if (result.success) {
-        this.paymentStatus.set({
-          bookingId: result.bookingId,
-          invoiceId: result.invoiceId,
-          invoiceUrl: result.invoiceUrl,
-          invoiceStatus: result.invoiceStatus,
-          bookingStatus: result.bookingStatus,
-          amount: result.amount,
-          paidAt: result.paidAt || null,
-          paymentMethod: result.paymentMethod || null,
-          paymentChannel: result.paymentChannel || null,
-          expiresAt: result.expiresAt || null
-        });
-
-        if (result.synced && result.invoiceStatus === 'PAID') {
-          await this.showToast('Payment confirmed!', 'success');
-          setTimeout(() => {
-            this.router.navigate(['/c/bookings', bookingId]);
-          }, 2000);
-        }
-      }
-    } catch (err) {
-      console.error('Failed to sync payment status:', err);
-    } finally {
-      this.isProcessing.set(false);
-    }
+  /**
+   * Handle success modal dismiss - navigate to booking details
+   */
+  onSuccessModalDismiss() {
+    console.log('[Payment] Success modal dismissed, navigating to bookings list');
+    this.showSuccessModal.set(false);
+    this.successModalData.set(null);
+    this.router.navigate(['/c/bookings']);
   }
 
   // Helper methods

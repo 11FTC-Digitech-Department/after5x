@@ -7,6 +7,7 @@ import { AuthFlowService } from './auth-flow.service';
 import { AuthEventsService } from './auth-events.service';
 import { AUTH_CONFIG } from './auth.config';
 import { ToastController } from '@ionic/angular/standalone';
+import { PaymentContextService } from '../services/payment-context.service';
 
 export interface UserProfile {
   id: string;
@@ -25,6 +26,7 @@ export class SessionService {
   private authFlowService = inject(AuthFlowService);
   private authEventsService = inject(AuthEventsService);
   private toastController = inject(ToastController);
+  private paymentContextService = inject(PaymentContextService);
 
   // --- STATE (Signals) ---
   private _session = signal<Session | null>(null);
@@ -87,18 +89,27 @@ export class SessionService {
         this._session.set(session);
 
         if (event === 'SIGNED_IN' || event === 'INITIAL_SESSION') {
-          // Initial auth - block UI while loading profile
-          this._loading.set(true);
-          try {
-            await this.fetchProfileWithTimeout(session.user.id);
-            console.log('SessionService: Profile loaded successfully for event:', event);
-            // Emit session started event
-            this.authEventsService.emit('SESSION_STARTED', session.user.id);
-          } catch (error) {
-            console.error('SessionService: Error fetching profile during auth state change:', error);
-            // Don't clear the session on profile fetch error - profile might load on retry
-          } finally {
-            this._loading.set(false);
+          // Check if returning from payment flow - skip blocking fetch
+          if (this.paymentContextService.isInPaymentFlow()) {
+            console.log('SessionService: Returning from payment flow - background profile fetch');
+            this.fetchProfile(session.user.id).catch(err =>
+              console.warn('SessionService: Background profile refresh failed:', err)
+            );
+            this.paymentContextService.exitPaymentFlow();
+          } else {
+            // Normal sign in - block UI while loading profile
+            this._loading.set(true);
+            try {
+              await this.fetchProfileWithTimeout(session.user.id);
+              console.log('SessionService: Profile loaded successfully for event:', event);
+              // Emit session started event
+              this.authEventsService.emit('SESSION_STARTED', session.user.id);
+            } catch (error) {
+              console.error('SessionService: Error fetching profile during auth state change:', error);
+              // Don't clear the session on profile fetch error - profile might load on retry
+            } finally {
+              this._loading.set(false);
+            }
           }
         } else if (event === 'TOKEN_REFRESHED') {
           // Token refresh - update silently WITHOUT blocking UI

@@ -13,25 +13,22 @@ interface CreateInvoiceRequest {
   bookingId: string
 }
 
-interface XenditInvoiceResponse {
-  id: string
-  external_id: string
-  user_id: string
-  status: string
-  merchant_name: string
+// Xendit v3 Payment Session Response (actual API response structure)
+interface XenditSessionResponse {
+  payment_session_id: string  // This is the actual field name from Xendit v3 API
+  reference_id: string
+  status: 'ACTIVE' | 'COMPLETED' | 'EXPIRED' | 'CANCELED'
+  session_type: string
+  mode: string
   amount: number
-  payer_email: string
-  description: string
-  expiry_date: string
-  invoice_url: string
-  available_banks: any[]
-  available_retail_outlets: any[]
-  available_ewallets: any[]
-  should_exclude_credit_card: boolean
-  should_send_email: boolean
-  created: string
-  updated: string
   currency: string
+  country: string
+  payment_link_url: string
+  expires_at: string
+  created: string  // Xendit uses 'created' not 'created_at'
+  updated: string  // Xendit uses 'updated' not 'updated_at'
+  customer_id?: string
+  metadata?: Record<string, string>
 }
 
 serve(async (req) => {
@@ -42,33 +39,52 @@ serve(async (req) => {
 
   try {
     // Get environment variables
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!
-    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
-    const xenditSecretKey = Deno.env.get('XENDIT_SECRET_KEY')!
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')
+    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
+    const xenditSecretKey = Deno.env.get('XENDIT_SECRET_KEY')
     const appUrl = Deno.env.get('APP_URL') || 'http://localhost:8100'
 
-    // Initialize Supabase client with service role for full access
-    const supabase = createClient(supabaseUrl, supabaseServiceKey)
+    // Validate required environment variables
+    if (!supabaseUrl || !supabaseServiceKey) {
+      console.error('Missing required env vars:', { supabaseUrl: !!supabaseUrl, supabaseServiceKey: !!supabaseServiceKey })
+      return new Response(
+        JSON.stringify({ error: 'Server configuration error' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
 
     // Get the JWT from the request header to identify the user
-    const authHeader = req.headers.get('Authorization')
+    // Check both cases for header name (some proxies lowercase headers)
+    const authHeader = req.headers.get('Authorization') || req.headers.get('authorization')
+
+    console.log('Auth header present:', !!authHeader)
+
     if (!authHeader) {
+      // Log all headers for debugging (without sensitive values)
+      const headerNames = Array.from(req.headers.keys())
+      console.error('Missing auth header. Available headers:', headerNames)
       return new Response(
         JSON.stringify({ error: 'Missing authorization header' }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
 
+    // Initialize Supabase client with service role for full access
+    const supabase = createClient(supabaseUrl, supabaseServiceKey)
+
     // Verify the user token
     const token = authHeader.replace('Bearer ', '')
     const { data: { user }, error: authError } = await supabase.auth.getUser(token)
 
     if (authError || !user) {
+      console.error('Auth verification failed:', authError?.message || 'No user returned')
       return new Response(
-        JSON.stringify({ error: 'Invalid authorization token' }),
+        JSON.stringify({ error: 'Invalid authorization token', details: authError?.message }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
+
+    console.log('User authenticated:', user.id)
 
     // Parse request body
     const { bookingId }: CreateInvoiceRequest = await req.json()
@@ -165,42 +181,49 @@ serve(async (req) => {
       )
     }
 
-    // 5. Generate external ID for tracking
-    const externalId = `booking-${bookingId}-${Date.now()}`
+    // 5. Generate reference ID for tracking (v3 uses reference_id instead of external_id)
+    const referenceId = `booking-${bookingId}-${Date.now()}`
 
-    // 6. Prepare Xendit invoice payload
-    const invoiceExpiry = new Date()
-    invoiceExpiry.setHours(invoiceExpiry.getHours() + 24) // 24 hour expiry
+    // 6. Prepare Xendit v3 Payment Session payload
+    // Parse customer name for individual_detail (surname is required, min 1 char)
+    const nameParts = (profile.full_name || 'Customer').trim().split(' ').filter(Boolean)
+    const givenNames = nameParts[0] || 'Customer'
+    const surname = nameParts.length > 1 ? nameParts.slice(1).join(' ') : '-'
 
-    const xenditPayload = {
-      external_id: externalId,
+    const xenditPayload: Record<string, any> = {
+      reference_id: referenceId,
+      session_type: 'PAY',
+      mode: 'PAYMENT_LINK',
       amount: booking.grand_total,
-      payer_email: profile.email,
-      description: `Payment for Service Booking #${bookingId.slice(-6).toUpperCase()}`,
       currency: 'PHP',
-      invoice_duration: 86400, // 24 hours in seconds
-      customer: {
-        given_names: profile.full_name,
-        email: profile.email,
-        mobile_number: profile.phone_number || undefined
-      },
-      customer_notification_preference: {
-        invoice_created: ['email'],
-        invoice_reminder: ['email'],
-        invoice_paid: ['email']
-      },
-      success_redirect_url: `${appUrl}/c/payment/${bookingId}?status=success`,
-      failure_redirect_url: `${appUrl}/c/payment/${bookingId}?status=failed`,
-      payment_methods: ['CREDIT_CARD', 'GCASH', 'GRAB_PAY', 'PAYMAYA', 'BPI', 'UNIONBANK', 'CEBUANA', 'ECPAY'],
+      country: 'PH',
+      // Use email for notifications without creating a formal customer record
+      customer_email: profile.email,
+      expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+      description: `Payment for Service Booking #${bookingId.slice(-6).toUpperCase()}`,
+      // Use HTTPS redirect URL that will redirect to app deeplink
+      success_return_url: `${supabaseUrl}/functions/v1/payment-redirect?booking=${bookingId}&status=success`,
+      cancel_return_url: `${supabaseUrl}/functions/v1/payment-redirect?booking=${bookingId}&status=failed`,
+      // Channel codes available for Payment Sessions API
+      allowed_payment_channels: [
+        'CARDS',        // Visa, Mastercard, JCB
+        'GCASH',        // GCash e-wallet
+        'GRABPAY',      // GrabPay e-wallet
+        'SHOPEEPAY',    // ShopeePay e-wallet
+        'CEBUANA',      // Cebuana Over-The-Counter
+        'LBC',          // LBC Over-The-Counter
+        '7ELEVEN',      // 7-Eleven Over-The-Counter
+        'QRPH'          // QR Philippines
+      ],
       metadata: {
         booking_id: bookingId,
         customer_id: booking.customer_id
       }
     }
 
-    // 7. Call Xendit Create Invoice API
+    // 7. Call Xendit v3 Payment Sessions API
     const xenditAuth = btoa(`${xenditSecretKey}:`)
-    const xenditResponse = await fetch('https://api.xendit.co/v2/invoices', {
+    const xenditResponse = await fetch('https://api.xendit.co/sessions', {
       method: 'POST',
       headers: {
         'Authorization': `Basic ${xenditAuth}`,
@@ -218,33 +241,49 @@ serve(async (req) => {
       )
     }
 
-    const xenditInvoice: XenditInvoiceResponse = await xenditResponse.json()
+    const xenditSession: XenditSessionResponse = await xenditResponse.json()
+    console.log('Xendit session created:', JSON.stringify(xenditSession, null, 2))
 
-    // 8. Store invoice in database
+    // Validate we got a session ID
+    if (!xenditSession.payment_session_id) {
+      console.error('Xendit response missing payment_session_id:', xenditSession)
+      return new Response(
+        JSON.stringify({ error: 'Invalid Xendit response - missing session ID' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
+    // 8. Store invoice in database (using payment_session_id as the xendit invoice ID)
     const { data: invoiceRecord, error: invoiceError } = await supabase.rpc('create_invoice_record', {
       p_booking_id: bookingId,
       p_customer_id: booking.customer_id,
       p_amount: booking.grand_total,
-      p_xendit_invoice_id: xenditInvoice.id,
-      p_xendit_invoice_url: xenditInvoice.invoice_url,
-      p_xendit_external_id: externalId,
-      p_expires_at: xenditInvoice.expiry_date
+      p_xendit_invoice_id: xenditSession.payment_session_id,
+      p_xendit_invoice_url: xenditSession.payment_link_url,
+      p_xendit_external_id: referenceId,
+      p_expires_at: xenditSession.expires_at
     })
 
     if (invoiceError) {
       console.error('Failed to store invoice record:', invoiceError)
-      // Invoice was created in Xendit but failed to store - log for reconciliation
+      // This is critical - fail the request so user knows something went wrong
+      return new Response(
+        JSON.stringify({ error: 'Failed to create invoice record', details: invoiceError.message }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
     }
 
-    // 9. Return success response
+    console.log('Invoice record created:', invoiceRecord)
+
+    // 9. Return success response (map v3 fields to existing response format)
     return new Response(
       JSON.stringify({
         success: true,
         invoiceId: invoiceRecord || null,
-        invoiceUrl: xenditInvoice.invoice_url,
-        xenditInvoiceId: xenditInvoice.id,
-        amount: xenditInvoice.amount,
-        expiresAt: xenditInvoice.expiry_date,
+        invoiceUrl: xenditSession.payment_link_url,
+        xenditInvoiceId: xenditSession.payment_session_id,
+        amount: xenditSession.amount,
+        expiresAt: xenditSession.expires_at,
         isExisting: false
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }

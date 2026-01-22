@@ -47,11 +47,6 @@ export class SupabaseService {
       },
       db: {
         schema: 'public'
-      },
-      global: {
-        headers: {
-          'x-my-custom-header': 'after5x-app'
-        }
       }
     });
   }

@@ -376,6 +376,45 @@ ion-footer {
   height: 140px;
 }
 
+// Processing overlay - blocks UI during payment verification
+.processing-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 99998;
+  background: rgba(0, 0, 0, 0.75);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: fadeIn 0.2s ease;
+
+  .processing-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+
+    ion-spinner {
+      width: 48px;
+      height: 48px;
+    }
+
+    p {
+      font-size: 18px;
+      font-weight: 600;
+      color: #fff;
+      margin: 0;
+    }
+
+    .processing-hint {
+      font-size: 14px;
+      color: rgba(255, 255, 255, 0.7);
+    }
+  }
+}
+
 // Responsive
 @media (min-width: 768px) {
   ion-card {

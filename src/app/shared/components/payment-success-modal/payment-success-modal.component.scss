@@ -1,0 +1,326 @@
+// Payment Success Modal Styles
+// Full-screen celebration with confetti animation
+
+.success-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 99999;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.3s ease-out;
+  overflow: hidden;
+
+  &.visible {
+    opacity: 1;
+  }
+}
+
+// Confetti Animation
+.confetti-container {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.confetti {
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  top: -20px;
+  left: var(--x, 50vw);
+  background: var(--color, #667eea);
+  opacity: 0;
+  animation: confetti-fall 4s ease-out var(--delay, 0s) forwards;
+
+  &:nth-child(odd) {
+    width: 8px;
+    height: 12px;
+    border-radius: 2px;
+  }
+
+  &:nth-child(even) {
+    width: 12px;
+    height: 8px;
+    border-radius: 50%;
+  }
+
+  &:nth-child(3n) {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+  }
+}
+
+@keyframes confetti-fall {
+  0% {
+    opacity: 1;
+    transform: translateY(0) rotate(0deg) scale(1);
+  }
+  25% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(100vh) rotate(720deg) scale(0.5);
+  }
+}
+
+// Main Content
+.success-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 32px 24px;
+  max-width: 380px;
+  width: 100%;
+  transform: scale(0.8);
+  opacity: 0;
+  transition: transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275),
+              opacity 0.3s ease-out;
+
+  &.animate {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+// Animated Checkmark
+.checkmark-container {
+  margin-bottom: 24px;
+}
+
+.checkmark-circle {
+  width: 100px;
+  height: 100px;
+  position: relative;
+}
+
+.checkmark {
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+  display: block;
+  stroke-width: 2;
+  stroke: #fff;
+  stroke-miterlimit: 10;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+  animation: checkmark-scale 0.4s ease-in-out 0.3s both;
+}
+
+.checkmark-bg {
+  stroke: rgba(255, 255, 255, 0.3);
+  stroke-width: 2;
+}
+
+.checkmark-check {
+  transform-origin: 50% 50%;
+  stroke-dasharray: 48;
+  stroke-dashoffset: 48;
+  stroke-width: 3;
+  stroke-linecap: round;
+  animation: checkmark-draw 0.6s cubic-bezier(0.65, 0, 0.45, 1) 0.5s forwards;
+}
+
+@keyframes checkmark-scale {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.1);
+  }
+}
+
+@keyframes checkmark-draw {
+  0% {
+    stroke-dashoffset: 48;
+  }
+  100% {
+    stroke-dashoffset: 0;
+  }
+}
+
+// Title
+.success-title {
+  font-size: 28px;
+  font-weight: 700;
+  color: #fff;
+  margin: 0 0 24px;
+  text-align: center;
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+  animation: title-bounce 0.6s ease-out 0.4s both;
+}
+
+@keyframes title-bounce {
+  0% {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  60% {
+    transform: translateY(-5px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+// Invoice Card
+.invoice-card {
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 16px;
+  padding: 20px 24px;
+  width: 100%;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+  animation: card-slide-up 0.5s ease-out 0.5s both;
+}
+
+@keyframes card-slide-up {
+  0% {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.invoice-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 0;
+
+  &:not(:last-child) {
+    border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+  }
+}
+
+.invoice-label {
+  font-size: 14px;
+  color: #6b7280;
+  font-weight: 500;
+}
+
+.invoice-value {
+  font-size: 15px;
+  color: #1f2937;
+  font-weight: 600;
+  text-align: right;
+
+  &.amount {
+    font-size: 18px;
+    color: #10b981;
+    font-weight: 700;
+  }
+
+  &.booking-id {
+    font-family: 'SF Mono', 'Menlo', monospace;
+    background: #f3f4f6;
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-size: 13px;
+  }
+}
+
+// Thank you message
+.thank-you {
+  font-size: 16px;
+  color: rgba(255, 255, 255, 0.9);
+  margin: 24px 0 20px;
+  text-align: center;
+  animation: fade-in 0.5s ease-out 0.7s both;
+}
+
+@keyframes fade-in {
+  0% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+// View Booking Button
+.view-booking-btn {
+  --background: #fff;
+  --color: #667eea;
+  --border-radius: 12px;
+  --box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
+  font-weight: 600;
+  font-size: 16px;
+  height: 52px;
+  margin: 0;
+  width: 100%;
+  animation: button-pop 0.4s ease-out 0.8s both;
+
+  &:hover {
+    --background: #f9fafb;
+  }
+}
+
+@keyframes button-pop {
+  0% {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  60% {
+    transform: scale(1.02);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+// Countdown text
+.countdown-text {
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.7);
+  margin-top: 16px;
+  text-align: center;
+  animation: fade-in 0.5s ease-out 1s both;
+}
+
+// Dark mode adjustments
+@media (prefers-color-scheme: dark) {
+  .invoice-card {
+    background: rgba(30, 30, 30, 0.95);
+  }
+
+  .invoice-row:not(:last-child) {
+    border-bottom-color: rgba(255, 255, 255, 0.1);
+  }
+
+  .invoice-label {
+    color: #9ca3af;
+  }
+
+  .invoice-value {
+    color: #f3f4f6;
+
+    &.booking-id {
+      background: #374151;
+      color: #e5e7eb;
+    }
+  }
+
+  .view-booking-btn {
+    --background: rgba(255, 255, 255, 0.1);
+    --color: #fff;
+
+    &:hover {
+      --background: rgba(255, 255, 255, 0.15);
+    }
+  }
+}

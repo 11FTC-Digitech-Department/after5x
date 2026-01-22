@@ -9,9 +9,68 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-callback-token',
 }
 
-// Xendit webhook event types
-type WebhookEvent = 'invoices' | 'invoice.paid' | 'invoice.expired'
+// Xendit v3 webhook event types
+type WebhookEvent = 
+  // Payment API events (v3)
+  | 'payment.capture' 
+  | 'payment.authorization'
+  | 'payment.failure'
+  // Session events (if any)
+  | 'payment_session.completed' 
+  | 'payment_session.expired'
+  // Legacy v2 invoice events
+  | 'invoices' 
+  | 'invoice.paid' 
+  | 'invoice.expired'
 
+// Xendit v3 Payment Capture Webhook (payment.capture event)
+interface XenditPaymentWebhook {
+  event: 'payment.capture' | 'payment.authorization' | 'payment.failure'
+  business_id: string
+  created: string
+  data: {
+    payment_id: string
+    business_id: string
+    status: 'SUCCEEDED' | 'FAILED' | 'PENDING' | 'AUTHORIZED'
+    payment_request_id: string
+    request_amount: number
+    customer_id?: string
+    channel_code: string
+    country: string
+    currency: string
+    reference_id: string
+    description?: string
+    channel_properties?: Record<string, string>
+    type: string
+    created: string
+    updated: string
+    failure_code?: string
+    metadata?: Record<string, string>
+  }
+}
+
+// Xendit v3 Payment Session Webhook (if session events are sent)
+interface XenditSessionWebhook {
+  id: string
+  payment_session_id?: string
+  reference_id: string
+  status: 'ACTIVE' | 'COMPLETED' | 'EXPIRED' | 'CANCELED'
+  session_type?: string
+  mode?: string
+  amount?: number
+  currency?: string
+  country?: string
+  expires_at?: string
+  created_at?: string
+  updated_at?: string
+  payment_request_id?: string
+  metadata?: {
+    booking_id?: string
+    customer_id?: string
+  }
+}
+
+// Legacy Xendit v2 Invoice Webhook (for backward compatibility)
 interface XenditInvoiceWebhook {
   id: string
   external_id: string
@@ -92,28 +151,126 @@ serve(async (req) => {
     // Initialize Supabase client with service role
     const supabase = createClient(supabaseUrl, supabaseServiceKey)
 
-    // Parse webhook payload
-    const webhook: XenditInvoiceWebhook = await req.json()
-    console.log('Received webhook:', JSON.stringify(webhook, null, 2))
+    // Parse webhook payload - could be v3 payment event, v3 session event, or v2 invoice
+    const rawWebhook = await req.json()
+    console.log('Received webhook:', JSON.stringify(rawWebhook, null, 2))
 
-    const xenditInvoiceId = webhook.id
-    const status = webhook.status
+    let xenditId: string
+    let isPaid: boolean
+    let isExpired: boolean
+    let bookingId: string | undefined
+    let paymentMethod: string | null = null
+    let paymentChannel: string | null = null
+    let feesPaid: number = 0
 
-    // 2. Handle different webhook events
-    if (status === 'PAID') {
-      // Payment successful
-      console.log(`Invoice ${xenditInvoiceId} has been paid`)
+    // Determine webhook type by checking for event field first (v3 payment events)
+    const isV3PaymentEvent = rawWebhook.event && 
+      ['payment.capture', 'payment.authorization', 'payment.failure'].includes(rawWebhook.event)
+    
+    // Check for session-based webhooks
+    const isSessionWebhook = rawWebhook.session_type || rawWebhook.payment_session_id ||
+      (rawWebhook.status && ['ACTIVE', 'COMPLETED', 'CANCELED', 'EXPIRED'].includes(rawWebhook.status) && !rawWebhook.event)
 
-      // Get booking ID from metadata or external_id
-      let bookingId = webhook.metadata?.booking_id
+    if (isV3PaymentEvent) {
+      // Handle v3 Payment API webhook (payment.capture, payment.failure, etc.)
+      const webhook = rawWebhook as XenditPaymentWebhook
+      const paymentData = webhook.data
+      
+      // For payment events, we need to find the invoice by reference_id (which contains booking ID)
+      xenditId = paymentData.payment_request_id || paymentData.payment_id
+      
+      // payment.capture with SUCCEEDED status means payment is complete
+      isPaid = webhook.event === 'payment.capture' && paymentData.status === 'SUCCEEDED'
+      isExpired = false // Payment events don't have expiry, only failure
+      const isFailed = webhook.event === 'payment.failure' || paymentData.status === 'FAILED'
 
+      // Extract booking ID from reference_id (format: booking-{uuid}-{timestamp})
+      // or from metadata if available
+      bookingId = paymentData.metadata?.booking_id
+      if (!bookingId && paymentData.reference_id) {
+        const match = paymentData.reference_id.match(/^booking-([a-f0-9-]+)-/)
+        if (match) {
+          bookingId = match[1]
+        }
+      }
+
+      // Extract payment details
+      paymentMethod = paymentData.channel_code || null
+      paymentChannel = paymentData.channel_code || null
+      feesPaid = 0 // Not directly available in payment webhook
+
+      console.log(`v3 payment webhook - Event: ${webhook.event}, Payment: ${paymentData.payment_id}, Status: ${paymentData.status}, Reference: ${paymentData.reference_id}`)
+
+      // For payment events, we need to look up the invoice by booking_id since xenditId is the payment_request_id
+      if (bookingId && (isPaid || isFailed)) {
+        // Find invoice by booking_id instead of xendit_invoice_id
+        const { data: invoiceByBooking, error: lookupByBookingError } = await supabase
+          .from('invoices')
+          .select('id, xendit_invoice_id, booking_id')
+          .eq('booking_id', bookingId)
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .maybeSingle()
+
+        if (invoiceByBooking) {
+          // Use the xendit_invoice_id from our database for updating
+          xenditId = invoiceByBooking.xendit_invoice_id
+          console.log(`Found invoice ${invoiceByBooking.id} with xendit_id ${xenditId} for booking ${bookingId}`)
+        } else {
+          console.warn(`No invoice found for booking ${bookingId}`)
+        }
+      }
+
+    } else if (isSessionWebhook) {
+      // Handle v3 Payment Session webhook
+      const webhook = rawWebhook as XenditSessionWebhook
+      xenditId = webhook.id || webhook.payment_session_id || ''
+
+      // Session COMPLETED means payment succeeded
+      isPaid = webhook.status === 'COMPLETED'
+      isExpired = webhook.status === 'EXPIRED'
+
+      // Extract booking ID from metadata or reference_id
+      bookingId = webhook.metadata?.booking_id
+      if (!bookingId && webhook.reference_id) {
+        const match = webhook.reference_id.match(/^booking-([a-f0-9-]+)-/)
+        if (match) {
+          bookingId = match[1]
+        }
+      }
+
+      paymentMethod = null // Session webhooks don't include payment method details
+      paymentChannel = null
+      feesPaid = 0
+
+      console.log(`v3 session webhook - Session ${xenditId}: status=${webhook.status}`)
+    } else {
+      // Handle v2 Invoice webhook (backward compatibility)
+      const webhook = rawWebhook as XenditInvoiceWebhook
+      xenditId = webhook.id
+
+      isPaid = webhook.status === 'PAID'
+      isExpired = webhook.status === 'EXPIRED'
+
+      // Extract booking ID from metadata or external_id
+      bookingId = webhook.metadata?.booking_id
       if (!bookingId && webhook.external_id) {
-        // Parse from external_id format: "booking-{uuid}-{timestamp}"
         const match = webhook.external_id.match(/^booking-([a-f0-9-]+)-/)
         if (match) {
           bookingId = match[1]
         }
       }
+
+      paymentMethod = webhook.payment_method || null
+      paymentChannel = webhook.payment_channel || webhook.payment_destination || null
+      feesPaid = webhook.fees_paid_amount || 0
+
+      console.log(`v2 webhook - Invoice ${xenditId}: status=${webhook.status}`)
+    }
+
+    // 2. Handle payment success
+    if (isPaid) {
+      console.log(`Payment ${xenditId} has been paid`)
 
       if (!bookingId) {
         console.error('Could not determine booking ID from webhook')
@@ -123,14 +280,34 @@ serve(async (req) => {
         )
       }
 
+      // First, verify the invoice exists in our database
+      const { data: existingInvoice, error: lookupError } = await supabase
+        .from('invoices')
+        .select('id, booking_id')
+        .eq('xendit_invoice_id', xenditId)
+        .maybeSingle()
+
+      if (lookupError) {
+        console.error('Error looking up invoice:', lookupError)
+      }
+
+      if (!existingInvoice) {
+        // Invoice not found - this might be a test webhook or stale data
+        console.warn(`Invoice not found for xendit_id: ${xenditId}. This may be a test webhook.`)
+        return new Response(
+          JSON.stringify({ success: true, message: 'Webhook acknowledged (invoice not found - possibly test data)' }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        )
+      }
+
       // Update invoice status
-      const paymentMethodType = mapPaymentMethodType(webhook.payment_method || '')
+      const paymentMethodType = mapPaymentMethodType(paymentMethod || '')
       const { data: invoiceId, error: invoiceError } = await supabase.rpc('update_invoice_paid', {
-        p_xendit_invoice_id: xenditInvoiceId,
-        p_payment_method: webhook.payment_method || null,
+        p_xendit_invoice_id: xenditId,
+        p_payment_method: paymentMethod,
         p_payment_method_type: paymentMethodType,
-        p_payment_channel: webhook.payment_channel || webhook.payment_destination || null,
-        p_fees_paid: webhook.fees_paid_amount || 0
+        p_payment_channel: paymentChannel,
+        p_fees_paid: feesPaid
       })
 
       if (invoiceError) {
@@ -140,7 +317,7 @@ serve(async (req) => {
 
       // Update booking status to PAID
       const { error: bookingStatusError } = await supabase.rpc('update_booking_payment_status', {
-        p_booking_id: bookingId,
+        p_booking_id: existingInvoice.booking_id,
         p_new_status: 'paid'
       })
 
@@ -154,8 +331,8 @@ serve(async (req) => {
 
       // Credit provider wallet
       const { error: walletError } = await supabase.rpc('credit_provider_wallet', {
-        p_booking_id: bookingId,
-        p_invoice_id: invoiceId
+        p_booking_id: existingInvoice.booking_id,
+        p_invoice_id: invoiceId || existingInvoice.id
       })
 
       if (walletError) {
@@ -165,7 +342,7 @@ serve(async (req) => {
 
       // Auto-transition to COMPLETED
       const { error: completeError } = await supabase.rpc('update_booking_payment_status', {
-        p_booking_id: bookingId,
+        p_booking_id: existingInvoice.booking_id,
         p_new_status: 'completed'
       })
 
@@ -173,21 +350,33 @@ serve(async (req) => {
         console.error('Failed to complete booking:', completeError)
       }
 
-      // Send notifications (optional - could be done via database triggers)
-      // await sendPaymentNotifications(supabase, bookingId)
-
       return new Response(
         JSON.stringify({ success: true, message: 'Payment processed successfully' }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
 
-    } else if (status === 'EXPIRED') {
-      // Invoice expired
-      console.log(`Invoice ${xenditInvoiceId} has expired`)
+    } else if (isExpired) {
+      // Invoice/Session expired
+      console.log(`Payment ${xenditId} has expired`)
+
+      // First, verify the invoice exists
+      const { data: existingInvoice } = await supabase
+        .from('invoices')
+        .select('id')
+        .eq('xendit_invoice_id', xenditId)
+        .maybeSingle()
+
+      if (!existingInvoice) {
+        console.warn(`Invoice not found for xendit_id: ${xenditId}. This may be a test webhook.`)
+        return new Response(
+          JSON.stringify({ success: true, message: 'Webhook acknowledged (invoice not found - possibly test data)' }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        )
+      }
 
       // Update invoice status
       const { error: invoiceError } = await supabase.rpc('update_invoice_expired', {
-        p_xendit_invoice_id: xenditInvoiceId
+        p_xendit_invoice_id: xenditId
       })
 
       if (invoiceError) {
@@ -204,9 +393,9 @@ serve(async (req) => {
 
     } else {
       // Unknown or unhandled status
-      console.log(`Unhandled webhook status: ${status}`)
+      console.log(`Unhandled webhook status for ${xenditId}`)
       return new Response(
-        JSON.stringify({ success: true, message: `Status ${status} acknowledged` }),
+        JSON.stringify({ success: true, message: 'Webhook acknowledged' }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
