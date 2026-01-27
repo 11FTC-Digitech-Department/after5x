@@ -1,8 +1,8 @@
 import type { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
-  appId: 'com.rockit.after5',
-  appName: 'After5',
+  appId: 'com.rockit.after5.provider',
+  appName: 'After5 Experts',
   webDir: 'www',
   plugins: {
     CapacitorHttp: {

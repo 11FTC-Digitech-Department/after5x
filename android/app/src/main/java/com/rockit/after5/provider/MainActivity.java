@@ -1,4 +1,4 @@
-package com.rockit.after5;
+package com.rockit.after5.provider;
 
 import com.getcapacitor.BridgeActivity;
 

@@ -11,7 +11,6 @@ android {
     namespace = "com.rockit.after5"
     compileSdk = rootProject.ext.compileSdkVersion
     defaultConfig {
-        applicationId "com.rockit.after5"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 4
@@ -23,6 +22,26 @@ android {
             ignoreAssetsPattern = '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
         }
     }
+    
+    // Product Flavors for Customer and Provider apps
+    flavorDimensions = ["app"]
+    productFlavors {
+        customer {
+            dimension "app"
+            applicationId "com.rockit.after5"
+            resValue "string", "app_name", "After5"
+            resValue "string", "custom_url_scheme", "com.rockit.after5"
+            buildConfigField "String", "APP_TYPE", "\"customer\""
+        }
+        experts {
+            dimension "app"
+            applicationId "com.rockit.after5.experts"
+            resValue "string", "app_name", "After5 Experts"
+            resValue "string", "custom_url_scheme", "com.rockit.after5.experts"
+            buildConfigField "String", "APP_TYPE", "\"experts\""
+        }
+    }
+    
     signingConfigs {
         release {
             if (keystorePropertiesFile.exists()) {
@@ -40,6 +59,10 @@ android {
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
             signingConfig signingConfigs.release
         }
+    }
+    
+    buildFeatures {
+        buildConfig true
     }
 }
 
@@ -63,9 +86,10 @@ dependencies {
 
 apply from: 'capacitor.build.gradle'
 
+// Google Services plugin - uses flavor-specific google-services.json from src/{flavor}/
 try {
     def servicesJSON = file('google-services.json')
-    if (servicesJSON.text) {
+    if (servicesJSON.exists() && servicesJSON.text) {
         apply plugin: 'com.google.gms.google-services'
     }
 } catch(Exception e) {

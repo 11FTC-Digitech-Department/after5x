@@ -13,6 +13,11 @@
     "lint": "ng lint",
     "android:dev": "npm run start & sleep 5 && npx cap run android --livereload",
     "android:build": "npm run build && npx cap sync android",
+    "android:bundle:customer": "npm run build && npx cap sync android && cd android && ./gradlew bundleCustomerRelease",
+    "android:bundle:experts": "npm run build && npx cap sync android && cd android && ./gradlew bundleExpertsRelease",
+    "android:bundle:all": "npm run build && npx cap sync android && cd android && ./gradlew bundleCustomerRelease bundleExpertsRelease",
+    "android:apk:customer": "npm run build && npx cap sync android && cd android && ./gradlew assembleCustomerRelease",
+    "android:apk:experts": "npm run build && npx cap sync android && cd android && ./gradlew assembleExpertsRelease",
     "docker:cleanup": "./scripts/docker-cleanup.sh"
   },
   "private": true,
