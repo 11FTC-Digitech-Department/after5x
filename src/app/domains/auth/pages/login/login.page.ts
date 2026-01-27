@@ -59,6 +59,8 @@ export class LoginPage implements OnInit {
   appVersion = signal<string>('0.0.0');
   buildNumber = signal<string>('1');
   environmentType = signal<string>('dev');
+  appType = signal<'customer' | 'experts'>('customer');
+  isExpertsApp = signal<boolean>(false);
 
   constructor() {
     addIcons({ fingerPrintOutline, eyeOutline });
@@ -87,6 +89,11 @@ export class LoginPage implements OnInit {
       const info = await App.getInfo();
       this.appVersion.set(info.version);
       this.buildNumber.set(info.build);
+      
+      // Detect app type based on package name
+      const isExperts = info.id?.includes('experts') ?? false;
+      this.isExpertsApp.set(isExperts);
+      this.appType.set(isExperts ? 'experts' : 'customer');
     } catch (error) {
       console.warn('Could not get app info:', error);
       // Fallback to package.json version

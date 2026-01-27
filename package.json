@@ -8,16 +8,29 @@
     "start": "ng serve --host 0.0.0.0",
     "start:local": "ng serve",
     "build": "ng build",
+    "build:prod": "ng build --configuration=production",
     "watch": "ng build --watch --configuration development",
     "test": "ng test",
     "lint": "ng lint",
-    "android:dev": "npm run start & sleep 5 && npx cap run android --livereload",
-    "android:build": "npm run build && npx cap sync android",
-    "android:bundle:customer": "npm run build && npx cap sync android && cd android && ./gradlew bundleCustomerRelease",
-    "android:bundle:experts": "npm run build && npx cap sync android && cd android && ./gradlew bundleExpertsRelease",
-    "android:bundle:all": "npm run build && npx cap sync android && cd android && ./gradlew bundleCustomerRelease bundleExpertsRelease",
-    "android:apk:customer": "npm run build && npx cap sync android && cd android && ./gradlew assembleCustomerRelease",
-    "android:apk:experts": "npm run build && npx cap sync android && cd android && ./gradlew assembleExpertsRelease",
+    
+    "android": "./scripts/android-build.sh",
+    "android:sync": "./scripts/android-build.sh sync",
+    
+    "android:run:customer": "./scripts/android-build.sh run customer dev",
+    "android:run:customer:prod": "./scripts/android-build.sh run customer prod",
+    "android:run:experts": "./scripts/android-build.sh run experts dev",
+    "android:run:experts:prod": "./scripts/android-build.sh run experts prod",
+    
+    "android:apk:customer": "./scripts/android-build.sh build customer dev",
+    "android:apk:customer:prod": "./scripts/android-build.sh build customer prod",
+    "android:apk:experts": "./scripts/android-build.sh build experts dev",
+    "android:apk:experts:prod": "./scripts/android-build.sh build experts prod",
+    
+    "android:bundle:customer": "./scripts/android-build.sh bundle customer prod",
+    "android:bundle:experts": "./scripts/android-build.sh bundle experts prod",
+    "android:bundle:all": "./scripts/android-build.sh bundle customer prod && ./scripts/android-build.sh bundle experts prod",
+    
+    "android:livereload": "npm run start & sleep 5 && npx cap run android --livereload",
     "docker:cleanup": "./scripts/docker-cleanup.sh"
   },
   "private": true,
