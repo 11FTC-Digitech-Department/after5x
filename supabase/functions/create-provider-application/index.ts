@@ -128,7 +128,7 @@ serve(async (req) => {
 
     // 2. Wait for profile creation via trigger (with retry logic)
     let profile = null
-    let retries = 10
+    let retries = 20 // Increased from 10 to 20 (10 seconds total)
     while (retries > 0 && !profile) {
       const { data: profileData, error: profileError } = await supabase
         .from('profiles')
@@ -141,6 +141,10 @@ serve(async (req) => {
         break
       }
 
+      if (profileError) {
+        console.error('Profile query error:', profileError)
+      }
+
       // Wait 500ms before retry
       await new Promise(resolve => setTimeout(resolve, 500))
       retries--
@@ -148,12 +152,82 @@ serve(async (req) => {
 
     if (!profile) {
       console.error('Profile creation timeout for user:', authUser.user.id)
-      // Cleanup: delete auth user if profile wasn't created
-      await supabase.auth.admin.deleteUser(authUser.user.id)
-      return new Response(
-        JSON.stringify({ error: 'Profile creation failed. Please try again.' }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
+      console.error('Auth user created but profile was not found after 10 seconds')
+      // Check if profile exists with different query
+      const { data: checkProfile } = await supabase
+        .from('profiles')
+        .select('id, role')
+        .eq('id', authUser.user.id)
+        .maybeSingle()
+      
+      if (checkProfile) {
+        console.log('Profile found on second check:', checkProfile)
+        profile = checkProfile
+      } else {
+        // Fallback: Create profile directly if trigger failed
+        console.log('Trigger failed, creating profile directly as fallback')
+        const fullName = [body.firstName, body.middleName, body.lastName]
+          .filter(Boolean)
+          .join(' ')
+        
+        // Use upsert to handle potential conflicts (e.g., if trigger partially succeeded)
+        const { data: createdProfile, error: createError } = await supabase
+          .from('profiles')
+          .upsert({
+            id: authUser.user.id,
+            email: body.email,
+            full_name: fullName,
+            role: 'provider',
+            phone_number: body.mobileNumber,
+            activated: false,
+            date_of_birth: body.dateOfBirth || null,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          }, {
+            onConflict: 'id',
+            ignoreDuplicates: false
+          })
+          .select('id, role')
+          .single()
+        
+        if (createError) {
+          console.error('Fallback profile creation failed:', createError)
+          console.error('Error details:', JSON.stringify(createError, null, 2))
+          
+          // Try to fetch the profile one more time in case it was created between checks
+          const { data: finalCheck } = await supabase
+            .from('profiles')
+            .select('id, role')
+            .eq('id', authUser.user.id)
+            .maybeSingle()
+          
+          if (finalCheck) {
+            console.log('Profile found on final check:', finalCheck)
+            profile = finalCheck
+          } else {
+            // Cleanup: delete auth user if profile wasn't created
+            await supabase.auth.admin.deleteUser(authUser.user.id)
+            return new Response(
+              JSON.stringify({ 
+                error: 'Profile creation failed. Please try again.',
+                details: createError.message 
+              }),
+              { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+            )
+          }
+        } else if (!createdProfile) {
+          console.error('Upsert returned no data')
+          // Cleanup: delete auth user if profile wasn't created
+          await supabase.auth.admin.deleteUser(authUser.user.id)
+          return new Response(
+            JSON.stringify({ error: 'Profile creation failed. Please try again.' }),
+            { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          )
+        } else {
+          console.log('Profile created via fallback:', createdProfile.id)
+          profile = createdProfile
+        }
+      }
     }
 
     // Verify profile has provider role

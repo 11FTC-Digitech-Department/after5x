@@ -217,6 +217,12 @@ export class ProviderApplicationFormPage implements OnInit {
     this.isSubmitting.set(true);
 
     try {
+      // Format date of birth to YYYY-MM-DD if it's an ISO string
+      let dateOfBirth = this.applicationForm.value.dateOfBirth;
+      if (dateOfBirth && dateOfBirth.includes('T')) {
+        dateOfBirth = dateOfBirth.split('T')[0];
+      }
+
       // Call Edge Function
       const { data, error } = await this.supabaseService.client.functions.invoke(
         'create-provider-application',
@@ -228,7 +234,7 @@ export class ProviderApplicationFormPage implements OnInit {
             email: this.applicationForm.value.email,
             password: this.applicationForm.value.password,
             mobileNumber: this.applicationForm.value.mobileNumber,
-            dateOfBirth: this.applicationForm.value.dateOfBirth,
+            dateOfBirth: dateOfBirth,
             hasSmartphone: this.applicationForm.value.hasSmartphone === 'yes',
             yearsOfExperience: parseInt(this.applicationForm.value.yearsOfExperience, 10),
             selectedCategories: this.applicationForm.value.selectedCategories
@@ -243,17 +249,38 @@ export class ProviderApplicationFormPage implements OnInit {
       }
 
       if (data?.error) {
+        console.error('Edge Function returned error:', data.error);
         await this.showToast(data.error, 'danger');
         return;
       }
 
-      // Success - redirect to OTP verification
+      // Check if the response indicates success
+      if (!data || (data.success !== true && data.success !== undefined)) {
+        console.error('Unexpected response format:', data);
+        await this.showToast('Unexpected response from server. Please try again.', 'danger');
+        return;
+      }
+
+      // Success - show toast and redirect to OTP verification
       await this.showToast('Application submitted! Please verify your email', 'success');
+      
+      // Navigate to verify-otp page with query params
       this.router.navigate(['/auth/verify-otp'], {
         queryParams: {
           email: this.applicationForm.value.email,
           type: 'signup'
         }
+      }).catch(err => {
+        console.error('Navigation error:', err);
+        // Fallback: try navigating after a short delay
+        setTimeout(() => {
+          this.router.navigate(['/auth/verify-otp'], {
+            queryParams: {
+              email: this.applicationForm.value.email,
+              type: 'signup'
+            }
+          });
+        }, 100);
       });
     } catch (error) {
       console.error('Unexpected error:', error);

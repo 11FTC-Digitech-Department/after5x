@@ -1,7 +1,7 @@
 import { Component, OnInit, OnDestroy, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Router } from '@angular/router';
+import { Router, ActivatedRoute } from '@angular/router';
 import {
   IonContent,
   IonHeader,
@@ -45,6 +45,7 @@ import { AuthFlowService } from '../../../../core/auth/auth-flow.service';
 })
 export class VerifyOtpPage implements OnInit, OnDestroy {
   private router = inject(Router);
+  private route = inject(ActivatedRoute);
   private supabaseService = inject(SupabaseService);
   private sessionService = inject(SessionService);
   private authFlowService = inject(AuthFlowService);
@@ -60,7 +61,7 @@ export class VerifyOtpPage implements OnInit, OnDestroy {
   private timerInterval: any;
 
   ngOnInit() {
-    // Get the form data from navigation state
+    // Get the form data from navigation state or query params
     const navigation = this.router.getCurrentNavigation();
     if (navigation?.extras?.state) {
       const { email, type } = navigation.extras.state as any;
@@ -68,9 +69,17 @@ export class VerifyOtpPage implements OnInit, OnDestroy {
       this.verificationType = type || 'signup';
     }
 
-    // If no email in state, redirect back to login
+    // If not found in state, check query params
+    if (!this.email) {
+      const queryParams = this.route.snapshot.queryParams;
+      this.email = queryParams['email'] || '';
+      this.verificationType = (queryParams['type'] as 'signup' | 'recovery' | 'email_change') || 'signup';
+    }
+
+    // If no email found, redirect back to login
     if (!this.email) {
       this.router.navigate(['/auth/login']);
+      return;
     }
 
     // Start the countdown timer
