@@ -9,18 +9,21 @@ import {
   IonTitle,
   IonButtons,
   IonBackButton,
-  IonList,
-  IonListHeader,
   IonItem,
   IonLabel,
   IonInput,
   IonDatetime,
   IonButton,
   IonSpinner,
-  IonCheckbox,
   IonRadioGroup,
   IonRadio,
   IonText,
+  IonCard,
+  IonCardHeader,
+  IonCardTitle,
+  IonCardContent,
+  IonChip,
+  IonIcon,
   ToastController
 } from '@ionic/angular/standalone';
 import { SupabaseService } from '../../../../core/supabase/supabase';
@@ -46,18 +49,21 @@ interface ServiceCategory {
     IonTitle,
     IonButtons,
     IonBackButton,
-    IonList,
-    IonListHeader,
     IonItem,
     IonLabel,
     IonInput,
     IonDatetime,
     IonButton,
     IonSpinner,
-    IonCheckbox,
     IonRadioGroup,
     IonRadio,
-    IonText
+    IonText,
+    IonCard,
+    IonCardHeader,
+    IonCardTitle,
+    IonCardContent,
+    IonChip,
+    IonIcon
   ]
 })
 export class ProviderApplicationFormPage implements OnInit {
