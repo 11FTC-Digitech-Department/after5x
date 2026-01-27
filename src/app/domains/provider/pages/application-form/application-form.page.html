@@ -1,0 +1,218 @@
+<ion-header>
+  <ion-toolbar>
+    <ion-buttons slot="start">
+      <ion-back-button defaultHref="/auth/welcome"></ion-back-button>
+    </ion-buttons>
+    <ion-title>Provider Application</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content>
+  <form [formGroup]="applicationForm" (ngSubmit)="onSubmit()">
+    <ion-list>
+      <!-- Personal Information -->
+      <ion-list-header>
+        <ion-label>Personal Information</ion-label>
+      </ion-list-header>
+
+      <ion-item [class.invalid]="isFieldInvalid('firstName')">
+        <ion-label position="stacked">First Name *</ion-label>
+        <ion-input
+          formControlName="firstName"
+          type="text"
+          placeholder="Enter your first name">
+        </ion-input>
+      </ion-item>
+      @if (getFieldError('firstName')) {
+        <ion-item lines="none">
+          <ion-text color="danger" class="ion-padding-start">
+            <small>{{ getFieldError('firstName') }}</small>
+          </ion-text>
+        </ion-item>
+      }
+
+      <ion-item>
+        <ion-label position="stacked">Middle Name</ion-label>
+        <ion-input
+          formControlName="middleName"
+          type="text"
+          placeholder="Enter your middle name (optional)">
+        </ion-input>
+      </ion-item>
+
+      <ion-item [class.invalid]="isFieldInvalid('lastName')">
+        <ion-label position="stacked">Last Name *</ion-label>
+        <ion-input
+          formControlName="lastName"
+          type="text"
+          placeholder="Enter your last name">
+        </ion-input>
+      </ion-item>
+      @if (getFieldError('lastName')) {
+        <ion-item lines="none">
+          <ion-text color="danger" class="ion-padding-start">
+            <small>{{ getFieldError('lastName') }}</small>
+          </ion-text>
+        </ion-item>
+      }
+
+      <ion-item [class.invalid]="isFieldInvalid('email')">
+        <ion-label position="stacked">Email Address *</ion-label>
+        <ion-input
+          formControlName="email"
+          type="email"
+          placeholder="your.email@example.com">
+        </ion-input>
+      </ion-item>
+      @if (getFieldError('email')) {
+        <ion-item lines="none">
+          <ion-text color="danger" class="ion-padding-start">
+            <small>{{ getFieldError('email') }}</small>
+          </ion-text>
+        </ion-item>
+      }
+
+      <ion-item [class.invalid]="isFieldInvalid('password')">
+        <ion-label position="stacked">Password *</ion-label>
+        <ion-input
+          formControlName="password"
+          type="password"
+          placeholder="Minimum 8 characters">
+        </ion-input>
+      </ion-item>
+      @if (getFieldError('password')) {
+        <ion-item lines="none">
+          <ion-text color="danger" class="ion-padding-start">
+            <small>{{ getFieldError('password') }}</small>
+          </ion-text>
+        </ion-item>
+      }
+
+      <ion-item [class.invalid]="isFieldInvalid('mobileNumber')">
+        <ion-label position="stacked">Mobile Number *</ion-label>
+        <ion-input
+          formControlName="mobileNumber"
+          type="tel"
+          placeholder="+639XXXXXXXXX or 09XXXXXXXXX">
+        </ion-input>
+      </ion-item>
+      @if (getFieldError('mobileNumber')) {
+        <ion-item lines="none">
+          <ion-text color="danger" class="ion-padding-start">
+            <small>{{ getFieldError('mobileNumber') }}</small>
+          </ion-text>
+        </ion-item>
+      }
+
+      <ion-item [class.invalid]="isFieldInvalid('dateOfBirth')">
+        <ion-label position="stacked">Date of Birth *</ion-label>
+        <ion-datetime
+          formControlName="dateOfBirth"
+          presentation="date"
+          [max]="getMaxDate()"
+          placeholder="Select your date of birth">
+        </ion-datetime>
+      </ion-item>
+      @if (getFieldError('dateOfBirth')) {
+        <ion-item lines="none">
+          <ion-text color="danger" class="ion-padding-start">
+            <small>{{ getFieldError('dateOfBirth') }}</small>
+          </ion-text>
+        </ion-item>
+      }
+
+      <!-- Specialization -->
+      <ion-list-header>
+        <ion-label>Specialization *</ion-label>
+      </ion-list-header>
+      <ion-item lines="none">
+        <ion-text color="medium">
+          <small>Select all services you can provide</small>
+        </ion-text>
+      </ion-item>
+
+      @if (isLoadingCategories()) {
+        <ion-item>
+          <ion-spinner name="crescent"></ion-spinner>
+          <ion-label class="ion-margin-start">Loading categories...</ion-label>
+        </ion-item>
+      } @else {
+        @for (category of categories(); track category.id) {
+          <ion-item>
+            <ion-checkbox
+              [value]="category.id"
+              [checked]="isCategorySelected(category.id)"
+              (ionChange)="toggleCategory(category.id)">
+            </ion-checkbox>
+            <ion-label class="ion-margin-start">{{ category.name }}</ion-label>
+          </ion-item>
+        }
+      }
+
+      @if (getFieldError('selectedCategories')) {
+        <ion-item lines="none">
+          <ion-text color="danger" class="ion-padding-start">
+            <small>{{ getFieldError('selectedCategories') }}</small>
+          </ion-text>
+        </ion-item>
+      }
+
+      <!-- Professional Information -->
+      <ion-list-header>
+        <ion-label>Professional Information</ion-label>
+      </ion-list-header>
+
+      <ion-item [class.invalid]="isFieldInvalid('yearsOfExperience')">
+        <ion-label position="stacked">Years of Experience in Selected Specialization *</ion-label>
+        <ion-input
+          formControlName="yearsOfExperience"
+          type="number"
+          min="0"
+          placeholder="0">
+        </ion-input>
+      </ion-item>
+      @if (getFieldError('yearsOfExperience')) {
+        <ion-item lines="none">
+          <ion-text color="danger" class="ion-padding-start">
+            <small>{{ getFieldError('yearsOfExperience') }}</small>
+          </ion-text>
+        </ion-item>
+      }
+
+      <ion-list-header>
+        <ion-label>Do you own a smartphone? *</ion-label>
+      </ion-list-header>
+      <ion-radio-group formControlName="hasSmartphone">
+        <ion-item>
+          <ion-label>Yes</ion-label>
+          <ion-radio slot="start" value="yes"></ion-radio>
+        </ion-item>
+        <ion-item>
+          <ion-label>No</ion-label>
+          <ion-radio slot="start" value="no"></ion-radio>
+        </ion-item>
+      </ion-radio-group>
+      @if (getFieldError('hasSmartphone')) {
+        <ion-item lines="none">
+          <ion-text color="danger" class="ion-padding-start">
+            <small>{{ getFieldError('hasSmartphone') }}</small>
+          </ion-text>
+        </ion-item>
+      }
+    </ion-list>
+
+    <div class="ion-padding">
+      <ion-button
+        expand="block"
+        type="submit"
+        [disabled]="applicationForm.invalid || isSubmitting() || isLoadingCategories()">
+        @if (isSubmitting()) {
+          <ion-spinner name="crescent" class="ion-margin-end"></ion-spinner>
+          Submitting...
+        } @else {
+          Submit Application
+        }
+      </ion-button>
+    </div>
+  </form>
+</ion-content>
