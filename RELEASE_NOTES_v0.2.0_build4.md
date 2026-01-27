@@ -89,3 +89,35 @@
 
 ### Previous Version
 - v0.1.0 (Version Code 2)
+
+---
+
+## Google Play Store Release Notes
+
+> Character limit: 500 characters
+
+<en-US>
+What's New in v0.2.0:
+
+💳 Payments
+• Xendit payment integration
+• In-app payment with status tracking
+• Provider wallet & earnings
+
+📅 Bookings
+• New booking details page
+• Urgency selection
+• Smart timeslot availability
+• Booking cancellation
+
+🔔 Notifications
+• Real-time updates
+• Notification center
+• Customizable settings
+
+👤 Profile
+• Edit profile & addresses
+• Business profile for providers
+
+🐛 Bug fixes & performance improvements
+</en-US>
