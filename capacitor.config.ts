@@ -4,6 +4,9 @@ const config: CapacitorConfig = {
   appId: 'com.rockit.after5',
   appName: 'After5',
   webDir: 'www',
+  android: {
+    flavor: 'customer',  // Default flavor for development
+  },
   plugins: {
     CapacitorHttp: {
       enabled: false,  // Disabled: was stripping Authorization headers, causing 401 on Edge Functions
