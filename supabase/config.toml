@@ -127,7 +127,8 @@ additional_redirect_urls = ["https://localhost:8100"]
 jwt_expiry = 3600
 # Refresh token expiry: 30 days in seconds (2592000 = 30 * 24 * 60 * 60)
 # This enables rolling expiry - each app usage extends the session by another 30 days
-refresh_token_expiry = 2592000
+# Note: refresh_token_expiry is not a valid config key in current Supabase CLI
+# refresh_token_expiry = 2592000
 # JWT issuer URL. If not set, defaults to the local API URL (http://127.0.0.1:<port>/auth/v1).
 # jwt_issuer = ""
 # Path to JWT signing key. DO NOT commit your signing keys file to git.

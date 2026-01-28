@@ -74,6 +74,12 @@
             <ion-text class="section-title" color="medium">
               <small>Your saved addresses</small>
             </ion-text>
+            @if (locationError()) {
+              <ion-item color="danger" lines="none" class="error-item">
+                <ion-icon name="alert-circle" slot="start"></ion-icon>
+                <ion-label class="ion-text-wrap">{{ locationError() }}</ion-label>
+              </ion-item>
+            }
             <ion-list class="address-list">
               @for (address of userAddresses(); track address.id) {
                 <ion-item button (click)="selectSavedAddress(address)" class="address-item">
@@ -83,6 +89,11 @@
                       {{ address.label }}
                       @if (address.is_default) {
                         <ion-badge color="primary" class="default-badge">Default</ion-badge>
+                      }
+                      @if (!address.hasValidLocation) {
+                        <ion-badge color="warning" class="invalid-badge">
+                          <ion-icon name="warning-outline"></ion-icon> Invalid
+                        </ion-badge>
                       }
                     </h3>
                     <p class="address-text">{{ address.full_address }}</p>
@@ -130,16 +141,6 @@
         }
       </div>
 
-      <!-- Map Selection Option - Always Available -->
-      <div class="section map-option-section">
-        <ion-text class="section-title" color="medium">
-          <small>Or choose a new location</small>
-        </ion-text>
-        <ion-button expand="block" fill="outline" (click)="openMapSelector()" class="map-button">
-          <ion-icon name="map" slot="start"></ion-icon>
-          Select Location on Map
-        </ion-button>
-      </div>
     </div>
   } @else {
     <!-- Map View -->

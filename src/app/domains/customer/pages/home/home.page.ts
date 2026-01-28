@@ -37,6 +37,8 @@ interface PopularService {
   rating: number;
   provider: string;
   image: string;
+  /** Category slug for catalog navigation (e.g. aircon, locksmithing, automotive) */
+  categorySlug: string;
 }
 
 @Component({
@@ -99,7 +101,8 @@ export class HomePage implements OnInit {
       price: 1200,
       rating: 4.8,
       provider: 'Teko PH',
-      image: 'assets/splash/main-splash.png'
+      image: 'assets/splash/main-splash.png',
+      categorySlug: 'aircon'
     },
     {
       id: '2',
@@ -107,7 +110,8 @@ export class HomePage implements OnInit {
       price: 800,
       rating: 4.9,
       provider: 'Masterlock PH',
-      image: 'assets/splash/main-splash.png'
+      image: 'assets/splash/main-splash.png',
+      categorySlug: 'locksmithing'
     },
     {
       id: '3',
@@ -115,7 +119,8 @@ export class HomePage implements OnInit {
       price: 1500,
       rating: 4.7,
       provider: 'KMAce Auto',
-      image: 'assets/splash/main-splash.png'
+      image: 'assets/splash/main-splash.png',
+      categorySlug: 'automotive'
     }
   ];
 
@@ -175,9 +180,7 @@ export class HomePage implements OnInit {
   }
 
   navigateToService(service: PopularService) {
-    // For now, navigate to catalog with a default category
-    // In production, this would navigate to specific service details
-    this.router.navigate(['/c/catalog', 'plumbing']); // Default to first category
+    this.router.navigate(['/c/catalog', service.categorySlug]);
   }
 
   navigateToNotifications() {

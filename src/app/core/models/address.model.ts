@@ -12,6 +12,7 @@ export interface UserAddress {
     lat: number;
     lng: number;
   };
+  hasValidLocation?: boolean;
   created_at: string;
   updated_at: string;
 }

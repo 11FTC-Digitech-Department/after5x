@@ -1,0 +1,101 @@
+<ion-header>
+  <ion-toolbar>
+    <ion-title>{{ isEditMode() ? 'Edit Address' : 'New Address' }}</ion-title>
+    <ion-buttons slot="end">
+      <ion-button (click)="onCancel()">
+        <ion-icon name="close" slot="icon-only"></ion-icon>
+      </ion-button>
+    </ion-buttons>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content>
+  <form [formGroup]="addressForm" (ngSubmit)="onSubmit()">
+    <ion-list>
+      <!-- Selected Location Display (read-only) -->
+      <ion-item lines="full" class="location-item">
+        <ion-icon name="location" slot="start" color="primary"></ion-icon>
+        <ion-label>
+          <p class="location-label">Selected Location</p>
+          <h3 class="location-address">{{ location.address }}</h3>
+        </ion-label>
+        <ion-button fill="clear" slot="end" (click)="changeLocation()">
+          Change
+        </ion-button>
+      </ion-item>
+
+      <!-- Address Label -->
+      <ion-item lines="full">
+        <ion-select
+          formControlName="label"
+          label="Address Label"
+          labelPlacement="stacked"
+          interface="popover"
+        >
+          @for (label of addressLabels; track label) {
+            <ion-select-option [value]="label">{{ label }}</ion-select-option>
+          }
+        </ion-select>
+      </ion-item>
+
+      <!-- Set as Default -->
+      <ion-item lines="full">
+        <ion-label>Set as Default</ion-label>
+        <ion-toggle formControlName="is_default" slot="end"></ion-toggle>
+      </ion-item>
+
+      <!-- Unit Details -->
+      <ion-item lines="full">
+        <ion-input
+          formControlName="unit_details"
+          label="Unit Details"
+          labelPlacement="stacked"
+          placeholder="e.g., Unit 123, Floor 5"
+        ></ion-input>
+      </ion-item>
+
+      <!-- Access Instructions -->
+      <ion-item lines="full">
+        <ion-textarea
+          formControlName="access_instructions"
+          label="Access Instructions"
+          labelPlacement="stacked"
+          placeholder="e.g., Ring the bell at the gate"
+          [rows]="2"
+          [autoGrow]="true"
+        ></ion-textarea>
+      </ion-item>
+
+      <!-- Parking Toggle -->
+      <ion-item lines="full">
+        <ion-label>Parking Available</ion-label>
+        <ion-toggle formControlName="has_parking" slot="end"></ion-toggle>
+      </ion-item>
+
+      <!-- Parking Instructions (conditionally shown) -->
+      @if (addressForm.get('has_parking')?.value) {
+        <ion-item lines="full">
+          <ion-textarea
+            formControlName="parking_instructions"
+            label="Parking Instructions"
+            labelPlacement="stacked"
+            placeholder="e.g., Use visitor parking on the left"
+            [rows]="2"
+            [autoGrow]="true"
+          ></ion-textarea>
+        </ion-item>
+      }
+    </ion-list>
+
+    <div class="form-actions">
+      <ion-button expand="block" type="submit" [disabled]="isSubmitting() || addressForm.invalid">
+        @if (isSubmitting()) {
+          <ion-spinner name="crescent" slot="start"></ion-spinner>
+          Saving...
+        } @else {
+          {{ isEditMode() ? 'Update Address' : 'Save Address' }}
+        }
+      </ion-button>
+    </div>
+  </form>
+</ion-content>

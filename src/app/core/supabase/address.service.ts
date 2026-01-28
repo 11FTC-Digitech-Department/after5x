@@ -30,21 +30,37 @@ export class AddressService {
         return { data: null, error: error.message };
       }
 
-      // Transform the location from PostGIS geography to lat/lng
-      const addresses: UserAddress[] = data?.map(address => ({
-        id: address.id,
-        user_id: address.user_id,
-        label: address.label || 'Home',
-        is_default: address.is_default || false,
-        full_address: address.full_address,
-        unit_details: address.unit_details || undefined,
-        access_instructions: address.access_instructions || undefined,
-        has_parking: address.has_parking || false,
-        parking_instructions: address.parking_instructions || undefined,
-        location: this.parseGeographyPoint(address.location),
-        created_at: address.created_at || '',
-        updated_at: address.updated_at || ''
-      })) || [];
+      // Read lat/lng directly from columns instead of parsing geography
+      const addresses: UserAddress[] = data?.map((address: any) => {
+        const lat = address.latitude;
+        const lng = address.longitude;
+        const isValid = this.isValidCoordinate(lat, lng);
+
+        console.log('[AddressService] Mapping address:', {
+          id: address.id,
+          label: address.label,
+          latitude: lat,
+          longitude: lng,
+          isValid,
+          rawData: { latitude: address.latitude, longitude: address.longitude }
+        });
+
+        return {
+          id: address.id,
+          user_id: address.user_id,
+          label: address.label || 'Home',
+          is_default: address.is_default || false,
+          full_address: address.full_address,
+          unit_details: address.unit_details || undefined,
+          access_instructions: address.access_instructions || undefined,
+          has_parking: address.has_parking || false,
+          parking_instructions: address.parking_instructions || undefined,
+          location: isValid ? { lat, lng } : { lat: 0, lng: 0 },
+          hasValidLocation: isValid,
+          created_at: address.created_at || '',
+          updated_at: address.updated_at || ''
+        };
+      }) || [];
 
       return { data: addresses, error: null };
     } catch (error) {
@@ -78,19 +94,25 @@ export class AddressService {
         return { data: null, error: 'Address not found' };
       }
 
+      const addressData = data as any;
+      const lat = addressData.latitude;
+      const lng = addressData.longitude;
+      const isValid = this.isValidCoordinate(lat, lng);
+
       const address: UserAddress = {
-        id: data.id,
-        user_id: data.user_id,
-        label: data.label || 'Home',
-        is_default: data.is_default || false,
-        full_address: data.full_address,
-        unit_details: data.unit_details || undefined,
-        access_instructions: data.access_instructions || undefined,
-        has_parking: data.has_parking || false,
-        parking_instructions: data.parking_instructions || undefined,
-        location: this.parseGeographyPoint(data.location),
-        created_at: data.created_at || '',
-        updated_at: data.updated_at || ''
+        id: addressData.id,
+        user_id: addressData.user_id,
+        label: addressData.label || 'Home',
+        is_default: addressData.is_default || false,
+        full_address: addressData.full_address,
+        unit_details: addressData.unit_details || undefined,
+        access_instructions: addressData.access_instructions || undefined,
+        has_parking: addressData.has_parking || false,
+        parking_instructions: addressData.parking_instructions || undefined,
+        location: isValid ? { lat, lng } : { lat: 0, lng: 0 },
+        hasValidLocation: isValid,
+        created_at: addressData.created_at || '',
+        updated_at: addressData.updated_at || ''
       };
 
       return { data: address, error: null };
@@ -110,6 +132,11 @@ export class AddressService {
         return { data: null, error: 'User not authenticated' };
       }
 
+      // Validate coordinates before saving
+      if (!this.isValidCoordinate(addressData.latitude, addressData.longitude)) {
+        return { data: null, error: 'Invalid location coordinates. Please select a valid location on the map.' };
+      }
+
       // If this is set as default, unset other defaults first
       if (addressData.is_default) {
         await this.unsetDefaultAddresses(user.id);
@@ -126,8 +153,10 @@ export class AddressService {
           access_instructions: addressData.access_instructions,
           has_parking: addressData.has_parking || false,
           parking_instructions: addressData.parking_instructions,
+          latitude: addressData.latitude,
+          longitude: addressData.longitude,
           location: `POINT(${addressData.longitude} ${addressData.latitude})`
-        })
+        } as any)
         .select()
         .single();
 
@@ -135,19 +164,25 @@ export class AddressService {
         return { data: null, error: error.message };
       }
 
+      const responseData = data as any;
+      const lat = responseData.latitude;
+      const lng = responseData.longitude;
+      const isValid = this.isValidCoordinate(lat, lng);
+
       const address: UserAddress = {
-        id: data.id,
-        user_id: data.user_id,
-        label: data.label || 'Home',
-        is_default: data.is_default || false,
-        full_address: data.full_address,
-        unit_details: data.unit_details || undefined,
-        access_instructions: data.access_instructions || undefined,
-        has_parking: data.has_parking || false,
-        parking_instructions: data.parking_instructions || undefined,
-        location: this.parseGeographyPoint(data.location),
-        created_at: data.created_at || '',
-        updated_at: data.updated_at || ''
+        id: responseData.id,
+        user_id: responseData.user_id,
+        label: responseData.label || 'Home',
+        is_default: responseData.is_default || false,
+        full_address: responseData.full_address,
+        unit_details: responseData.unit_details || undefined,
+        access_instructions: responseData.access_instructions || undefined,
+        has_parking: responseData.has_parking || false,
+        parking_instructions: responseData.parking_instructions || undefined,
+        location: isValid ? { lat, lng } : { lat: 0, lng: 0 },
+        hasValidLocation: isValid,
+        created_at: responseData.created_at || '',
+        updated_at: responseData.updated_at || ''
       };
 
       return { data: address, error: null };
@@ -184,6 +219,12 @@ export class AddressService {
 
       // Only include location if latitude and longitude are provided
       if (addressData.latitude !== undefined && addressData.longitude !== undefined) {
+        // Validate coordinates before saving
+        if (!this.isValidCoordinate(addressData.latitude, addressData.longitude)) {
+          return { data: null, error: 'Invalid location coordinates. Please select a valid location on the map.' };
+        }
+        updateData.latitude = addressData.latitude;
+        updateData.longitude = addressData.longitude;
         updateData.location = `POINT(${addressData.longitude} ${addressData.latitude})`;
       }
 
@@ -199,19 +240,25 @@ export class AddressService {
         return { data: null, error: error.message };
       }
 
+      const responseData = data as any;
+      const lat = responseData.latitude;
+      const lng = responseData.longitude;
+      const isValid = this.isValidCoordinate(lat, lng);
+
       const address: UserAddress = {
-        id: data.id,
-        user_id: data.user_id,
-        label: data.label || 'Home',
-        is_default: data.is_default || false,
-        full_address: data.full_address,
-        unit_details: data.unit_details || undefined,
-        access_instructions: data.access_instructions || undefined,
-        has_parking: data.has_parking || false,
-        parking_instructions: data.parking_instructions || undefined,
-        location: this.parseGeographyPoint(data.location),
-        created_at: data.created_at || '',
-        updated_at: data.updated_at || ''
+        id: responseData.id,
+        user_id: responseData.user_id,
+        label: responseData.label || 'Home',
+        is_default: responseData.is_default || false,
+        full_address: responseData.full_address,
+        unit_details: responseData.unit_details || undefined,
+        access_instructions: responseData.access_instructions || undefined,
+        has_parking: responseData.has_parking || false,
+        parking_instructions: responseData.parking_instructions || undefined,
+        location: isValid ? { lat, lng } : { lat: 0, lng: 0 },
+        hasValidLocation: isValid,
+        created_at: responseData.created_at || '',
+        updated_at: responseData.updated_at || ''
       };
 
       return { data: address, error: null };
@@ -309,19 +356,25 @@ export class AddressService {
         return { data: null, error: null };
       }
 
+      const responseData = data as any;
+      const lat = responseData.latitude;
+      const lng = responseData.longitude;
+      const isValid = this.isValidCoordinate(lat, lng);
+
       const address: UserAddress = {
-        id: data.id,
-        user_id: data.user_id,
-        label: data.label || 'Home',
-        is_default: data.is_default || false,
-        full_address: data.full_address,
-        unit_details: data.unit_details || undefined,
-        access_instructions: data.access_instructions || undefined,
-        has_parking: data.has_parking || false,
-        parking_instructions: data.parking_instructions || undefined,
-        location: this.parseGeographyPoint(data.location),
-        created_at: data.created_at || '',
-        updated_at: data.updated_at || ''
+        id: responseData.id,
+        user_id: responseData.user_id,
+        label: responseData.label || 'Home',
+        is_default: responseData.is_default || false,
+        full_address: responseData.full_address,
+        unit_details: responseData.unit_details || undefined,
+        access_instructions: responseData.access_instructions || undefined,
+        has_parking: responseData.has_parking || false,
+        parking_instructions: responseData.parking_instructions || undefined,
+        location: isValid ? { lat, lng } : { lat: 0, lng: 0 },
+        hasValidLocation: isValid,
+        created_at: responseData.created_at || '',
+        updated_at: responseData.updated_at || ''
       };
 
       return { data: address, error: null };
@@ -347,28 +400,39 @@ export class AddressService {
   }
 
   /**
-   * Parse PostGIS geography point to lat/lng object
+   * Validate that coordinates are valid and not 0,0
    */
-  private parseGeographyPoint(geographyPoint: any): { lat: number; lng: number } {
-    // PostGIS geography point comes as "POINT(lng lat)" string or already parsed object
-    if (typeof geographyPoint === 'string') {
-      const match = geographyPoint.match(/POINT\(([^ ]+) ([^)]+)\)/);
-      if (match) {
-        return {
-          lng: parseFloat(match[1]),
-          lat: parseFloat(match[2])
-        };
+  private isValidCoordinate(lat: number, lng: number): boolean {
+    return (
+      typeof lat === 'number' &&
+      typeof lng === 'number' &&
+      !isNaN(lat) &&
+      !isNaN(lng) &&
+      !(lat === 0 && lng === 0) &&
+      lat >= -90 && lat <= 90 &&
+      lng >= -180 && lng <= 180
+    );
+  }
+
+  /**
+   * Parse geography point to lat/lng object (fallback for legacy data)
+   * Note: Primary coordinate reading now uses latitude/longitude columns directly
+   * Returns null if parsing fails instead of defaulting to 0,0
+   */
+  private parseGeographyPoint(geographyPoint: any): { lat: number; lng: number } | null {
+    if (!geographyPoint) {
+      return null;
+    }
+
+    // Handle object format as fallback for legacy data
+    if (typeof geographyPoint === 'object') {
+      const lat = geographyPoint.lat ?? geographyPoint.latitude;
+      const lng = geographyPoint.lng ?? geographyPoint.longitude;
+      if (this.isValidCoordinate(lat, lng)) {
+        return { lat, lng };
       }
     }
 
-    // If it's already an object with coordinates
-    if (geographyPoint && typeof geographyPoint === 'object') {
-      return {
-        lat: geographyPoint.lat || geographyPoint.latitude || 0,
-        lng: geographyPoint.lng || geographyPoint.longitude || 0
-      };
-    }
-
-    return { lat: 0, lng: 0 };
+    return null;
   }
 }

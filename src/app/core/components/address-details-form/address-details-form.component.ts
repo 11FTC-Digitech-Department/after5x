@@ -22,14 +22,13 @@ import {
   ModalController,
   ToastController
 } from '@ionic/angular/standalone';
-import { MapSelectorComponent } from '../map-selector/map-selector.component';
 import { AddressService } from '../../supabase/address.service';
 import { UserAddress, CreateAddressRequest, UpdateAddressRequest, GeocodeResult } from '../../models/address.model';
 
 @Component({
-  selector: 'app-address-form',
-  templateUrl: './address-form.component.html',
-  styleUrls: ['./address-form.component.scss'],
+  selector: 'app-address-details-form',
+  templateUrl: './address-details-form.component.html',
+  styleUrls: ['./address-details-form.component.scss'],
   standalone: true,
   imports: [
     CommonModule,
@@ -51,26 +50,25 @@ import { UserAddress, CreateAddressRequest, UpdateAddressRequest, GeocodeResult 
     IonSelectOption,
     IonText,
     IonIcon,
-    IonSpinner,
-    MapSelectorComponent
+    IonSpinner
   ]
 })
-export class AddressFormComponent implements OnInit {
+export class AddressDetailsFormComponent implements OnInit {
   private modalController = inject(ModalController);
   private formBuilder = inject(FormBuilder);
   private addressService = inject(AddressService);
   private toastController = inject(ToastController);
 
   // Component inputs (passed via modal props)
-  address: UserAddress | null = null;
-  isEditMode = computed(() => !!this.address);
+  location!: GeocodeResult; // Required - the selected location from the map
+  existingAddress: UserAddress | null = null; // Optional - for edit mode
+
+  // Computed
+  isEditMode = computed(() => !!this.existingAddress);
 
   // Form
   addressForm!: FormGroup;
   isSubmitting = signal(false);
-
-  // Location data
-  selectedLocation = signal<GeocodeResult | null>(null);
 
   // Address labels
   addressLabels = [
@@ -91,47 +89,27 @@ export class AddressFormComponent implements OnInit {
   }
 
   private initializeForm() {
-    const existingAddress = this.address;
+    const existing = this.existingAddress;
 
     this.addressForm = this.formBuilder.group({
-      label: [existingAddress?.label || 'Home', [Validators.required]],
-      is_default: [existingAddress?.is_default || false],
-      full_address: [existingAddress?.full_address || '', [Validators.required]],
-      unit_details: [existingAddress?.unit_details || ''],
-      access_instructions: [existingAddress?.access_instructions || ''],
-      has_parking: [existingAddress?.has_parking || false],
-      parking_instructions: [existingAddress?.parking_instructions || '']
-    });
-
-    // Set initial location if editing
-    if (existingAddress) {
-      this.selectedLocation.set({
-        lat: existingAddress.location.lat,
-        lng: existingAddress.location.lng,
-        address: existingAddress.full_address
-      });
-    }
-  }
-
-  onLocationSelected(location: GeocodeResult) {
-    this.selectedLocation.set(location);
-    // Update the address field with the selected location's address
-    this.addressForm.patchValue({
-      full_address: location.address
+      label: [existing?.label || 'Home', [Validators.required]],
+      is_default: [existing?.is_default || false],
+      unit_details: [existing?.unit_details || ''],
+      access_instructions: [existing?.access_instructions || ''],
+      has_parking: [existing?.has_parking || false],
+      parking_instructions: [existing?.parking_instructions || '']
     });
   }
 
   async onSubmit() {
-    if (this.addressForm.invalid || !this.selectedLocation()) {
-      this.showToast('Please fill in all required fields and select a location', 'warning');
+    if (this.addressForm.invalid) {
+      this.showToast('Please fill in all required fields', 'warning');
       return;
     }
 
-    const location = this.selectedLocation()!;
-
-    // Validate coordinates before saving
-    if (location.lat === 0 && location.lng === 0) {
-      this.showToast('Invalid location. Please select a valid location on the map.', 'warning');
+    // Validate the location
+    if (!this.location || (this.location.lat === 0 && this.location.lng === 0)) {
+      this.showToast('Invalid location. Please select a valid location.', 'warning');
       return;
     }
 
@@ -143,16 +121,16 @@ export class AddressFormComponent implements OnInit {
       if (this.isEditMode()) {
         // Update existing address
         const updateRequest: UpdateAddressRequest = {
-          id: this.address!.id,
+          id: this.existingAddress!.id,
           label: formValue.label,
           is_default: formValue.is_default,
-          full_address: formValue.full_address,
+          full_address: this.location.address,
           unit_details: formValue.unit_details,
           access_instructions: formValue.access_instructions,
           has_parking: formValue.has_parking,
           parking_instructions: formValue.parking_instructions,
-          latitude: location.lat,
-          longitude: location.lng
+          latitude: this.location.lat,
+          longitude: this.location.lng
         };
 
         const result = await this.addressService.updateAddress(updateRequest);
@@ -168,13 +146,13 @@ export class AddressFormComponent implements OnInit {
         const createRequest: CreateAddressRequest = {
           label: formValue.label,
           is_default: formValue.is_default,
-          full_address: formValue.full_address,
+          full_address: this.location.address,
           unit_details: formValue.unit_details,
           access_instructions: formValue.access_instructions,
           has_parking: formValue.has_parking,
           parking_instructions: formValue.parking_instructions,
-          latitude: location.lat,
-          longitude: location.lng
+          latitude: this.location.lat,
+          longitude: this.location.lng
         };
 
         const result = await this.addressService.createAddress(createRequest);
@@ -195,6 +173,11 @@ export class AddressFormComponent implements OnInit {
 
   async onCancel() {
     await this.modalController.dismiss(null, 'cancel');
+  }
+
+  async changeLocation() {
+    // Dismiss modal with special role to trigger navigation to map
+    await this.modalController.dismiss(null, 'change-location');
   }
 
   private async showToast(message: string, color: 'success' | 'warning' | 'danger') {

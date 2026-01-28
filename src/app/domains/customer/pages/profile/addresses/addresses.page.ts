@@ -2,6 +2,7 @@ import { Component, OnInit, OnDestroy, inject, signal, computed } from '@angular
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
+import { ViewWillEnter } from '@ionic/angular';
 import {
   IonContent,
   IonHeader,
@@ -25,8 +26,14 @@ import {
   AlertController
 } from '@ionic/angular/standalone';
 import { AddressService } from '../../../../../core/supabase/address.service';
-import { AddressFormComponent } from '../../../../../core/components/address-form/address-form.component';
-import { UserAddress } from '../../../../../core/models/address.model';
+import { AddressDetailsFormComponent } from '../../../../../core/components/address-details-form/address-details-form.component';
+import { UserAddress, GeocodeResult } from '../../../../../core/models/address.model';
+
+// Navigation state interface
+interface AddressSelectorNavigationState {
+  selectedLocation?: GeocodeResult;
+  existingAddress?: UserAddress;
+}
 
 @Component({
   selector: 'app-addresses',
@@ -55,7 +62,7 @@ import { UserAddress } from '../../../../../core/models/address.model';
     FormsModule
   ]
 })
-export class AddressesPage implements OnInit, OnDestroy {
+export class AddressesPage implements OnInit, OnDestroy, ViewWillEnter {
   private router = inject(Router);
   private addressService = inject(AddressService);
   private modalController = inject(ModalController);
@@ -74,11 +81,30 @@ export class AddressesPage implements OnInit, OnDestroy {
   );
 
   ngOnInit() {
-    this.loadAddresses();
+    // Initial load happens in ionViewWillEnter
   }
 
   ngOnDestroy() {
     // Cleanup if needed
+  }
+
+  ionViewWillEnter() {
+    this.handleNavigationReturn();
+    this.loadAddresses();
+  }
+
+  private async handleNavigationReturn() {
+    const state = history.state as AddressSelectorNavigationState;
+
+    if (state?.selectedLocation) {
+      // Clear state to prevent re-triggering on subsequent navigations
+      const location = state.selectedLocation;
+      const existingAddress = state.existingAddress;
+      history.replaceState({}, '');
+
+      // Open details form with selected location
+      await this.openAddressDetailsForm(location, existingAddress);
+    }
   }
 
   async loadAddresses() {
@@ -108,36 +134,68 @@ export class AddressesPage implements OnInit, OnDestroy {
     }
   }
 
-  async addNewAddress() {
-    const modal = await this.modalController.create({
-      component: AddressFormComponent,
-      componentProps: {
-        address: null // null indicates create mode
-      },
+  /**
+   * Add new address - navigate to address-selector to pick location
+   */
+  addNewAddress() {
+    this.router.navigate(['/c/address-selector'], {
+      state: {
+        returnUrl: '/c/profile/addresses',
+        mode: 'create'
+      }
     });
+  }
 
-    modal.onDidDismiss().then(async (result) => {
-      if (result.role === 'save' && result.data) {
-        // Reload addresses to get the updated list
-        await this.loadAddresses();
+  /**
+   * Edit address - if location is invalid, navigate to map; otherwise open details form directly
+   */
+  async editAddress(address: UserAddress) {
+    // If invalid location (0,0 or no valid location), auto-open map to fix
+    if (!address.hasValidLocation || (address.location.lat === 0 && address.location.lng === 0)) {
+      this.router.navigate(['/c/address-selector'], {
+        state: {
+          returnUrl: '/c/profile/addresses',
+          mode: 'edit',
+          existingAddress: address
+        }
+      });
+      return;
+    }
+
+    // Valid location - open details form directly
+    const location: GeocodeResult = {
+      lat: address.location.lat,
+      lng: address.location.lng,
+      address: address.full_address
+    };
+    await this.openAddressDetailsForm(location, address);
+  }
+
+  /**
+   * Open the address details form modal
+   */
+  private async openAddressDetailsForm(location: GeocodeResult, existingAddress?: UserAddress) {
+    const modal = await this.modalController.create({
+      component: AddressDetailsFormComponent,
+      componentProps: {
+        location,
+        existingAddress
       }
     });
 
-    await modal.present();
-  }
-
-  async editAddress(address: UserAddress) {
-    const modal = await this.modalController.create({
-      component: AddressFormComponent,
-      componentProps: {
-        address: address
-      },
-    });
-
     modal.onDidDismiss().then(async (result) => {
-      if (result.role === 'save' && result.data) {
-        // Reload addresses to get the updated list
+      if (result.role === 'save') {
+        // Reload addresses after save
         await this.loadAddresses();
+      } else if (result.role === 'change-location') {
+        // User wants to change location - navigate to map
+        this.router.navigate(['/c/address-selector'], {
+          state: {
+            returnUrl: '/c/profile/addresses',
+            mode: existingAddress ? 'edit' : 'create',
+            existingAddress
+          }
+        });
       }
     });
 

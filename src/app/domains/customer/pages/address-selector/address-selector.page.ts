@@ -27,6 +27,13 @@ import { AddressService } from '@core/supabase/address.service';
 import { GoogleMapsService } from '@core/services/google-maps.service';
 import { UserAddress, GeocodeResult, GooglePlaceResult } from '@core/models/address.model';
 
+// Navigation state interface for address selector
+interface AddressSelectorNavigationState {
+  returnUrl?: string;
+  mode?: 'create' | 'edit';
+  existingAddress?: UserAddress;
+}
+
 @Component({
   selector: 'app-address-selector',
   templateUrl: './address-selector.page.html',
@@ -75,6 +82,9 @@ export class AddressSelectorPage implements ViewWillEnter, OnInit, OnDestroy {
   showSearchResults = signal(false);
   isSelectingPlace = signal(false);
 
+  // Edit mode state
+  private navigationState: AddressSelectorNavigationState | null = null;
+
   // RxJS for debouncing
   private searchSubject = new Subject<string>();
   private destroy$ = new Subject<void>();
@@ -98,6 +108,26 @@ export class AddressSelectorPage implements ViewWillEnter, OnInit, OnDestroy {
   }
 
   ionViewWillEnter() {
+    // Capture navigation state
+    this.navigationState = history.state as AddressSelectorNavigationState;
+
+    // If editing an address with existing location, pre-center the map
+    if (this.navigationState?.existingAddress?.hasValidLocation) {
+      const existingAddr = this.navigationState.existingAddress;
+      if (existingAddr.location.lat !== 0 || existingAddr.location.lng !== 0) {
+        this.currentLocation.set({
+          lat: existingAddr.location.lat,
+          lng: existingAddr.location.lng
+        });
+        // Pre-select the location
+        this.selectedLocation.set({
+          lat: existingAddr.location.lat,
+          lng: existingAddr.location.lng,
+          address: existingAddr.full_address
+        });
+      }
+    }
+
     // Only load addresses if not already loaded
     if (!this.hasLoaded()) {
       this.loadUserAddresses();
@@ -135,6 +165,15 @@ export class AddressSelectorPage implements ViewWillEnter, OnInit, OnDestroy {
   }
 
   selectSavedAddress(address: UserAddress) {
+    // Validate coordinates before selection
+    if (!address.hasValidLocation || (address.location.lat === 0 && address.location.lng === 0)) {
+      this.locationError.set('This address has invalid location data. Please select a different address or use the map to update it.');
+      return;
+    }
+
+    // Clear any previous error
+    this.locationError.set(null);
+
     const location: GeocodeResult = {
       lat: address.location.lat,
       lng: address.location.lng,
@@ -145,10 +184,6 @@ export class AddressSelectorPage implements ViewWillEnter, OnInit, OnDestroy {
 
   onLocationSelected(location: GeocodeResult) {
     this.selectedLocation.set(location);
-  }
-
-  openMapSelector() {
-    this.showMap.set(true);
   }
 
   async useCurrentLocation() {
@@ -313,13 +348,16 @@ export class AddressSelectorPage implements ViewWillEnter, OnInit, OnDestroy {
   }
 
   private confirmSelection(location: GeocodeResult) {
-    // Get the return URL from navigation state, or use default
-    const state = history.state as { returnUrl?: string };
-    const returnUrl = state?.returnUrl || '/c/book';
+    // Get the return URL and existing address from navigation state
+    const returnUrl = this.navigationState?.returnUrl || '/c/book';
+    const existingAddress = this.navigationState?.existingAddress;
 
-    // Navigate back with the selected location
+    // Navigate back with the selected location and existing address data (for edit mode)
     this.navController.navigateBack(returnUrl, {
-      state: { selectedLocation: location }
+      state: {
+        selectedLocation: location,
+        existingAddress: existingAddress // Pass back for edit mode
+      }
     });
   }
 

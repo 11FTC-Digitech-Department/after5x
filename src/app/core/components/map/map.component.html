@@ -1,8 +1,7 @@
 <div class="map-container" [style.height]="height()">
     <capacitor-google-map
         #mapContainer
-        id="map"
-        (enableTouch)="true"
+        [attr.id]="mapId"
         >
     </capacitor-google-map>
 
