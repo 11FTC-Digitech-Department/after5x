@@ -268,6 +268,9 @@ export class DashboardPage implements OnInit, OnDestroy {
     this.isTogglingStatus.set(true);
 
     try {
+      const confirmed = await this.confirmAvailabilityChange(newStatus);
+      if (!confirmed) return;
+
       await this.dashboardService.setProviderStatus(providerId, newStatus);
       this.isOnline.set(newStatus);
       await this.showToast(
@@ -280,6 +283,22 @@ export class DashboardPage implements OnInit, OnDestroy {
     } finally {
       this.isTogglingStatus.set(false);
     }
+  }
+
+  private async confirmAvailabilityChange(newStatus: boolean): Promise<boolean> {
+    const alert = await this.alertController.create({
+      header: newStatus ? 'Go online?' : 'Go offline?',
+      message: newStatus
+        ? 'You will start receiving new job requests.'
+        : 'You will stop receiving new job requests. Existing jobs are not affected.',
+      buttons: [
+        { text: 'Cancel', role: 'cancel' },
+        { text: newStatus ? 'Go online' : 'Go offline', role: 'confirm' }
+      ]
+    });
+    await alert.present();
+    const { role } = await alert.onDidDismiss();
+    return role === 'confirm';
   }
 
   async handleRefresh(event: RefresherCustomEvent) {

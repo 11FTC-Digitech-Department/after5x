@@ -84,6 +84,7 @@ export class SupabaseService {
         password,
         options: {
           data: metadata,
+          emailRedirectTo: 'https://app.after5.ph/auth/verify-email',
         },
       });
 

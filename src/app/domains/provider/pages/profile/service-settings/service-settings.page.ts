@@ -21,7 +21,8 @@ import {
   IonListHeader,
   IonDatetime,
   IonModal,
-  ToastController
+  ToastController,
+  AlertController
 } from '@ionic/angular/standalone';
 import { ProfileService, isProviderActive } from '../../../../../core/services/profile.service';
 
@@ -57,6 +58,7 @@ export class ServiceSettingsPage implements OnInit {
   private router = inject(Router);
   private profileService = inject(ProfileService);
   private toastController = inject(ToastController);
+  private alertController = inject(AlertController);
 
   // State
   isLoading = signal(true);
@@ -128,18 +130,23 @@ export class ServiceSettingsPage implements OnInit {
   }
 
   async onAvailabilityChange() {
-    // Toggle the value since the event fires after the toggle changes
-    this.isAvailable.set(!this.isAvailable());
+    const intendedNew = !this.isAvailable();
+    this.isSaving.set(true);
+
+    const confirmed = await this.confirmAvailabilityChange(intendedNew);
+    if (!confirmed) {
+      this.isSaving.set(false);
+      return;
+    }
+
+    this.isAvailable.set(intendedNew);
 
     try {
-      this.isSaving.set(true);
-
       const result = await this.profileService.updateProviderProfile({
         status: this.isAvailable() ? 'online' : 'offline'
       });
 
       if (result.error) {
-        // Revert on error
         this.isAvailable.set(!this.isAvailable());
         await this.showToast(result.error, 'danger');
         return;
@@ -157,6 +164,22 @@ export class ServiceSettingsPage implements OnInit {
     } finally {
       this.isSaving.set(false);
     }
+  }
+
+  private async confirmAvailabilityChange(newStatus: boolean): Promise<boolean> {
+    const alert = await this.alertController.create({
+      header: newStatus ? 'Go online?' : 'Go offline?',
+      message: newStatus
+        ? 'You will start receiving new job requests.'
+        : 'You will stop receiving new job requests. Existing jobs are not affected.',
+      buttons: [
+        { text: 'Cancel', role: 'cancel' },
+        { text: newStatus ? 'Go online' : 'Go offline', role: 'confirm' }
+      ]
+    });
+    await alert.present();
+    const { role } = await alert.onDidDismiss();
+    return role === 'confirm';
   }
 
   async saveRadius() {
