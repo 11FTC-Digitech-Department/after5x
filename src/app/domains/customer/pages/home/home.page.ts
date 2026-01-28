@@ -174,6 +174,10 @@ export class HomePage implements OnInit {
     this.router.navigate(['/c/catalog', category.slug]);
   }
 
+  navigateToCategories() {
+    this.router.navigate(['/c/categories']);
+  }
+
   navigateToService(service: PopularService) {
     // For now, navigate to catalog with a default category
     // In production, this would navigate to specific service details

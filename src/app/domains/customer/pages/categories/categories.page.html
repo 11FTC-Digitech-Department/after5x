@@ -1,0 +1,79 @@
+<ion-header class="ion-no-border">
+  <ion-toolbar class="categories-header-toolbar">
+    <ion-buttons slot="start">
+      <ion-back-button defaultHref="/c/home"></ion-back-button>
+    </ion-buttons>
+    <ion-title>Services</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content [fullscreen]="true">
+  <ion-grid fixed class="ion-no-padding">
+    <!-- Header Text -->
+    <ion-row>
+      <ion-col size="12">
+        <div class="categories-header">
+          <h2>Popular Services</h2>
+          <p>Browse all service categories and see what we can help you with.</p>
+        </div>
+      </ion-col>
+    </ion-row>
+
+    <!-- Loading State -->
+    <ion-row>
+      @if (isLoading()) {
+        <ion-col size="12">
+          <div class="categories-grid">
+            @for (i of [1,2,3,4,5,6]; track i) {
+              <ion-card class="category-card skeleton-card">
+                <ion-card-header>
+                  <ion-card-title>
+                    <ion-text>
+                      <ion-skeleton-text animated style="height: 20px; width: 60%;"></ion-skeleton-text>
+                    </ion-text>
+                  </ion-card-title>
+                </ion-card-header>
+                <ion-card-content>
+                  <ion-skeleton-text animated style="height: 14px; width: 90%; margin-bottom: 6px;"></ion-skeleton-text>
+                  <ion-skeleton-text animated style="height: 14px; width: 80%;"></ion-skeleton-text>
+                </ion-card-content>
+              </ion-card>
+            }
+          </div>
+        </ion-col>
+      } @else if (loadError()) {
+        <ion-col size="12">
+          <div class="categories-error">
+            <h3>Unable to load services</h3>
+            <p>{{ loadError() }}</p>
+          </div>
+        </ion-col>
+      } @else if (categories().length === 0) {
+        <ion-col size="12">
+          <div class="categories-empty">
+            <h3>No services available</h3>
+            <p>Please check back again soon.</p>
+          </div>
+        </ion-col>
+      } @else {
+        <ion-col size="12">
+          <div class="categories-grid">
+            @for (category of categories(); track category.id) {
+              <ion-card class="category-card" (click)="navigateToCategory(category)">
+                <ion-card-header>
+                  <ion-card-title>{{ category.name }}</ion-card-title>
+                </ion-card-header>
+                <ion-card-content>
+                  <p class="category-description">
+                    {{ category.description }}
+                  </p>
+                </ion-card-content>
+              </ion-card>
+            }
+          </div>
+        </ion-col>
+      }
+    </ion-row>
+  </ion-grid>
+</ion-content>
+

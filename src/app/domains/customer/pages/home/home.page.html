@@ -63,7 +63,7 @@
         <div class="section-container">
           <div class="section-header">
             <h3 class="section-title">Popular Services</h3>
-            <ion-button fill="clear" class="see-all-btn">See All</ion-button>
+            <ion-button fill="clear" class="see-all-btn" (click)="navigateToCategories()">See All</ion-button>
           </div>
           <div class="horizontal-scroll">
             @for (service of popularServices; track service.id) {
