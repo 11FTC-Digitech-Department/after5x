@@ -138,39 +138,6 @@ ion-card {
   }
 }
 
-// Notice card
-.notice-card {
-  background: var(--ion-color-primary-tint);
-  border: 1px solid var(--ion-color-primary);
-
-  ion-card-content {
-    padding: 16px;
-  }
-
-  .notice-content {
-    display: flex;
-    gap: 12px;
-
-    ion-icon {
-      font-size: 24px;
-      flex-shrink: 0;
-    }
-
-    .notice-text {
-      p {
-        margin: 0;
-        font-size: 13px;
-        color: var(--ion-color-dark);
-        line-height: 1.4;
-
-        &:first-child {
-          margin-bottom: 4px;
-        }
-      }
-    }
-  }
-}
-
 // Transactions card
 .transactions-card {
   ion-card-content {

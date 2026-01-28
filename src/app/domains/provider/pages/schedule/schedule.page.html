@@ -1,6 +1,24 @@
-<ion-header [translucent]="true">
+<ion-header [translucent]="true" class="ion-no-border">
   <ion-toolbar>
     <ion-title>My Jobs</ion-title>
+  </ion-toolbar>
+  <ion-toolbar>
+    <ion-segment [value]="selectedSegment()" (ionChange)="onSegmentChange($event)" scrollable="true">
+      <ion-segment-button value="incoming">
+        <ion-label>
+          Incoming
+          @if (incomingCount() > 0) {
+            <ion-badge color="danger" class="segment-badge">{{ incomingCount() }}</ion-badge>
+          }
+        </ion-label>
+      </ion-segment-button>
+      <ion-segment-button value="active">
+        <ion-label>Active</ion-label>
+      </ion-segment-button>
+      <ion-segment-button value="history">
+        <ion-label>History</ion-label>
+      </ion-segment-button>
+    </ion-segment>
   </ion-toolbar>
 </ion-header>
 
@@ -17,25 +35,7 @@
     </ion-toolbar>
   </ion-header>
 
-  <!-- Segment Control -->
-  <div class="segment-container">
-    <ion-segment [value]="selectedSegment()" (ionChange)="onSegmentChange($event)">
-      <ion-segment-button value="incoming">
-        <ion-label>
-          Incoming
-          @if (incomingCount() > 0) {
-            <ion-badge color="danger" class="segment-badge">{{ incomingCount() }}</ion-badge>
-          }
-        </ion-label>
-      </ion-segment-button>
-      <ion-segment-button value="active">
-        <ion-label>Active</ion-label>
-      </ion-segment-button>
-      <ion-segment-button value="history">
-        <ion-label>History</ion-label>
-      </ion-segment-button>
-    </ion-segment>
-  </div>
+
 
   <!-- Loading State -->
   @if (isLoading()) {

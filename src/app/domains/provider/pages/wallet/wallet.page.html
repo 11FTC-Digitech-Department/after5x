@@ -1,4 +1,4 @@
-<ion-header [translucent]="true">
+<ion-header [translucent]="true" class="ion-no-border">
   <ion-toolbar>
     <ion-title>Wallet</ion-title>
   </ion-toolbar>
@@ -66,7 +66,7 @@
       <ion-card-content>
         <div class="balance-header">
           <ion-icon name="wallet-outline"></ion-icon>
-          <span>Available Balance</span>
+          <span>Total Earnings</span>
         </div>
         <div class="balance-amount">
           {{ formatAmount(wallet()?.available || 0) }}
@@ -77,19 +77,6 @@
             <span>{{ formatAmount(wallet()!.frozen) }} pending</span>
           </div>
         }
-      </ion-card-content>
-    </ion-card>
-
-    <!-- Withdrawal Notice -->
-    <ion-card class="notice-card">
-      <ion-card-content>
-        <div class="notice-content">
-          <ion-icon name="information-circle-outline" color="primary"></ion-icon>
-          <div class="notice-text">
-            <p><strong>Withdrawals coming soon!</strong></p>
-            <p>We're working on adding bank transfer withdrawals. Your earnings are safely stored and will be available for withdrawal soon.</p>
-          </div>
-        </div>
       </ion-card-content>
     </ion-card>
 
