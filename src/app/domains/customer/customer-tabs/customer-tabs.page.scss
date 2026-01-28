@@ -2,6 +2,13 @@ ion-content {
   --background: white;
 }
 
+// Android Edge-to-Edge Support
+:host-context(.plt-android) {
+  ion-tab-bar {
+    padding-bottom: var(--safe-area-inset-bottom);
+  }
+}
+
 // Custom tab bar styling with gradient
 ion-tab-bar {
   --background: white;

@@ -1,7 +1,8 @@
 import { Component, inject, NgZone, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
-import { IonApp, IonRouterOutlet } from '@ionic/angular/standalone';
+import { IonApp, IonRouterOutlet, Platform } from '@ionic/angular/standalone';
 import { App, URLOpenListenerEvent } from '@capacitor/app';
+import { EdgeToEdge } from '@capawesome/capacitor-android-edge-to-edge-support';
 import { SupabaseService } from './core/supabase/supabase';
 
 @Component({
@@ -12,12 +13,26 @@ import { SupabaseService } from './core/supabase/supabase';
 export class AppComponent implements OnInit {
   private router = inject(Router);
   private zone = inject(NgZone);
+  private platform = inject(Platform);
 
   // Inject SupabaseService to ensure it initializes early and is not tree-shaken
   constructor(_supabaseService: SupabaseService) {}
 
-  ngOnInit() {
+  async ngOnInit() {
     this.initDeepLinkListener();
+    await this.initEdgeToEdge();
+  }
+
+  private async initEdgeToEdge() {
+    if (this.platform.is('android')) {
+      try {
+        await EdgeToEdge.enable();
+        await EdgeToEdge.setStatusBarColor({ color: '#00000000' });
+        await EdgeToEdge.setNavigationBarColor({ color: '#00000000' });
+      } catch (error) {
+        console.warn('Edge-to-edge initialization failed:', error);
+      }
+    }
   }
 
   private initDeepLinkListener() {

@@ -29,5 +29,8 @@ project(':capacitor-preferences').projectDir = new File('../node_modules/@capaci
 include ':capacitor-status-bar'
 project(':capacitor-status-bar').projectDir = new File('../node_modules/@capacitor/status-bar/android')
 
+include ':capawesome-capacitor-android-edge-to-edge-support'
+project(':capawesome-capacitor-android-edge-to-edge-support').projectDir = new File('../node_modules/@capawesome/capacitor-android-edge-to-edge-support/android')
+
 include ':capacitor-native-biometric'
 project(':capacitor-native-biometric').projectDir = new File('../node_modules/capacitor-native-biometric/android')
