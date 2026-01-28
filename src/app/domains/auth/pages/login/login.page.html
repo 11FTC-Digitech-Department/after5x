@@ -24,7 +24,7 @@
             <ion-segment-button value="login">
               <ion-label>Login</ion-label>
             </ion-segment-button>
-            <ion-segment-button value="signup">
+            <ion-segment-button value="signup" (click)="onSignupSegmentClick()">
               <ion-label>Sign Up</ion-label>
             </ion-segment-button>
           </ion-segment>
@@ -63,6 +63,7 @@
           <!-- Sign Up Form -->
           @if (selectedSegment() === 'signup') {
           <app-signup-form
+            #signupForm
             [isLoading]="isSignupLoading()"
             (signup)="onSignup($event)"
           ></app-signup-form>
@@ -76,4 +77,12 @@
   <div class="app-version-info">
     <small>{{ appVersion() }}.{{ buildNumber() }} {{ environmentType() }}</small>
   </div>
+
+  <!-- Signup Success Modal -->
+  @if (showSuccessModal()) {
+  <app-signup-success-modal
+    [type]="successModalType()"
+    (dismissed)="onSuccessModalDismissed()"
+  ></app-signup-success-modal>
+  }
 </ion-content>

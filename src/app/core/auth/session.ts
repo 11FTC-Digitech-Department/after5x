@@ -14,6 +14,7 @@ export interface UserProfile {
   email: string;
   full_name: string;
   role: 'customer' | 'provider' | 'admin';
+  activated: boolean;
 }
 
 @Injectable({
@@ -33,11 +34,13 @@ export class SessionService {
   private _profile = signal<UserProfile | null>(null);
   private _loading = signal<boolean>(true);
   private _initialized = signal<boolean>(false);
+  private _isSignupInProgress = signal<boolean>(false);
 
   // --- COMPUTED (Read-only) ---
   readonly session = this._session.asReadonly();
   readonly profile = this._profile.asReadonly();
   readonly isLoading = this._loading.asReadonly();
+  readonly isSignupInProgress = this._isSignupInProgress.asReadonly();
   
   readonly isAuthenticated = computed(() => !!this._session());
   readonly isFullyAuthenticated = computed(() => !!this._session() && !!this._profile());
@@ -89,6 +92,17 @@ export class SessionService {
         this._session.set(session);
 
         if (event === 'SIGNED_IN' || event === 'INITIAL_SESSION') {
+          // Check if signup is in progress - skip auto-navigation
+          console.log('SessionService: SIGNED_IN event, signup flag:', this._isSignupInProgress());
+          if (this._isSignupInProgress() && event === 'SIGNED_IN') {
+            console.log('SessionService: Signup in progress - skipping auto-navigation');
+            // Still fetch profile but don't navigate
+            this.fetchProfile(session.user.id).catch(err =>
+              console.warn('SessionService: Background profile fetch during signup failed:', err)
+            );
+            return;
+          }
+          
           // Check if returning from payment flow - skip blocking fetch
           if (this.paymentContextService.isInPaymentFlow()) {
             console.log('SessionService: Returning from payment flow - background profile fetch');
@@ -104,6 +118,11 @@ export class SessionService {
               console.log('SessionService: Profile loaded successfully for event:', event);
               // Emit session started event
               this.authEventsService.emit('SESSION_STARTED', session.user.id);
+              // Navigation is handled by the calling component (LoginPage, etc.)
+              // Skip navigation if signup is in progress
+              if (this._isSignupInProgress() && event === 'SIGNED_IN') {
+                console.log('SessionService: Skipping navigation - signup in progress');
+              }
             } catch (error) {
               console.error('SessionService: Error fetching profile during auth state change:', error);
               // Don't clear the session on profile fetch error - profile might load on retry
@@ -163,11 +182,39 @@ export class SessionService {
   private async fetchProfile(userId: string) {
     try {
       console.log('SessionService: Fetching profile for user:', userId);
-      const { data, error } = await this.supabase
+      
+      // Try to fetch with activated column first
+      const result = await this.supabase
         .from('profiles')
-        .select('*')
+        .select('id, email, full_name, role, activated')
         .eq('id', userId)
         .maybeSingle();
+
+      let data: UserProfile | null = result.data as UserProfile | null;
+      let error = result.error;
+
+      // If activated column doesn't exist, fallback to query without it
+      if (error && typeof error === 'object' && 'message' in error && 
+          typeof error.message === 'string' && error.message.includes("column 'activated' does not exist")) {
+        console.warn('SessionService: activated column not found, fetching without it');
+        const fallbackResult = await this.supabase
+          .from('profiles')
+          .select('id, email, full_name, role')
+          .eq('id', userId)
+          .maybeSingle();
+        
+        error = fallbackResult.error;
+        
+        // Add default activated value if column doesn't exist
+        if (fallbackResult.data) {
+          data = {
+            ...fallbackResult.data,
+            activated: true // Default to activated if column doesn't exist
+          } as UserProfile;
+        } else {
+          data = null;
+        }
+      }
 
       if (error) {
         console.error('SessionService: Error fetching profile:', error);
@@ -176,7 +223,7 @@ export class SessionService {
 
       if (data) {
         this._profile.set(data as UserProfile);
-        console.log('SessionService: Profile set successfully, role:', data.role);
+        console.log('SessionService: Profile set successfully, role:', (data as any).role);
       } else {
         console.warn('SessionService: Profile not found for user:', userId);
         // Try to create profile for OAuth users
@@ -212,12 +259,19 @@ export class SessionService {
         return;
       }
 
+      // Get role from metadata or default to customer
+      const userRole = (user.user_metadata?.['role'] || 'customer') as 'customer' | 'provider' | 'admin';
+      
+      // Set activated based on role - all roles activated except provider
+      const activated = userRole !== 'provider';
+
       // Create profile for new user
       const profileData = {
         id: userId,
         email: user.email || '',
         full_name: this.extractFullName(user),
-        role: 'customer' as const, // Default role
+        role: userRole,
+        activated: activated,
         phone_number: user.user_metadata?.['phone'] || user.phone || null,
         avatar_url: user.user_metadata?.['avatar_url'] || null,
         created_at: new Date().toISOString(),
@@ -388,8 +442,12 @@ export class SessionService {
         this._session.set(data.session);
         await this.fetchProfile(data.session.user.id);
 
-        // Navigate to preserved URL or role-based default
-        await this.authFlowService.navigateAfterAuthentication(this.userRole());
+        // Navigate to preserved URL or role-based default, but skip if signup is in progress
+        if (!this._isSignupInProgress()) {
+          await this.authFlowService.navigateAfterAuthentication(this.userRole());
+        } else {
+          console.log('SessionService: Skipping navigation - signup in progress');
+        }
       }
     }
 
@@ -423,5 +481,12 @@ export class SessionService {
    */
   get biometryTypeName(): string {
     return this.biometricService.getBiometryTypeName();
+  }
+
+  /**
+   * Set signup in-progress flag to prevent auto-navigation during signup flow
+   */
+  setSignupInProgress(value: boolean): void {
+    this._isSignupInProgress.set(value);
   }
 }

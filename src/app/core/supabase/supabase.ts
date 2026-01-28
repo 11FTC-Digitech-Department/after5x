@@ -270,6 +270,15 @@ export class SupabaseService {
 
     // Handle different error object structures
     const message = error?.message || error?.error?.message || error?.msg || '';
+    const errorCode = error?.code || error?.error?.code || '';
+
+    // Check error code first (more reliable)
+    if (errorCode === 'over_email_send_rate_limit') {
+      return {
+        success: false,
+        error: 'Email rate limit exceeded. Please wait a few minutes before trying again.',
+      };
+    }
 
     switch (message) {
       case 'Invalid login credentials':
@@ -301,6 +310,8 @@ export class SupabaseService {
           errorMessage = 'Network error. Please check your internet connection and try again.';
         } else if (error?.code === 'user_already_exists') {
           errorMessage = 'An account with this email already exists. Please try logging in instead.';
+        } else if (error?.code === 'over_email_send_rate_limit' || message.includes('email rate limit')) {
+          errorMessage = 'Email rate limit exceeded. Please wait a few minutes before trying again.';
         }
     }
 
