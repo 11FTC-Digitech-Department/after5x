@@ -1,7 +1,6 @@
 <?xml version='1.0' encoding='utf-8'?>
 <resources>
-    <string name="app_name">After5</string>
+    <!-- app_name and custom_url_scheme are set via product flavors in build.gradle -->
     <string name="title_activity_main">After5</string>
     <string name="package_name">com.rockit.after5</string>
-    <string name="custom_url_scheme">com.rockit.after5</string>
 </resources>

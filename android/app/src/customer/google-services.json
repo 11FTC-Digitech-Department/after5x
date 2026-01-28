@@ -1,13 +1,13 @@
 {
   "project_info": {
-    "project_number": "your_project_number",
-    "project_id": "your_project_id",
-    "storage_bucket": "your_project_id.appspot.com"
+    "project_number": "545776273064",
+    "project_id": "after5-98db8",
+    "storage_bucket": "after5-98db8.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:your_project_number:android:your_app_id",
+        "mobilesdk_app_id": "1:545776273064:android:9a26bb02d46705ec7aa49d",
         "android_client_info": {
           "package_name": "com.rockit.after5"
         }
@@ -15,7 +15,7 @@
       "oauth_client": [],
       "api_key": [
         {
-          "current_key": "AIzaSyC6UXRkbdChigjhccoNb4WOWptb6IWLLg4"
+          "current_key": "AIzaSyAHBARzziDo3tYVm79hiutZzVx8wLgn57I"
         }
       ],
       "services": {

@@ -1,6 +1,25 @@
 ion-content {
   --background: white;
   position: relative;
+  
+  &.experts-app {
+    --background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+    
+    .app-title, .app-subtitle {
+      color: white;
+    }
+    
+    .auth-segment ion-segment-button {
+      --background: rgba(255, 255, 255, 0.1);
+      --color: white;
+      --background-checked: white;
+      --color-checked: #1a1a2e;
+    }
+    
+    .app-version-info {
+      color: rgba(255, 255, 255, 0.5);
+    }
+  }
 }
 
 .full-height {
@@ -12,6 +31,41 @@ ion-content {
   max-width: 400px;
   margin: 0 auto;
   padding: 0 20px;
+}
+
+.app-header {
+  text-align: center;
+  margin-bottom: 2rem;
+  
+  .app-logo {
+    width: 80px;
+    height: 80px;
+    margin-bottom: 1rem;
+    object-fit: contain;
+    
+    &.experts-logo {
+      filter: drop-shadow(0 4px 8px rgba(255, 255, 255, 0.2));
+    }
+  }
+  
+  .app-title {
+    font-size: 1.75rem;
+    font-weight: 700;
+    margin: 0 0 0.25rem 0;
+    color: var(--ion-color-dark);
+    
+    &.experts-title {
+      color: white;
+      text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+    }
+  }
+  
+  .app-subtitle {
+    font-size: 0.9rem;
+    color: rgba(255, 255, 255, 0.8);
+    margin: 0;
+    font-weight: 500;
+  }
 }
 
 .auth-segment {

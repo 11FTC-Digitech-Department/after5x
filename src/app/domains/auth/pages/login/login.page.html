@@ -1,8 +1,20 @@
-<ion-content [fullscreen]="true" scroll-y="false">
+<ion-content [fullscreen]="true" scroll-y="false" [class.experts-app]="isExpertsApp()">
   <ion-grid fixed class="ion-no-padding">
     <ion-row class="full-height ion-align-items-center">
       <ion-col size="12">
         <div class="auth-container">
+          <!-- App Logo and Title -->
+          <div class="app-header">
+            @if (isExpertsApp()) {
+              <img src="assets/icon/white-icon.png" alt="After5 Experts" class="app-logo experts-logo" />
+              <h1 class="app-title experts-title">After5 Experts</h1>
+              <p class="app-subtitle">Service Provider Portal</p>
+            } @else {
+              <img src="assets/icon/black-icon.png" alt="After5" class="app-logo" />
+              <h1 class="app-title">After5</h1>
+            }
+          </div>
+
           <!-- Auth Segment -->
           <ion-segment
             [value]="selectedSegment()"
