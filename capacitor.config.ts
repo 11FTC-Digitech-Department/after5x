@@ -16,6 +16,14 @@ const config: CapacitorConfig = {
       // Add your Google Maps configuration here
       apiKey: 'AIzaSyC6UXRkbdChigjhccoNb4WOWptb6IWLLg4'
     },
+    EdgeToEdge: {
+      backgroundColor: '#FFFFFF',
+      statusBarColor: '#00000000',
+      navigationBarColor: '#00000000',
+    },
+    SystemBars: {
+      insetsHandling: 'disable',
+    },
   },
 };
 

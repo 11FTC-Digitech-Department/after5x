@@ -68,5 +68,20 @@
   }
 }
 
+// Android Edge-to-Edge Support
+.plt-android {
+  // Header toolbar padding for status bar
+  ion-header ion-toolbar:first-of-type {
+    padding-top: var(--safe-area-inset-top);
+  }
 
+  // Tab bar padding for navigation bar
+  ion-tab-bar[slot="bottom"] {
+    padding-bottom: var(--safe-area-inset-bottom);
+  }
 
+  // Footer toolbar padding for navigation bar
+  ion-footer ion-toolbar:last-of-type {
+    padding-bottom: var(--safe-area-inset-bottom);
+  }
+}

@@ -6,6 +6,13 @@ ion-content {
   --background: var(--app-gradient-primary);
 }
 
+// Android Edge-to-Edge Support - Full screen page without header
+:host-context(.plt-android) {
+  ion-content {
+    --padding-top: var(--safe-area-inset-top);
+  }
+}
+
 .welcome-grid {
   padding: 0;
   

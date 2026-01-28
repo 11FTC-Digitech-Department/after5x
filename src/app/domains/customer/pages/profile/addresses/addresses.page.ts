@@ -114,8 +114,6 @@ export class AddressesPage implements OnInit, OnDestroy {
       componentProps: {
         address: null // null indicates create mode
       },
-      breakpoints: [0, 0.8, 1],
-      initialBreakpoint: 0.8
     });
 
     modal.onDidDismiss().then(async (result) => {
@@ -134,8 +132,6 @@ export class AddressesPage implements OnInit, OnDestroy {
       componentProps: {
         address: address
       },
-      breakpoints: [0, 0.8, 1],
-      initialBreakpoint: 0.8
     });
 
     modal.onDidDismiss().then(async (result) => {

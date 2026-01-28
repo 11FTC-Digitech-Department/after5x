@@ -442,7 +442,7 @@ ion-footer {
 }
 
 .footer-spacer {
-  height: 80px;
+  height: calc(80px + var(--safe-area-inset-bottom));
 }
 
 // Responsive

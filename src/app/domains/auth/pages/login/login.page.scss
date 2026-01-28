@@ -1,7 +1,12 @@
 ion-content {
   --background: white;
   position: relative;
-  
+
+  // Android Edge-to-Edge Support - Full screen page without header
+  :host-context(.plt-android) & {
+    --padding-top: var(--safe-area-inset-top);
+  }
+
   &.experts-app {
     --background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
     
