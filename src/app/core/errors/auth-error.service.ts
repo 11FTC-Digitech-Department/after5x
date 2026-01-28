@@ -36,6 +36,7 @@ export class AuthErrorService {
     ['otp_expired', 'Verification code has expired. Please request a new one.'],
     ['invalid_otp', 'Invalid verification code. Please check and try again.'],
     ['too_many_requests', 'Too many attempts. Please wait before trying again.'],
+    ['over_email_send_rate_limit', 'Email rate limit exceeded. Please wait a few minutes before trying again.'],
 
     // OAuth Errors
     ['access_denied', 'Login was cancelled or denied.'],
@@ -150,6 +151,7 @@ export class AuthErrorService {
     if (messageLower.includes('token has expired')) return 'otp_expired';
     if (messageLower.includes('invalid token') || messageLower.includes('invalid otp')) return 'invalid_otp';
     if (messageLower.includes('too many requests')) return 'too_many_requests';
+    if (messageLower.includes('email rate limit') || error?.code === 'over_email_send_rate_limit') return 'over_email_send_rate_limit';
     if (messageLower.includes('network')) return 'network_error';
     if (messageLower.includes('navigatorlock') || messageLower.includes('lock')) return 'lock_timeout';
     if (messageLower.includes('access_denied') || messageLower.includes('cancelled')) return 'access_denied';

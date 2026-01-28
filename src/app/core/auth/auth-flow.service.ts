@@ -112,8 +112,16 @@ export class AuthFlowService {
   /**
    * Navigate to the appropriate destination after successful authentication.
    * Uses preserved URL if available, otherwise falls back to role-based routing.
+   * @param userRole - The user's role
+   * @param skipIfSignupInProgress - Optional flag to skip navigation if signup is in progress
    */
-  async navigateAfterAuthentication(userRole?: string): Promise<void> {
+  async navigateAfterAuthentication(userRole?: string, skipIfSignupInProgress?: boolean): Promise<void> {
+    // Skip navigation if signup is in progress (flag passed from SessionService)
+    if (skipIfSignupInProgress) {
+      console.log('AuthFlowService: Signup in progress - skipping navigation');
+      return;
+    }
+
     const state = await this.consumeNavigationState();
 
     if (state?.url && this.isValidReturnUrl(state.url)) {

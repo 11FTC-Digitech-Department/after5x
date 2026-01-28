@@ -1,6 +1,7 @@
-import { Component, output, input } from '@angular/core';
+import { Component, output, input, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { Router } from '@angular/router';
 import {
   IonItem,
   IonInput,
@@ -36,6 +37,8 @@ export interface SignupFormData {
   ]
 })
 export class SignupFormComponent {
+  private router = inject(Router);
+
   signup = output<SignupFormData>();
 
   isLoading = input<boolean>(false);
@@ -54,6 +57,17 @@ export class SignupFormComponent {
     addIcons({ eye, eyeOff });
   }
 
+  resetForm() {
+    this.signupForm = {
+      email: '',
+      mobile: '',
+      password: '',
+      confirmPassword: ''
+    };
+    this.isPasswordVisible = false;
+    this.isConfirmPasswordVisible = false;
+  }
+
   onSignup() {
     this.signup.emit(this.signupForm);
   }
@@ -64,5 +78,9 @@ export class SignupFormComponent {
 
   toggleConfirmPasswordVisibility() {
     this.isConfirmPasswordVisible = !this.isConfirmPasswordVisible;
+  }
+
+  navigateToProviderApplication() {
+    this.router.navigate(['/provider-application']);
   }
 }

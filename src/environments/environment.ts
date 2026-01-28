@@ -6,7 +6,8 @@ export const environment = {
   production: false,
   appUrl: 'http://localhost:8100',
   supabase: {
-    url: 'https://344a134aeec4.ngrok-free.app/',
+    // url: 'https://344a134aeec4.ngrok-free.app/',
+    url: 'https://nonpracticably-unbreathing-vincenzo.ngrok-free.dev/',
     key: 'sb_publishable_ACJWlzQHlZjBrEguHvfOxg_3BJgxAaH',
   },
   googleMaps: {
@@ -16,7 +17,7 @@ export const environment = {
   xendit: {
     // Success redirect after payment
     successRedirectUrl: 'http://localhost:8100/c/payment',
-    // Failure redirect after payment
+    // Failure redirect after payment 
     failureRedirectUrl: 'http://localhost:8100/c/payment',
   }
 };

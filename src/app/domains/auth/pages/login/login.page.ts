@@ -1,6 +1,6 @@
-import { Component, OnInit, signal, inject } from '@angular/core';
+import { Component, OnInit, signal, inject, ViewChild, AfterViewChecked, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Router } from '@angular/router';
+import { Router, ActivatedRoute } from '@angular/router';
 import {
   IonContent,
   IonGrid,
@@ -11,7 +11,8 @@ import {
   IonLabel,
   IonButton,
   IonIcon,
-  ToastController
+  ToastController,
+  AlertController
 } from '@ionic/angular/standalone';
 import { addIcons } from 'ionicons';
 import { fingerPrintOutline, eyeOutline } from 'ionicons/icons';
@@ -23,6 +24,7 @@ import { BiometricService } from '../../../../core/auth/biometric.service';
 import { AuthFlowService } from '../../../../core/auth/auth-flow.service';
 import { App } from '@capacitor/app';
 import { environment } from '../../../../../environments/environment';
+import { SignupSuccessModalComponent } from '../../../../shared/components/signup-success-modal/signup-success-modal.component';
 
 @Component({
   selector: 'app-login',
@@ -41,16 +43,23 @@ import { environment } from '../../../../../environments/environment';
     IonIcon,
     CommonModule,
     LoginFormComponent,
-    SignupFormComponent
+    SignupFormComponent,
+    SignupSuccessModalComponent
   ]
 })
-export class LoginPage implements OnInit {
+export class LoginPage implements OnInit, AfterViewChecked {
   private router = inject(Router);
+  private route = inject(ActivatedRoute);
   private supabaseService = inject(SupabaseService);
   private sessionService = inject(SessionService);
   private authFlowService = inject(AuthFlowService);
   private toastController = inject(ToastController);
+  private alertController = inject(AlertController);
+  private cdr = inject(ChangeDetectorRef);
   biometricService = inject(BiometricService);
+
+  @ViewChild('signupForm') signupFormComponent?: SignupFormComponent;
+  private shouldResetForm = signal<boolean>(false);
 
   selectedSegment = signal<'login' | 'signup'>('login');
   isLoginLoading = signal<boolean>(false);
@@ -61,9 +70,30 @@ export class LoginPage implements OnInit {
   environmentType = signal<string>('dev');
   appType = signal<'customer' | 'experts'>('customer');
   isExpertsApp = signal<boolean>(false);
+  showSuccessModal = signal<boolean>(false);
+  successModalType = signal<'customer' | 'provider'>('customer');
 
   constructor() {
     addIcons({ fingerPrintOutline, eyeOutline });
+  }
+
+  // Ensure we always land on the Login tab when this page becomes active
+  ionViewWillEnter() {
+    // Check query params and set segment accordingly
+    const tabParam = this.route.snapshot.queryParams['tab'];
+    if (tabParam === 'login') {
+      this.selectedSegment.set('login');
+    } else if (tabParam === 'signup') {
+      // In provider build, redirect to provider-application instead of showing signup form
+      if (this.isExpertsApp()) {
+        this.router.navigate(['/provider-application']);
+        return;
+      }
+      this.selectedSegment.set('signup');
+    } else {
+      // No tab param or unknown value - default to login
+      this.selectedSegment.set('login');
+    }
   }
 
   async ngOnInit() {
@@ -72,6 +102,20 @@ export class LoginPage implements OnInit {
       await this.authFlowService.navigateAfterAuthentication(this.sessionService.userRole());
       return;
     }
+
+    // Check for query parameter to set initial tab
+    this.route.queryParams.subscribe(params => {
+      if (params['tab'] === 'login') {
+        this.selectedSegment.set('login');
+      } else if (params['tab'] === 'signup') {
+        // In provider build, redirect to provider-application instead of showing signup form
+        if (this.isExpertsApp()) {
+          this.router.navigate(['/provider-application']);
+          return;
+        }
+        this.selectedSegment.set('signup');
+      }
+    });
 
     // Check for preserved navigation state and show appropriate message
     const navigationState = await this.authFlowService.consumeNavigationState();
@@ -82,6 +126,14 @@ export class LoginPage implements OnInit {
 
     // Get app version and build info
     this.loadAppInfo();
+  }
+
+  ngAfterViewChecked() {
+    // Reset form if flag is set and component is available
+    if (this.shouldResetForm() && this.signupFormComponent) {
+      this.signupFormComponent.resetForm();
+      this.shouldResetForm.set(false);
+    }
   }
 
   private async loadAppInfo() {
@@ -106,7 +158,27 @@ export class LoginPage implements OnInit {
   }
 
   segmentChanged(event: any) {
-    this.selectedSegment.set(event.detail.value);
+    const newSegment = event.detail.value;
+    
+    // In provider build, redirect to provider-application when signup is selected
+    if (newSegment === 'signup' && this.isExpertsApp()) {
+      this.router.navigate(['/provider-application']);
+      return;
+    }
+    
+    this.selectedSegment.set(newSegment);
+    
+    // Clear signup form when switching to login tab
+    if (newSegment === 'login') {
+      this.shouldResetForm.set(true);
+    }
+  }
+
+  onSignupSegmentClick() {
+    // For provider build, always redirect to provider application
+    if (this.isExpertsApp()) {
+      this.router.navigate(['/provider-application']);
+    }
   }
 
   async onLogin(formData: LoginFormData) {
@@ -121,6 +193,21 @@ export class LoginPage implements OnInit {
       const result = await this.supabaseService.signInWithEmail(formData.email, formData.password);
 
       if (result.success) {
+        // Wait for profile to load
+        await this.waitForProfile();
+        
+        const profile = this.sessionService.profile();
+        
+        // Check if account is activated
+        if (profile && profile.activated === false) {
+          // Sign out the user
+          await this.sessionService.signOut();
+          await this.showAccountNotActivatedAlert();
+          this.isLoginLoading.set(false);
+          return;
+        }
+
+        // Account is activated, proceed with login
         await this.showToast('Login successful!', 'success');
         await this.authFlowService.navigateAfterAuthentication(this.sessionService.userRole());
       } else {
@@ -134,12 +221,32 @@ export class LoginPage implements OnInit {
     }
   }
 
+  private async waitForProfile(maxWaitMs: number = 5000): Promise<void> {
+    const startTime = Date.now();
+    while (Date.now() - startTime < maxWaitMs) {
+      const profile = this.sessionService.profile();
+      if (profile) {
+        return;
+      }
+      await new Promise(resolve => setTimeout(resolve, 100));
+    }
+  }
+
   async onSignup(formData: SignupFormData) {
     if (!this.validateSignupForm(formData)) {
       return;
     }
 
+    // Check if this is a provider build - redirect to application form
+    if (this.isExpertsApp()) {
+      this.router.navigate(['/provider-application']);
+      return;
+    }
+
     this.isSignupLoading.set(true);
+    
+    // Set signup flag to prevent auto-navigation during signup
+    this.sessionService.setSignupInProgress(true);
 
     try {
       const result = await this.supabaseService.signUpWithEmail(
@@ -152,23 +259,38 @@ export class LoginPage implements OnInit {
       );
 
       if (result.success && result.user) {
-        // Profile is automatically created by database trigger
-        await this.showToast('Please check your email for verification code', 'success');
-        this.router.navigate(['/auth/verify-otp'], {
-          state: {
-            email: formData.email,
-            type: 'signup'
-          }
-        });
+        // Profile is automatically created by database trigger with activated=true for customer
+        // Show success modal instead of navigating to OTP
+        this.successModalType.set('customer');
+        this.showSuccessModal.set(true);
       } else {
         await this.showToast(result.error || 'Signup failed', 'danger');
+        // Clear signup flag on error
+        setTimeout(() => {
+          this.sessionService.setSignupInProgress(false);
+        }, 100);
       }
     } catch (error) {
       console.error('Signup error:', error);
       await this.showToast('An unexpected error occurred', 'danger');
+      // Clear signup flag on error
+      setTimeout(() => {
+        this.sessionService.setSignupInProgress(false);
+      }, 100);
     } finally {
       this.isSignupLoading.set(false);
     }
+  }
+
+  onSuccessModalDismissed() {
+    this.showSuccessModal.set(false);
+    // Switch to login tab and clear form
+    this.selectedSegment.set('login');
+    this.shouldResetForm.set(true);
+    // Clear signup flag after modal is dismissed
+    setTimeout(() => {
+      this.sessionService.setSignupInProgress(false);
+    }, 100);
   }
 
   async onBiometricLogin() {
@@ -182,6 +304,21 @@ export class LoginPage implements OnInit {
       const result = await this.sessionService.loginWithBiometric();
 
       if (result.success) {
+        // Wait for profile to load
+        await this.waitForProfile();
+        
+        const profile = this.sessionService.profile();
+        
+        // Check if account is activated
+        if (profile && profile.activated === false) {
+          // Sign out the user
+          await this.sessionService.signOut();
+          await this.showAccountNotActivatedAlert();
+          this.isBiometricLoading.set(false);
+          return;
+        }
+
+        // Account is activated, proceed with login
         await this.showToast('Welcome back!', 'success');
         await this.authFlowService.navigateAfterAuthentication(this.sessionService.userRole());
       } else {
@@ -206,6 +343,11 @@ export class LoginPage implements OnInit {
   navigateToForgotPassword() {
     // Navigate to forgot password page
     this.router.navigate(['/auth/forgot-password']);
+  }
+
+  navigateToProviderApplication() {
+    // Navigate to provider application form
+    this.router.navigate(['/provider-application']);
   }
 
   private validateSignupForm(formData: SignupFormData): boolean {
@@ -237,6 +379,16 @@ export class LoginPage implements OnInit {
     }
 
     return true;
+  }
+
+  private async showAccountNotActivatedAlert() {
+    const alert = await this.alertController.create({
+      header: 'Account Pending Activation',
+      message: 'Your account is currently under review. We\'ll notify you via email once your account has been activated. Thank you for your patience!',
+      buttons: ['OK'],
+      cssClass: 'account-not-activated-alert'
+    });
+    await alert.present();
   }
 
   private async showToast(message: string, color: 'success' | 'danger' | 'warning' = 'success') {
