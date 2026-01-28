@@ -1,7 +1,7 @@
 <ion-header [translucent]="true">
   <ion-toolbar>
     <ion-buttons slot="start">
-      <ion-back-button defaultHref="/auth/welcome"></ion-back-button>
+      <ion-back-button [defaultHref]="getBackHref()"></ion-back-button>
     </ion-buttons>
     <ion-title>Provider Application</ion-title>
   </ion-toolbar>

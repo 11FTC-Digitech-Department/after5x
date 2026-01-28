@@ -77,6 +77,25 @@ export class LoginPage implements OnInit, AfterViewChecked {
     addIcons({ fingerPrintOutline, eyeOutline });
   }
 
+  // Ensure we always land on the Login tab when this page becomes active
+  ionViewWillEnter() {
+    // Check query params and set segment accordingly
+    const tabParam = this.route.snapshot.queryParams['tab'];
+    if (tabParam === 'login') {
+      this.selectedSegment.set('login');
+    } else if (tabParam === 'signup') {
+      // In provider build, redirect to provider-application instead of showing signup form
+      if (this.isExpertsApp()) {
+        this.router.navigate(['/provider-application']);
+        return;
+      }
+      this.selectedSegment.set('signup');
+    } else {
+      // No tab param or unknown value - default to login
+      this.selectedSegment.set('login');
+    }
+  }
+
   async ngOnInit() {
     // Check if user is already authenticated
     if (this.sessionService.isAuthenticated()) {
@@ -89,6 +108,11 @@ export class LoginPage implements OnInit, AfterViewChecked {
       if (params['tab'] === 'login') {
         this.selectedSegment.set('login');
       } else if (params['tab'] === 'signup') {
+        // In provider build, redirect to provider-application instead of showing signup form
+        if (this.isExpertsApp()) {
+          this.router.navigate(['/provider-application']);
+          return;
+        }
         this.selectedSegment.set('signup');
       }
     });
@@ -135,11 +159,25 @@ export class LoginPage implements OnInit, AfterViewChecked {
 
   segmentChanged(event: any) {
     const newSegment = event.detail.value;
+    
+    // In provider build, redirect to provider-application when signup is selected
+    if (newSegment === 'signup' && this.isExpertsApp()) {
+      this.router.navigate(['/provider-application']);
+      return;
+    }
+    
     this.selectedSegment.set(newSegment);
     
     // Clear signup form when switching to login tab
     if (newSegment === 'login') {
       this.shouldResetForm.set(true);
+    }
+  }
+
+  onSignupSegmentClick() {
+    // For provider build, always redirect to provider application
+    if (this.isExpertsApp()) {
+      this.router.navigate(['/provider-application']);
     }
   }
 
@@ -305,6 +343,11 @@ export class LoginPage implements OnInit, AfterViewChecked {
   navigateToForgotPassword() {
     // Navigate to forgot password page
     this.router.navigate(['/auth/forgot-password']);
+  }
+
+  navigateToProviderApplication() {
+    // Navigate to provider application form
+    this.router.navigate(['/provider-application']);
   }
 
   private validateSignupForm(formData: SignupFormData): boolean {

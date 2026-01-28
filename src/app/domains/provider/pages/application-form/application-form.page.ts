@@ -325,4 +325,9 @@ export class ProviderApplicationFormPage implements OnInit {
     // Navigate to login page with login tab selected after modal is dismissed
     this.router.navigate(['/auth/login'], { queryParams: { tab: 'login' } });
   }
+
+  getBackHref(): string {
+    // Always return to login page with login tab selected
+    return '/auth/login?tab=login';
+  }
 }
