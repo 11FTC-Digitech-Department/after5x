@@ -61,10 +61,7 @@
     <ion-row>
       <ion-col size="12">
         <div class="section-container">
-          <div class="section-header">
-            <h3 class="section-title">Popular Services</h3>
-            <ion-button fill="clear" class="see-all-btn">See All</ion-button>
-          </div>
+          <h3 class="section-title">Popular Services</h3>
           <div class="horizontal-scroll">
             @for (service of popularServices; track service.id) {
               <ion-card class="service-card" (click)="navigateToService(service)">

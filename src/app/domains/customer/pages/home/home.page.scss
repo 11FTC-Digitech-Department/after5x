@@ -104,19 +104,6 @@ ion-content {
     color: #2c3e50;
     margin: 0 0 16px 0;
   }
-
-  .section-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 16px;
-
-    .see-all-btn {
-      --color: var(--ion-color-primary);
-      font-size: 14px;
-      font-weight: 500;
-    }
-  }
 }
 
 // Categories Grid

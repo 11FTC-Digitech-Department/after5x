@@ -12,16 +12,8 @@
       </ion-buttons>
     }
   </ion-toolbar>
-</ion-header>
-
-<ion-content [fullscreen]="true">
-  <ion-refresher slot="fixed" (ionRefresh)="handleRefresh($event)">
-    <ion-refresher-content></ion-refresher-content>
-  </ion-refresher>
-
-  <!-- Filter Segment -->
-  <div class="filter-container">
-    <ion-segment [value]="selectedFilter()" (ionChange)="onFilterChange($event)">
+  <ion-toolbar class="segment-toolbar">
+    <ion-segment [value]="selectedFilter()" (ionChange)="onFilterChange($event)" [scrollable]="true">
       <ion-segment-button value="all">
         <ion-label>All</ion-label>
       </ion-segment-button>
@@ -35,7 +27,13 @@
         <ion-label>System</ion-label>
       </ion-segment-button>
     </ion-segment>
-  </div>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content [fullscreen]="true">
+  <ion-refresher slot="fixed" (ionRefresh)="handleRefresh($event)">
+    <ion-refresher-content></ion-refresher-content>
+  </ion-refresher>
 
   @if (isLoading()) {
     <div class="loading-container">
