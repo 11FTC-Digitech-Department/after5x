@@ -244,4 +244,12 @@
       </ion-button>
     </div>
   </form>
+
+  <!-- Success Modal -->
+  @if (showSuccessModal()) {
+  <app-signup-success-modal
+    type="provider"
+    (dismissed)="onSuccessModalDismissed()"
+  ></app-signup-success-modal>
+  }
 </ion-content>

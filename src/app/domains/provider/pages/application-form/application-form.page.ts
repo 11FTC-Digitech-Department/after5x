@@ -28,6 +28,7 @@ import {
 } from '@ionic/angular/standalone';
 import { SupabaseService } from '../../../../core/supabase/supabase';
 import { ServiceService } from '../../../../core/services/service.service';
+import { SignupSuccessModalComponent } from '../../../../shared/components/signup-success-modal/signup-success-modal.component';
 
 interface ServiceCategory {
   id: string;
@@ -63,7 +64,8 @@ interface ServiceCategory {
     IonCardTitle,
     IonCardContent,
     IonChip,
-    IonIcon
+    IonIcon,
+    SignupSuccessModalComponent
   ]
 })
 export class ProviderApplicationFormPage implements OnInit {
@@ -77,6 +79,7 @@ export class ProviderApplicationFormPage implements OnInit {
   categories = signal<ServiceCategory[]>([]);
   isSubmitting = signal<boolean>(false);
   isLoadingCategories = signal<boolean>(true);
+  showSuccessModal = signal<boolean>(false);
 
   ngOnInit() {
     this.initializeForm();
@@ -267,27 +270,8 @@ export class ProviderApplicationFormPage implements OnInit {
         return;
       }
 
-      // Success - show toast and redirect to OTP verification
-      await this.showToast('Application submitted! Please verify your email', 'success');
-      
-      // Navigate to verify-otp page with query params
-      this.router.navigate(['/auth/verify-otp'], {
-        queryParams: {
-          email: this.applicationForm.value.email,
-          type: 'signup'
-        }
-      }).catch(err => {
-        console.error('Navigation error:', err);
-        // Fallback: try navigating after a short delay
-        setTimeout(() => {
-          this.router.navigate(['/auth/verify-otp'], {
-            queryParams: {
-              email: this.applicationForm.value.email,
-              type: 'signup'
-            }
-          });
-        }, 100);
-      });
+      // Success - show success modal instead of OTP navigation
+      this.showSuccessModal.set(true);
     } catch (error) {
       console.error('Unexpected error:', error);
       await this.showToast('An unexpected error occurred. Please try again', 'danger');
@@ -334,5 +318,11 @@ export class ProviderApplicationFormPage implements OnInit {
       position: 'top'
     });
     await toast.present();
+  }
+
+  onSuccessModalDismissed() {
+    this.showSuccessModal.set(false);
+    // Navigate to login page with login tab selected after modal is dismissed
+    this.router.navigate(['/auth/login'], { queryParams: { tab: 'login' } });
   }
 }

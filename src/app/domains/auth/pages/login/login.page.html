@@ -63,6 +63,7 @@
           <!-- Sign Up Form -->
           @if (selectedSegment() === 'signup') {
           <app-signup-form
+            #signupForm
             [isLoading]="isSignupLoading()"
             (signup)="onSignup($event)"
           ></app-signup-form>
@@ -76,4 +77,12 @@
   <div class="app-version-info">
     <small>{{ appVersion() }}.{{ buildNumber() }} {{ environmentType() }}</small>
   </div>
+
+  <!-- Signup Success Modal -->
+  @if (showSuccessModal()) {
+  <app-signup-success-modal
+    [type]="successModalType()"
+    (dismissed)="onSuccessModalDismissed()"
+  ></app-signup-success-modal>
+  }
 </ion-content>
