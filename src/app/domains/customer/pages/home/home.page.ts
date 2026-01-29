@@ -179,6 +179,10 @@ export class HomePage implements OnInit {
     this.router.navigate(['/c/catalog', category.slug]);
   }
 
+  navigateToCategories() {
+    this.router.navigate(['/c/categories']);
+  }
+
   navigateToService(service: PopularService) {
     this.router.navigate(['/c/catalog', service.categorySlug]);
   }
