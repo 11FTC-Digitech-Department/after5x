@@ -1,14 +1,18 @@
 import { Routes } from '@angular/router';
 import { authGuard } from './core/guards/auth-guard';
+import { guestGuard } from './core/guards/guest-guard';
+import { initialRouteGuard } from './core/guards/initial-route-guard';
 
 export const routes: Routes = [
   {
     path: '',
-    redirectTo: 'auth/welcome',
     pathMatch: 'full',
+    canActivate: [initialRouteGuard],
+    children: [], // Guard always redirects
   },
   {
     path: 'auth',
+    canActivate: [guestGuard],
     loadChildren: () => import('./domains/auth/auth.routes').then(m => m.AUTH_ROUTES),
   },
   // Backwards compatibility redirects for old routes

@@ -97,11 +97,7 @@ export class LoginPage implements OnInit, AfterViewChecked {
   }
 
   async ngOnInit() {
-    // Check if user is already authenticated
-    if (this.sessionService.isAuthenticated()) {
-      await this.authFlowService.navigateAfterAuthentication(this.sessionService.userRole());
-      return;
-    }
+    // Auth check is now handled by guestGuard - no need to check here
 
     // Check for query parameter to set initial tab
     this.route.queryParams.subscribe(params => {

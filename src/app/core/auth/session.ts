@@ -45,6 +45,7 @@ export class SessionService {
   readonly isAuthenticated = computed(() => !!this._session());
   readonly isFullyAuthenticated = computed(() => !!this._session() && !!this._profile());
   readonly userRole = computed(() => this._profile()?.role);
+  readonly isInitialized = this._initialized.asReadonly();
 
   constructor() {
     this.initSession();
