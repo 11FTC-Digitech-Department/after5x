@@ -38,7 +38,13 @@
     <ion-row>
       <ion-col size="12">
         <div class="section-container">
-          <h3 class="section-title">Categories</h3>
+          <ion-list>
+            <ion-list-header>
+              <ion-label>
+                <h3 class="section-title">Categories</h3>
+              </ion-label>
+            </ion-list-header>
+          </ion-list>
           <ion-grid fixed class="categories-grid">
             <ion-row>
               @for (category of categories; track category.id) {
@@ -62,8 +68,14 @@
       <ion-col size="12">
         <div class="section-container">
           <div class="section-header">
-            <h3 class="section-title">Popular Services</h3>
-            <ion-button fill="clear" class="see-all-btn" (click)="navigateToCategories()">See All</ion-button>
+            <ion-list>
+              <ion-list-header>
+                <ion-label>
+                  <h3 class="section-title">Popular Services</h3>
+                </ion-label>
+                <ion-button fill="clear" class="see-all-btn" (click)="navigateToCategories()">See All</ion-button>
+              </ion-list-header>
+            </ion-list>
           </div>
           <div class="horizontal-scroll">
             @for (service of popularServices; track service.id) {
@@ -93,7 +105,13 @@
     <ion-row>
       <ion-col size="12">
         <div class="section-container">
-          <h3 class="section-title">Special Offers</h3>
+          <ion-list>
+            <ion-list-header>
+              <ion-label>
+                <h3 class="section-title">Special Offers</h3>
+              </ion-label>
+            </ion-list-header>
+          </ion-list>
           <ion-card class="promo-card">
             <img src="assets/splash/main-splash.png" alt="Special Promo" class="promo-image" />
             <ion-card-content class="promo-content">

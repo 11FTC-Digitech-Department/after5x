@@ -17,7 +17,10 @@ import {
   IonCardTitle,
   IonCardContent,
   IonText,
-  IonBadge
+  IonBadge,
+  IonList,
+  IonListHeader,
+  IonLabel
 } from '@ionic/angular/standalone';
 import { AddressService } from '@core/supabase/address.service';
 import { SessionService } from '@core/auth/session';
@@ -63,7 +66,10 @@ interface PopularService {
     IonText,
     IonBadge,
     CommonModule,
-    FormsModule
+    FormsModule,
+    IonList,
+    IonListHeader,
+    IonLabel
   ]
 })
 export class HomePage implements OnInit {
