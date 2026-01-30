@@ -92,6 +92,43 @@ serve(async (req) => {
       )
     }
 
+    // Check for existing email in profiles or auth.users
+    const { data: existingEmailProfile } = await supabase
+      .from('profiles')
+      .select('id, email')
+      .eq('email', body.email.toLowerCase().trim())
+      .maybeSingle()
+
+    if (existingEmailProfile) {
+      // 200 + success:false so Supabase invoke() passes body (non-2xx discards body)
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: 'This email address is already registered. Please use a different email or try signing in.',
+          code: 'EMAIL_EXISTS'
+        }),
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
+    // Check for existing mobile number in profiles
+    const { data: existingPhoneProfile } = await supabase
+      .from('profiles')
+      .select('id, phone_number')
+      .eq('phone_number', body.mobileNumber.trim())
+      .maybeSingle()
+
+    if (existingPhoneProfile) {
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: 'This mobile number is already registered. Please use a different mobile number or try signing in.',
+          code: 'PHONE_EXISTS'
+        }),
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
     // Concatenate full name
     const fullName = [body.firstName, body.middleName, body.lastName]
       .filter(Boolean)
@@ -112,14 +149,28 @@ serve(async (req) => {
 
     if (authError || !authUser) {
       console.error('Auth user creation failed:', authError)
-      if (authError?.message?.includes('already registered')) {
+      
+      // Check for various email already exists error messages
+      const errorMessage = authError?.message?.toLowerCase() || ''
+      if (errorMessage.includes('already registered') || 
+          errorMessage.includes('user already registered') ||
+          errorMessage.includes('email already exists') ||
+          errorMessage.includes('duplicate key value')) {
         return new Response(
-          JSON.stringify({ error: 'Email already registered' }),
-          { status: 409, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          JSON.stringify({
+            success: false,
+            error: 'This email address is already registered. Please use a different email or try signing in.',
+            code: 'EMAIL_EXISTS'
+          }),
+          { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         )
       }
+      
       return new Response(
-        JSON.stringify({ error: 'Failed to create user account', details: authError?.message }),
+        JSON.stringify({ 
+          error: 'Failed to create your account. Please try again or contact support if the problem persists.',
+          details: authError?.message 
+        }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
