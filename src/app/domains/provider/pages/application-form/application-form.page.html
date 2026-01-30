@@ -227,12 +227,13 @@
         </ion-card-content>
       </ion-card>
 
-      <!-- Submit Button -->
+      <!-- Submit Button: type="button" to avoid double submit (form ngSubmit + native submit) -->
       <ion-button
         expand="block"
         size="large"
-        type="submit"
+        type="button"
         class="submit-button"
+        (click)="onSubmit()"
         [disabled]="applicationForm.invalid || isSubmitting() || isLoadingCategories()">
         @if (isSubmitting()) {
           <ion-spinner name="crescent" slot="start"></ion-spinner>
