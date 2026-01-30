@@ -363,9 +363,14 @@ verify_jwt = false
 [functions.check-invoice-status]
 verify_jwt = false
 
+# Push notification - called by database triggers and internal services
+[functions.send-push-notification]
+verify_jwt = false
+
 [edge_runtime.secrets]
 XENDIT_SECRET_KEY = "env(XENDIT_SECRET_KEY)"
 XENDIT_CALLBACK_TOKEN = "env(XENDIT_CALLBACK_TOKEN)"
+FCM_SERVICE_ACCOUNT_KEY = "env(FCM_SERVICE_ACCOUNT_KEY)"
 
 [analytics]
 enabled = true

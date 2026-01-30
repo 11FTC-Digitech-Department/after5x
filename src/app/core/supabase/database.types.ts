@@ -764,17 +764,71 @@ export type Database = {
           },
         ]
       }
+      device_tokens: {
+        Row: {
+          app_type: string
+          created_at: string | null
+          device_id: string | null
+          id: string
+          is_active: boolean | null
+          last_used_at: string | null
+          platform: string
+          token: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          app_type: string
+          created_at?: string | null
+          device_id?: string | null
+          id?: string
+          is_active?: boolean | null
+          last_used_at?: string | null
+          platform: string
+          token: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          app_type?: string
+          created_at?: string | null
+          device_id?: string | null
+          id?: string
+          is_active?: boolean | null
+          last_used_at?: string | null
+          platform?: string
+          token?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "device_tokens_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       invoices: {
         Row: {
           amount: number
           booking_id: string
           created_at: string | null
           customer_id: string
+          expires_at: string | null
+          fees_paid_amount: number | null
           id: string
           paid_at: string | null
+          payment_channel: string | null
           payment_method: string | null
+          payment_method_type:
+            | Database["public"]["Enums"]["payment_method_type"]
+            | null
           status: Database["public"]["Enums"]["invoice_status"] | null
           updated_at: string | null
+          xendit_external_id: string | null
           xendit_invoice_id: string | null
           xendit_invoice_url: string | null
         }
@@ -783,11 +837,18 @@ export type Database = {
           booking_id: string
           created_at?: string | null
           customer_id: string
+          expires_at?: string | null
+          fees_paid_amount?: number | null
           id?: string
           paid_at?: string | null
+          payment_channel?: string | null
           payment_method?: string | null
+          payment_method_type?:
+            | Database["public"]["Enums"]["payment_method_type"]
+            | null
           status?: Database["public"]["Enums"]["invoice_status"] | null
           updated_at?: string | null
+          xendit_external_id?: string | null
           xendit_invoice_id?: string | null
           xendit_invoice_url?: string | null
         }
@@ -796,11 +857,18 @@ export type Database = {
           booking_id?: string
           created_at?: string | null
           customer_id?: string
+          expires_at?: string | null
+          fees_paid_amount?: number | null
           id?: string
           paid_at?: string | null
+          payment_channel?: string | null
           payment_method?: string | null
+          payment_method_type?:
+            | Database["public"]["Enums"]["payment_method_type"]
+            | null
           status?: Database["public"]["Enums"]["invoice_status"] | null
           updated_at?: string | null
+          xendit_external_id?: string | null
           xendit_invoice_id?: string | null
           xendit_invoice_url?: string | null
         }
@@ -876,7 +944,10 @@ export type Database = {
         Row: {
           booking_id: string | null
           channel: string
+          delivery_status: string | null
           error_message: string | null
+          fcm_message_id: string | null
+          fcm_response: Json | null
           id: string
           metadata: Json | null
           notification_type: string
@@ -887,7 +958,10 @@ export type Database = {
         Insert: {
           booking_id?: string | null
           channel: string
+          delivery_status?: string | null
           error_message?: string | null
+          fcm_message_id?: string | null
+          fcm_response?: Json | null
           id?: string
           metadata?: Json | null
           notification_type: string
@@ -898,7 +972,10 @@ export type Database = {
         Update: {
           booking_id?: string | null
           channel?: string
+          delivery_status?: string | null
           error_message?: string | null
+          fcm_message_id?: string | null
+          fcm_response?: Json | null
           id?: string
           metadata?: Json | null
           notification_type?: string
@@ -925,6 +1002,86 @@ export type Database = {
             foreignKeyName: "notification_logs_recipient_id_fkey"
             columns: ["recipient_id"]
             isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      notification_preferences: {
+        Row: {
+          booking_cancelled: boolean | null
+          booking_completed: boolean | null
+          booking_confirmed: boolean | null
+          booking_started: boolean | null
+          created_at: string | null
+          id: string
+          job_cancelled: boolean | null
+          job_confirmed: boolean | null
+          job_reminder: boolean | null
+          new_job: boolean | null
+          news_updates: boolean | null
+          payment_received: boolean | null
+          payout_processed: boolean | null
+          promotions: boolean | null
+          provider_arrived: boolean | null
+          provider_on_way: boolean | null
+          push_enabled: boolean | null
+          reviews: boolean | null
+          updated_at: string | null
+          user_id: string
+          verification_status: boolean | null
+        }
+        Insert: {
+          booking_cancelled?: boolean | null
+          booking_completed?: boolean | null
+          booking_confirmed?: boolean | null
+          booking_started?: boolean | null
+          created_at?: string | null
+          id?: string
+          job_cancelled?: boolean | null
+          job_confirmed?: boolean | null
+          job_reminder?: boolean | null
+          new_job?: boolean | null
+          news_updates?: boolean | null
+          payment_received?: boolean | null
+          payout_processed?: boolean | null
+          promotions?: boolean | null
+          provider_arrived?: boolean | null
+          provider_on_way?: boolean | null
+          push_enabled?: boolean | null
+          reviews?: boolean | null
+          updated_at?: string | null
+          user_id: string
+          verification_status?: boolean | null
+        }
+        Update: {
+          booking_cancelled?: boolean | null
+          booking_completed?: boolean | null
+          booking_confirmed?: boolean | null
+          booking_started?: boolean | null
+          created_at?: string | null
+          id?: string
+          job_cancelled?: boolean | null
+          job_confirmed?: boolean | null
+          job_reminder?: boolean | null
+          new_job?: boolean | null
+          news_updates?: boolean | null
+          payment_received?: boolean | null
+          payout_processed?: boolean | null
+          promotions?: boolean | null
+          provider_arrived?: boolean | null
+          provider_on_way?: boolean | null
+          push_enabled?: boolean | null
+          reviews?: boolean | null
+          updated_at?: string | null
+          user_id?: string
+          verification_status?: boolean | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notification_preferences_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
@@ -1036,6 +1193,7 @@ export type Database = {
           activated: boolean | null
           avatar_url: string | null
           created_at: string | null
+          date_of_birth: string | null
           email: string
           fcm_token: string | null
           full_name: string
@@ -1049,6 +1207,7 @@ export type Database = {
           activated?: boolean | null
           avatar_url?: string | null
           created_at?: string | null
+          date_of_birth?: string | null
           email: string
           fcm_token?: string | null
           full_name: string
@@ -1062,6 +1221,7 @@ export type Database = {
           activated?: boolean | null
           avatar_url?: string | null
           created_at?: string | null
+          date_of_birth?: string | null
           email?: string
           fcm_token?: string | null
           full_name?: string
@@ -1220,7 +1380,9 @@ export type Database = {
           created_at: string | null
           current_location: unknown
           engagement_score: number | null
+          has_smartphone: boolean | null
           id: string
+          online_since: string | null
           rating_avg: number | null
           rating_count: number | null
           search_vector: unknown
@@ -1239,7 +1401,9 @@ export type Database = {
           created_at?: string | null
           current_location?: unknown
           engagement_score?: number | null
+          has_smartphone?: boolean | null
           id: string
+          online_since?: string | null
           rating_avg?: number | null
           rating_count?: number | null
           search_vector?: unknown
@@ -1258,7 +1422,9 @@ export type Database = {
           created_at?: string | null
           current_location?: unknown
           engagement_score?: number | null
+          has_smartphone?: boolean | null
           id?: string
+          online_since?: string | null
           rating_avg?: number | null
           rating_count?: number | null
           search_vector?: unknown
@@ -1398,6 +1564,7 @@ export type Database = {
           price_after5_min: number
           price_max: number
           price_min: number
+          properties: Json | null
           service_id: string
           transportation_fee: number | null
           updated_at: string | null
@@ -1415,6 +1582,7 @@ export type Database = {
           price_after5_min?: number
           price_max?: number
           price_min?: number
+          properties?: Json | null
           service_id: string
           transportation_fee?: number | null
           updated_at?: string | null
@@ -1432,6 +1600,7 @@ export type Database = {
           price_after5_min?: number
           price_max?: number
           price_min?: number
+          properties?: Json | null
           service_id?: string
           transportation_fee?: number | null
           updated_at?: string | null
@@ -1454,9 +1623,11 @@ export type Database = {
           created_at: string | null
           description: string | null
           id: string
+          image_url: string | null
           is_active: boolean | null
           name: string
           updated_at: string | null
+          variant_selection_schema: Json | null
         }
         Insert: {
           booking_form_schema?: Json | null
@@ -1464,9 +1635,11 @@ export type Database = {
           created_at?: string | null
           description?: string | null
           id?: string
+          image_url?: string | null
           is_active?: boolean | null
           name: string
           updated_at?: string | null
+          variant_selection_schema?: Json | null
         }
         Update: {
           booking_form_schema?: Json | null
@@ -1474,9 +1647,11 @@ export type Database = {
           created_at?: string | null
           description?: string | null
           id?: string
+          image_url?: string | null
           is_active?: boolean | null
           name?: string
           updated_at?: string | null
+          variant_selection_schema?: Json | null
         }
         Relationships: [
           {
@@ -1675,7 +1850,9 @@ export type Database = {
           id: string
           is_default: boolean | null
           label: string
+          latitude: number
           location: unknown
+          longitude: number
           parking_instructions: string | null
           unit_details: string | null
           updated_at: string | null
@@ -1689,7 +1866,9 @@ export type Database = {
           id?: string
           is_default?: boolean | null
           label?: string
+          latitude: number
           location: unknown
+          longitude: number
           parking_instructions?: string | null
           unit_details?: string | null
           updated_at?: string | null
@@ -1703,7 +1882,9 @@ export type Database = {
           id?: string
           is_default?: boolean | null
           label?: string
+          latitude?: number
           location?: unknown
+          longitude?: number
           parking_instructions?: string | null
           unit_details?: string | null
           updated_at?: string | null
@@ -1759,6 +1940,74 @@ export type Database = {
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      wallet_transactions: {
+        Row: {
+          amount: number
+          balance_after: number
+          booking_id: string | null
+          created_at: string | null
+          description: string | null
+          id: string
+          invoice_id: string | null
+          reference_id: string | null
+          type: string
+          wallet_id: string
+        }
+        Insert: {
+          amount: number
+          balance_after: number
+          booking_id?: string | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          invoice_id?: string | null
+          reference_id?: string | null
+          type: string
+          wallet_id: string
+        }
+        Update: {
+          amount?: number
+          balance_after?: number
+          booking_id?: string | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          invoice_id?: string | null
+          reference_id?: string | null
+          type?: string
+          wallet_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "wallet_transactions_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "wallet_transactions_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "view_customer_bookings_detailed"
+            referencedColumns: ["booking_id"]
+          },
+          {
+            foreignKeyName: "wallet_transactions_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "invoices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "wallet_transactions_wallet_id_fkey"
+            columns: ["wallet_id"]
+            isOneToOne: false
+            referencedRelation: "wallets"
             referencedColumns: ["id"]
           },
         ]
@@ -2101,35 +2350,35 @@ export type Database = {
       addgeometrycolumn:
         | {
             Args: {
+              column_name: string
+              new_dim: number
+              new_srid: number
+              new_type: string
+              schema_name: string
+              table_name: string
+              use_typmod?: boolean
+            }
+            Returns: string
+          }
+        | {
+            Args: {
+              column_name: string
+              new_dim: number
+              new_srid: number
+              new_type: string
+              table_name: string
+              use_typmod?: boolean
+            }
+            Returns: string
+          }
+        | {
+            Args: {
               catalog_name: string
               column_name: string
               new_dim: number
               new_srid_in: number
               new_type: string
               schema_name: string
-              table_name: string
-              use_typmod?: boolean
-            }
-            Returns: string
-          }
-        | {
-            Args: {
-              column_name: string
-              new_dim: number
-              new_srid: number
-              new_type: string
-              schema_name: string
-              table_name: string
-              use_typmod?: boolean
-            }
-            Returns: string
-          }
-        | {
-            Args: {
-              column_name: string
-              new_dim: number
-              new_srid: number
-              new_type: string
               table_name: string
               use_typmod?: boolean
             }
@@ -2158,17 +2407,24 @@ export type Database = {
         }
         Returns: string
       }
+      create_invoice_record: {
+        Args: {
+          p_amount: number
+          p_booking_id: string
+          p_customer_id: string
+          p_expires_at: string
+          p_xendit_external_id: string
+          p_xendit_invoice_id: string
+          p_xendit_invoice_url: string
+        }
+        Returns: string
+      }
+      credit_provider_wallet: {
+        Args: { p_booking_id: string; p_invoice_id: string }
+        Returns: undefined
+      }
       disablelongtransactions: { Args: never; Returns: string }
       dropgeometrycolumn:
-        | {
-            Args: {
-              catalog_name: string
-              column_name: string
-              schema_name: string
-              table_name: string
-            }
-            Returns: string
-          }
         | {
             Args: {
               column_name: string
@@ -2178,7 +2434,18 @@ export type Database = {
             Returns: string
           }
         | { Args: { column_name: string; table_name: string }; Returns: string }
+        | {
+            Args: {
+              catalog_name: string
+              column_name: string
+              schema_name: string
+              table_name: string
+            }
+            Returns: string
+          }
       dropgeometrytable:
+        | { Args: { schema_name: string; table_name: string }; Returns: string }
+        | { Args: { table_name: string }; Returns: string }
         | {
             Args: {
               catalog_name: string
@@ -2187,9 +2454,11 @@ export type Database = {
             }
             Returns: string
           }
-        | { Args: { schema_name: string; table_name: string }; Returns: string }
-        | { Args: { table_name: string }; Returns: string }
       enablelongtransactions: { Args: never; Returns: string }
+      ensure_customer_record: {
+        Args: { p_user_id: string }
+        Returns: undefined
+      }
       equals: { Args: { geom1: unknown; geom2: unknown }; Returns: boolean }
       geometry: { Args: { "": string }; Returns: unknown }
       geometry_above: {
@@ -2305,6 +2574,66 @@ export type Database = {
           provider_rating: number
         }[]
       }
+      get_invoice_by_booking: {
+        Args: { p_booking_id: string }
+        Returns: {
+          amount: number
+          expires_at: string
+          id: string
+          paid_at: string
+          payment_channel: string
+          payment_method: string
+          status: Database["public"]["Enums"]["invoice_status"]
+          xendit_invoice_id: string
+          xendit_invoice_url: string
+        }[]
+      }
+      get_or_create_notification_preferences: {
+        Args: { p_user_id: string }
+        Returns: {
+          booking_cancelled: boolean | null
+          booking_completed: boolean | null
+          booking_confirmed: boolean | null
+          booking_started: boolean | null
+          created_at: string | null
+          id: string
+          job_cancelled: boolean | null
+          job_confirmed: boolean | null
+          job_reminder: boolean | null
+          new_job: boolean | null
+          news_updates: boolean | null
+          payment_received: boolean | null
+          payout_processed: boolean | null
+          promotions: boolean | null
+          provider_arrived: boolean | null
+          provider_on_way: boolean | null
+          push_enabled: boolean | null
+          reviews: boolean | null
+          updated_at: string | null
+          user_id: string
+          verification_status: boolean | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "notification_preferences"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      get_or_create_xendit_customer: {
+        Args: { p_customer_id: string }
+        Returns: string
+      }
+      get_provider_wallet: {
+        Args: { p_provider_id: string }
+        Returns: {
+          balance: number
+          currency: string
+          frozen_balance: number
+          last_transaction_at: string
+          wallet_id: string
+        }[]
+      }
       get_user_notifications: {
         Args: { p_limit?: number; p_offset?: number }
         Returns: {
@@ -2315,6 +2644,18 @@ export type Database = {
           read: boolean
           read_at: string
           title: string
+          type: string
+        }[]
+      }
+      get_wallet_transactions: {
+        Args: { p_limit?: number; p_offset?: number; p_provider_id: string }
+        Returns: {
+          amount: number
+          balance_after: number
+          booking_id: string
+          created_at: string
+          description: string
+          id: string
           type: string
         }[]
       }
@@ -2334,8 +2675,8 @@ export type Database = {
         Returns: boolean
       }
       populate_geometry_columns:
-        | { Args: { tbl_oid: unknown; use_typmod?: boolean }; Returns: number }
         | { Args: { use_typmod?: boolean }; Returns: string }
+        | { Args: { tbl_oid: unknown; use_typmod?: boolean }; Returns: number }
       postgis_constraint_dims: {
         Args: { geomcolumn: string; geomschema: string; geomtable: string }
         Returns: number
@@ -2373,6 +2714,17 @@ export type Database = {
       }
       postgis_version: { Args: never; Returns: string }
       postgis_wagyu_version: { Args: never; Returns: string }
+      send_push_notification_async: {
+        Args: {
+          p_app_type: string
+          p_body: string
+          p_booking_id: string
+          p_title: string
+          p_type: string
+          p_user_ids: string[]
+        }
+        Returns: undefined
+      }
       st_3dclosestpoint: {
         Args: { geom1: unknown; geom2: unknown }
         Returns: unknown
@@ -2421,14 +2773,6 @@ export type Database = {
       st_asewkt: { Args: { "": string }; Returns: string }
       st_asgeojson:
         | {
-            Args: { geog: unknown; maxdecimaldigits?: number; options?: number }
-            Returns: string
-          }
-        | {
-            Args: { geom: unknown; maxdecimaldigits?: number; options?: number }
-            Returns: string
-          }
-        | {
             Args: {
               geom_column?: string
               maxdecimaldigits?: number
@@ -2437,32 +2781,18 @@ export type Database = {
             }
             Returns: string
           }
-        | { Args: { "": string }; Returns: string }
-      st_asgml:
-        | {
-            Args: {
-              geog: unknown
-              id?: string
-              maxdecimaldigits?: number
-              nprefix?: string
-              options?: number
-            }
-            Returns: string
-          }
         | {
             Args: { geom: unknown; maxdecimaldigits?: number; options?: number }
             Returns: string
           }
-        | { Args: { "": string }; Returns: string }
         | {
-            Args: {
-              geog: unknown
-              id?: string
-              maxdecimaldigits?: number
-              nprefix?: string
-              options?: number
-              version: number
-            }
+            Args: { geog: unknown; maxdecimaldigits?: number; options?: number }
+            Returns: string
+          }
+        | { Args: { "": string }; Returns: string }
+      st_asgml:
+        | {
+            Args: { geom: unknown; maxdecimaldigits?: number; options?: number }
             Returns: string
           }
         | {
@@ -2476,13 +2806,35 @@ export type Database = {
             }
             Returns: string
           }
-      st_askml:
         | {
-            Args: { geog: unknown; maxdecimaldigits?: number; nprefix?: string }
+            Args: {
+              geog: unknown
+              id?: string
+              maxdecimaldigits?: number
+              nprefix?: string
+              options?: number
+              version: number
+            }
             Returns: string
           }
         | {
+            Args: {
+              geog: unknown
+              id?: string
+              maxdecimaldigits?: number
+              nprefix?: string
+              options?: number
+            }
+            Returns: string
+          }
+        | { Args: { "": string }; Returns: string }
+      st_askml:
+        | {
             Args: { geom: unknown; maxdecimaldigits?: number; nprefix?: string }
+            Returns: string
+          }
+        | {
+            Args: { geog: unknown; maxdecimaldigits?: number; nprefix?: string }
             Returns: string
           }
         | { Args: { "": string }; Returns: string }
@@ -2503,11 +2855,11 @@ export type Database = {
       }
       st_assvg:
         | {
-            Args: { geog: unknown; maxdecimaldigits?: number; rel?: number }
+            Args: { geom: unknown; maxdecimaldigits?: number; rel?: number }
             Returns: string
           }
         | {
-            Args: { geom: unknown; maxdecimaldigits?: number; rel?: number }
+            Args: { geog: unknown; maxdecimaldigits?: number; rel?: number }
             Returns: string
           }
         | { Args: { "": string }; Returns: string }
@@ -2515,7 +2867,8 @@ export type Database = {
       st_astwkb:
         | {
             Args: {
-              geom: unknown
+              geom: unknown[]
+              ids: number[]
               prec?: number
               prec_m?: number
               prec_z?: number
@@ -2526,8 +2879,7 @@ export type Database = {
           }
         | {
             Args: {
-              geom: unknown[]
-              ids: number[]
+              geom: unknown
               prec?: number
               prec_m?: number
               prec_z?: number
@@ -2541,8 +2893,8 @@ export type Database = {
         Returns: string
       }
       st_azimuth:
-        | { Args: { geog1: unknown; geog2: unknown }; Returns: number }
         | { Args: { geom1: unknown; geom2: unknown }; Returns: number }
+        | { Args: { geog1: unknown; geog2: unknown }; Returns: number }
       st_boundingdiagonal: {
         Args: { fits?: boolean; geom: unknown }
         Returns: unknown
@@ -2607,11 +2959,11 @@ export type Database = {
         Returns: boolean
       }
       st_distance:
+        | { Args: { geom1: unknown; geom2: unknown }; Returns: number }
         | {
             Args: { geog1: unknown; geog2: unknown; use_spheroid?: boolean }
             Returns: number
           }
-        | { Args: { geom1: unknown; geom2: unknown }; Returns: number }
       st_distancesphere:
         | { Args: { geom1: unknown; geom2: unknown }; Returns: number }
         | {
@@ -2633,11 +2985,6 @@ export type Database = {
       }
       st_equals: { Args: { geom1: unknown; geom2: unknown }; Returns: boolean }
       st_expand:
-        | { Args: { box: unknown; dx: number; dy: number }; Returns: unknown }
-        | {
-            Args: { box: unknown; dx: number; dy: number; dz?: number }
-            Returns: unknown
-          }
         | {
             Args: {
               dm?: number
@@ -2648,6 +2995,11 @@ export type Database = {
             }
             Returns: unknown
           }
+        | {
+            Args: { box: unknown; dx: number; dy: number; dz?: number }
+            Returns: unknown
+          }
+        | { Args: { box: unknown; dx: number; dy: number }; Returns: unknown }
       st_force3d: { Args: { geom: unknown; zvalue?: number }; Returns: unknown }
       st_force3dm: {
         Args: { geom: unknown; mvalue?: number }
@@ -2670,8 +3022,8 @@ export type Database = {
       st_geogfromtext: { Args: { "": string }; Returns: unknown }
       st_geographyfromtext: { Args: { "": string }; Returns: unknown }
       st_geohash:
-        | { Args: { geog: unknown; maxchars?: number }; Returns: string }
         | { Args: { geom: unknown; maxchars?: number }; Returns: string }
+        | { Args: { geog: unknown; maxchars?: number }; Returns: string }
       st_geomcollfromtext: { Args: { "": string }; Returns: unknown }
       st_geometricmedian: {
         Args: {
@@ -2715,8 +3067,8 @@ export type Database = {
         Returns: unknown
       }
       st_intersects:
-        | { Args: { geog1: unknown; geog2: unknown }; Returns: boolean }
         | { Args: { geom1: unknown; geom2: unknown }; Returns: boolean }
+        | { Args: { geog1: unknown; geog2: unknown }; Returns: boolean }
       st_isvaliddetail: {
         Args: { flags?: number; geom: unknown }
         Returns: Database["public"]["CompositeTypes"]["valid_detail"]
@@ -2869,8 +3221,8 @@ export type Database = {
         Returns: unknown
       }
       st_setsrid:
-        | { Args: { geog: unknown; srid: number }; Returns: unknown }
         | { Args: { geom: unknown; srid: number }; Returns: unknown }
+        | { Args: { geog: unknown; srid: number }; Returns: unknown }
       st_sharedpaths: {
         Args: { geom1: unknown; geom2: unknown }
         Returns: unknown
@@ -2893,8 +3245,8 @@ export type Database = {
         Returns: Record<string, unknown>[]
       }
       st_srid:
-        | { Args: { geog: unknown }; Returns: number }
         | { Args: { geom: unknown }; Returns: number }
+        | { Args: { geog: unknown }; Returns: number }
       st_subdivide: {
         Args: { geom: unknown; gridsize?: number; maxvertices?: number }
         Returns: unknown[]
@@ -2923,15 +3275,15 @@ export type Database = {
       }
       st_touches: { Args: { geom1: unknown; geom2: unknown }; Returns: boolean }
       st_transform:
-        | {
-            Args: { from_proj: string; geom: unknown; to_proj: string }
-            Returns: unknown
-          }
+        | { Args: { geom: unknown; to_proj: string }; Returns: unknown }
         | {
             Args: { from_proj: string; geom: unknown; to_srid: number }
             Returns: unknown
           }
-        | { Args: { geom: unknown; to_proj: string }; Returns: unknown }
+        | {
+            Args: { from_proj: string; geom: unknown; to_proj: string }
+            Returns: unknown
+          }
       st_triangulatepolygon: { Args: { g1: unknown }; Returns: unknown }
       st_union:
         | { Args: { geom1: unknown; geom2: unknown }; Returns: unknown }
@@ -2955,8 +3307,38 @@ export type Database = {
         Returns: unknown
       }
       unlockrows: { Args: { "": string }; Returns: number }
+      update_booking_payment_status: {
+        Args: { p_booking_id: string; p_new_status: string }
+        Returns: undefined
+      }
+      update_invoice_expired: {
+        Args: { p_xendit_invoice_id: string }
+        Returns: string
+      }
+      update_invoice_paid: {
+        Args: {
+          p_fees_paid: number
+          p_payment_channel: string
+          p_payment_method: string
+          p_payment_method_type: Database["public"]["Enums"]["payment_method_type"]
+          p_xendit_invoice_id: string
+        }
+        Returns: string
+      }
       update_provider_rating: {
         Args: { provider_id: string }
+        Returns: undefined
+      }
+      update_provider_status_for_booking: {
+        Args: {
+          p_booking_id?: string
+          p_new_status: Database["public"]["Enums"]["provider_status"]
+          p_provider_id: string
+        }
+        Returns: undefined
+      }
+      update_xendit_customer_id: {
+        Args: { p_customer_id: string; p_xendit_customer_id: string }
         Returns: undefined
       }
       updategeometrysrid: {
@@ -2996,6 +3378,12 @@ export type Database = {
         | "COMPLETED_WORK"
         | "RECEIPT_PROOF"
       media_type: "IMAGE" | "VIDEO"
+      payment_method_type:
+        | "EWALLET"
+        | "CARD"
+        | "BANK_TRANSFER"
+        | "RETAIL_OUTLET"
+        | "QR_CODE"
       payout_status: "PROCESSING" | "COMPLETED" | "FAILED"
       price_applied_tier: "STANDARD_DAY" | "AFTER5_NIGHT"
       provider_status: "offline" | "online" | "busy" | "suspended"
@@ -3167,6 +3555,13 @@ export const Constants = {
         "RECEIPT_PROOF",
       ],
       media_type: ["IMAGE", "VIDEO"],
+      payment_method_type: [
+        "EWALLET",
+        "CARD",
+        "BANK_TRANSFER",
+        "RETAIL_OUTLET",
+        "QR_CODE",
+      ],
       payout_status: ["PROCESSING", "COMPLETED", "FAILED"],
       price_applied_tier: ["STANDARD_DAY", "AFTER5_NIGHT"],
       provider_status: ["offline", "online", "busy", "suspended"],

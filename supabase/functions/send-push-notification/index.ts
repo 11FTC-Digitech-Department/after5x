@@ -1,0 +1,451 @@
+// Supabase Edge Function: Send Push Notification
+// Purpose: Send FCM push notifications to users based on their device tokens and preferences
+
+import { serve } from 'https://deno.land/std@0.177.0/http/server.ts'
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { encode as base64Encode } from 'https://deno.land/std@0.177.0/encoding/base64.ts'
+
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+}
+
+interface PushNotificationRequest {
+  userIds: string[]
+  notification: {
+    type: string
+    title: string
+    body: string
+    data?: Record<string, string>
+    imageUrl?: string
+  }
+  options?: {
+    appType?: 'customer' | 'experts' | 'both'
+    priority?: 'high' | 'normal'
+  }
+}
+
+interface DeviceToken {
+  user_id: string
+  token: string
+  platform: string
+  app_type: string
+}
+
+interface NotificationPreference {
+  user_id: string
+  push_enabled: boolean
+  [key: string]: boolean | string
+}
+
+// Map notification types to preference column names
+const notificationTypeToPreference: Record<string, string> = {
+  // Customer preferences
+  'booking_confirmed': 'booking_confirmed',
+  'booking_started': 'booking_started',
+  'booking_completed': 'booking_completed',
+  'booking_cancelled': 'booking_cancelled',
+  'provider_on_way': 'provider_on_way',
+  'provider_arrived': 'provider_arrived',
+  // Provider preferences
+  'new_job': 'new_job',
+  'job_confirmed': 'job_confirmed',
+  'job_cancelled': 'job_cancelled',
+  'job_reminder': 'job_reminder',
+  'payment_received': 'payment_received',
+  'payout_processed': 'payout_processed',
+  'verification_status': 'verification_status',
+  'reviews': 'reviews',
+  // Common
+  'promotions': 'promotions',
+  'news_updates': 'news_updates',
+}
+
+serve(async (req) => {
+  if (req.method === 'OPTIONS') {
+    return new Response('ok', { headers: corsHeaders })
+  }
+
+  try {
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!
+    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+    const fcmServiceAccountKey = Deno.env.get('FCM_SERVICE_ACCOUNT_KEY')
+
+    if (!supabaseUrl || !supabaseServiceKey) {
+      console.error('Missing Supabase configuration')
+      return new Response(
+        JSON.stringify({ error: 'Server configuration error' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
+    if (!fcmServiceAccountKey) {
+      console.error('FCM_SERVICE_ACCOUNT_KEY not configured')
+      return new Response(
+        JSON.stringify({ error: 'FCM not configured', sent: 0 }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
+    const supabase = createClient(supabaseUrl, supabaseServiceKey)
+
+    // Parse request
+    const request: PushNotificationRequest = await req.json()
+    const { userIds, notification, options = {} } = request
+
+    if (!userIds?.length || !notification) {
+      return new Response(
+        JSON.stringify({ error: 'Missing required fields: userIds, notification' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
+    console.log(`Processing push notification for ${userIds.length} users, type: ${notification.type}`)
+
+    // Parse service account and get project ID
+    let serviceAccount: { project_id: string; client_email: string; private_key: string }
+    try {
+      serviceAccount = JSON.parse(fcmServiceAccountKey)
+    } catch (e) {
+      console.error('Failed to parse FCM service account key:', e)
+      return new Response(
+        JSON.stringify({ error: 'Invalid FCM service account configuration' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
+    const fcmProjectId = serviceAccount.project_id
+
+    // Get OAuth2 access token for FCM
+    const accessToken = await getAccessToken(serviceAccount)
+
+    // Get device tokens for users
+    let tokenQuery = supabase
+      .from('device_tokens')
+      .select('user_id, token, platform, app_type')
+      .in('user_id', userIds)
+      .eq('is_active', true)
+
+    // Filter by app type if specified
+    if (options.appType && options.appType !== 'both') {
+      tokenQuery = tokenQuery.eq('app_type', options.appType)
+    }
+
+    const { data: tokens, error: tokensError } = await tokenQuery
+
+    if (tokensError) {
+      console.error('Error fetching device tokens:', tokensError)
+      return new Response(
+        JSON.stringify({ error: 'Failed to fetch device tokens' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
+    if (!tokens?.length) {
+      console.log('No active tokens found for users:', userIds)
+      return new Response(
+        JSON.stringify({ success: true, sent: 0, message: 'No active tokens' }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
+    console.log(`Found ${tokens.length} active device tokens`)
+
+    // Get user preferences
+    const { data: preferences } = await supabase
+      .from('notification_preferences')
+      .select('*')
+      .in('user_id', userIds)
+
+    const preferencesMap = new Map<string, NotificationPreference>(
+      (preferences || []).map((p: NotificationPreference) => [p.user_id, p])
+    )
+
+    // Filter tokens based on preferences
+    const preferenceColumn = notificationTypeToPreference[notification.type]
+    const eligibleTokens = tokens.filter((token: DeviceToken) => {
+      const userPrefs = preferencesMap.get(token.user_id)
+
+      // If no preferences exist, send (default enabled)
+      if (!userPrefs) return true
+
+      // Check master toggle
+      if (!userPrefs.push_enabled) return false
+
+      // Check specific notification type preference
+      if (preferenceColumn && userPrefs[preferenceColumn] === false) {
+        return false
+      }
+
+      return true
+    })
+
+    if (!eligibleTokens.length) {
+      console.log('All tokens filtered out by preferences')
+      return new Response(
+        JSON.stringify({ success: true, sent: 0, filtered: tokens.length, message: 'Filtered by preferences' }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
+    console.log(`${eligibleTokens.length} tokens eligible after preference filtering`)
+
+    // Send to FCM
+    const results = await Promise.allSettled(
+      eligibleTokens.map((tokenData: DeviceToken) =>
+        sendToFCM(
+          accessToken,
+          fcmProjectId,
+          tokenData,
+          notification,
+          options.priority || 'high'
+        )
+      )
+    )
+
+    // Process results
+    let successCount = 0
+    let failCount = 0
+    const logEntries: any[] = []
+    const tokensToDeactivate: string[] = []
+
+    for (let i = 0; i < results.length; i++) {
+      const result = results[i]
+      const tokenData = eligibleTokens[i]
+
+      if (result.status === 'fulfilled') {
+        successCount++
+        logEntries.push({
+          recipient_id: tokenData.user_id,
+          notification_type: notification.type,
+          channel: 'push',
+          status: 'sent',
+          fcm_message_id: result.value.messageId,
+          fcm_response: result.value,
+          delivery_status: 'sent',
+        })
+      } else {
+        failCount++
+        const errorCode = result.reason?.code
+
+        // Check for invalid token and mark for deactivation
+        if (
+          errorCode === 'UNREGISTERED' ||
+          errorCode === 'INVALID_ARGUMENT' ||
+          errorCode === 'messaging/registration-token-not-registered'
+        ) {
+          tokensToDeactivate.push(tokenData.token)
+        }
+
+        logEntries.push({
+          recipient_id: tokenData.user_id,
+          notification_type: notification.type,
+          channel: 'push',
+          status: 'failed',
+          error_message: result.reason?.message || 'Unknown error',
+          fcm_response: result.reason,
+          delivery_status: 'failed',
+        })
+      }
+    }
+
+    // Deactivate invalid tokens
+    if (tokensToDeactivate.length > 0) {
+      console.log(`Deactivating ${tokensToDeactivate.length} invalid tokens`)
+      await supabase
+        .from('device_tokens')
+        .update({ is_active: false })
+        .in('token', tokensToDeactivate)
+    }
+
+    // Batch insert logs
+    if (logEntries.length > 0) {
+      const { error: logError } = await supabase.from('notification_logs').insert(logEntries)
+      if (logError) {
+        console.error('Failed to insert notification logs:', logError)
+      }
+    }
+
+    console.log(`Push notification complete: ${successCount} sent, ${failCount} failed`)
+
+    return new Response(
+      JSON.stringify({
+        success: true,
+        sent: successCount,
+        failed: failCount,
+        filtered: tokens.length - eligibleTokens.length,
+        total: tokens.length,
+      }),
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    )
+  } catch (error) {
+    console.error('Error sending push notification:', error)
+    return new Response(
+      JSON.stringify({ error: 'Internal server error', message: error.message }),
+      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    )
+  }
+})
+
+/**
+ * Get OAuth2 access token for FCM HTTP v1 API using service account
+ */
+async function getAccessToken(serviceAccount: {
+  client_email: string
+  private_key: string
+}): Promise<string> {
+  const now = Math.floor(Date.now() / 1000)
+
+  // Create JWT header
+  const header = { alg: 'RS256', typ: 'JWT' }
+
+  // Create JWT payload
+  const payload = {
+    iss: serviceAccount.client_email,
+    scope: 'https://www.googleapis.com/auth/firebase.messaging',
+    aud: 'https://oauth2.googleapis.com/token',
+    iat: now,
+    exp: now + 3600, // 1 hour
+  }
+
+  // Encode header and payload
+  const encodedHeader = base64UrlEncode(JSON.stringify(header))
+  const encodedPayload = base64UrlEncode(JSON.stringify(payload))
+  const toSign = `${encodedHeader}.${encodedPayload}`
+
+  // Sign the JWT
+  const signature = await signJWT(toSign, serviceAccount.private_key)
+  const jwt = `${toSign}.${signature}`
+
+  // Exchange JWT for access token
+  const tokenResponse = await fetch('https://oauth2.googleapis.com/token', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: `grant_type=urn:ietf:params:oauth:grant-type:jwt-bearer&assertion=${jwt}`,
+  })
+
+  if (!tokenResponse.ok) {
+    const errorText = await tokenResponse.text()
+    console.error('Failed to get FCM access token:', errorText)
+    throw new Error('Failed to get FCM access token')
+  }
+
+  const tokenData = await tokenResponse.json()
+  return tokenData.access_token
+}
+
+/**
+ * Sign JWT using RSA-SHA256
+ */
+async function signJWT(data: string, privateKeyPem: string): Promise<string> {
+  // Parse PEM key
+  const pemContents = privateKeyPem
+    .replace(/-----BEGIN PRIVATE KEY-----/, '')
+    .replace(/-----END PRIVATE KEY-----/, '')
+    .replace(/\n/g, '')
+
+  const binaryKey = Uint8Array.from(atob(pemContents), (c) => c.charCodeAt(0))
+
+  // Import the key
+  const key = await crypto.subtle.importKey(
+    'pkcs8',
+    binaryKey,
+    { name: 'RSASSA-PKCS1-v1_5', hash: 'SHA-256' },
+    false,
+    ['sign']
+  )
+
+  // Sign the data
+  const encoder = new TextEncoder()
+  const signature = await crypto.subtle.sign(
+    { name: 'RSASSA-PKCS1-v1_5' },
+    key,
+    encoder.encode(data)
+  )
+
+  return base64UrlEncode(new Uint8Array(signature))
+}
+
+/**
+ * Base64 URL encode (RFC 4648)
+ */
+function base64UrlEncode(data: string | Uint8Array): string {
+  let base64: string
+  if (typeof data === 'string') {
+    base64 = btoa(data)
+  } else {
+    base64 = base64Encode(data)
+  }
+  return base64.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '')
+}
+
+/**
+ * Send notification to FCM HTTP v1 API
+ */
+async function sendToFCM(
+  accessToken: string,
+  projectId: string,
+  tokenData: DeviceToken,
+  notification: PushNotificationRequest['notification'],
+  priority: 'high' | 'normal'
+): Promise<{ messageId: string }> {
+  const message: any = {
+    message: {
+      token: tokenData.token,
+      notification: {
+        title: notification.title,
+        body: notification.body,
+        ...(notification.imageUrl && { image: notification.imageUrl }),
+      },
+      data: {
+        ...notification.data,
+        type: notification.type,
+        click_action: 'FLUTTER_NOTIFICATION_CLICK',
+      },
+      android: {
+        priority: priority,
+        notification: {
+          channel_id: 'after5_notifications',
+          icon: 'ic_notification',
+          color: '#4A90A4',
+        },
+      },
+      apns: {
+        headers: {
+          'apns-priority': priority === 'high' ? '10' : '5',
+        },
+        payload: {
+          aps: {
+            sound: 'default',
+          },
+        },
+      },
+    },
+  }
+
+  const response = await fetch(
+    `https://fcm.googleapis.com/v1/projects/${projectId}/messages:send`,
+    {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(message),
+    }
+  )
+
+  if (!response.ok) {
+    const errorData = await response.json()
+    const errorCode =
+      errorData.error?.details?.[0]?.errorCode || errorData.error?.status || 'UNKNOWN'
+    throw {
+      code: errorCode,
+      message: errorData.error?.message || 'FCM request failed',
+      details: errorData,
+    }
+  }
+
+  const result = await response.json()
+  return { messageId: result.name }
+}
