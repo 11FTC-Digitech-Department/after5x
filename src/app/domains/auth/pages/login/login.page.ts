@@ -11,17 +11,19 @@ import {
   IonLabel,
   IonButton,
   IonIcon,
+  IonSpinner,
   ToastController,
   AlertController
 } from '@ionic/angular/standalone';
 import { addIcons } from 'ionicons';
-import { fingerPrintOutline, eyeOutline } from 'ionicons/icons';
+import { fingerPrintOutline, eyeOutline, logoGoogle, logoFacebook } from 'ionicons/icons';
 import { LoginFormComponent, LoginFormData } from '../../components/login-form/login-form.component';
 import { SignupFormComponent, SignupFormData } from '../../components/signup-form/signup-form.component';
 import { SupabaseService } from '../../../../core/supabase/supabase';
 import { SessionService } from '../../../../core/auth/session';
 import { BiometricService } from '../../../../core/auth/biometric.service';
 import { AuthFlowService } from '../../../../core/auth/auth-flow.service';
+import { OAuthService, OAuthProvider } from '../../../../core/auth/oauth.service';
 import { App } from '@capacitor/app';
 import { environment } from '../../../../../environments/environment';
 import { SignupSuccessModalComponent } from '../../../../shared/components/signup-success-modal/signup-success-modal.component';
@@ -41,6 +43,7 @@ import { SignupSuccessModalComponent } from '../../../../shared/components/signu
     IonLabel,
     IonButton,
     IonIcon,
+    IonSpinner,
     CommonModule,
     LoginFormComponent,
     SignupFormComponent,
@@ -56,6 +59,7 @@ export class LoginPage implements OnInit, AfterViewChecked {
   private toastController = inject(ToastController);
   private alertController = inject(AlertController);
   private cdr = inject(ChangeDetectorRef);
+  oauthService = inject(OAuthService);
   biometricService = inject(BiometricService);
 
   @ViewChild('signupForm') signupFormComponent?: SignupFormComponent;
@@ -65,6 +69,8 @@ export class LoginPage implements OnInit, AfterViewChecked {
   isLoginLoading = signal<boolean>(false);
   isSignupLoading = signal<boolean>(false);
   isBiometricLoading = signal<boolean>(false);
+  isGoogleLoading = signal<boolean>(false);
+  isFacebookLoading = signal<boolean>(false);
   appVersion = signal<string>('0.0.0');
   buildNumber = signal<string>('1');
   environmentType = signal<string>('dev');
@@ -74,7 +80,7 @@ export class LoginPage implements OnInit, AfterViewChecked {
   successModalType = signal<'customer' | 'provider'>('customer');
 
   constructor() {
-    addIcons({ fingerPrintOutline, eyeOutline });
+    addIcons({ fingerPrintOutline, eyeOutline, logoGoogle, logoFacebook });
   }
 
   // Ensure we always land on the Login tab when this page becomes active
@@ -118,6 +124,18 @@ export class LoginPage implements OnInit, AfterViewChecked {
     if (navigationState?.reason) {
       const message = this.authFlowService.getRedirectReasonMessage(navigationState.reason);
       await this.showToast(message, 'warning');
+    }
+
+    // Check for OAuth error in query params
+    const oauthError = this.route.snapshot.queryParams['oauth_error'];
+    if (oauthError) {
+      await this.showToast(decodeURIComponent(oauthError), 'danger');
+      // Clear the error from URL
+      this.router.navigate([], {
+        relativeTo: this.route,
+        queryParams: { oauth_error: null },
+        queryParamsHandling: 'merge'
+      });
     }
 
     // Get app version and build info
@@ -325,6 +343,34 @@ export class LoginPage implements OnInit, AfterViewChecked {
       await this.showToast('An unexpected error occurred', 'danger');
     } finally {
       this.isBiometricLoading.set(false);
+    }
+  }
+
+  async onGoogleLogin() {
+    await this.signInWithOAuth('google');
+  }
+
+  async onFacebookLogin() {
+    await this.signInWithOAuth('facebook');
+  }
+
+  private async signInWithOAuth(provider: OAuthProvider) {
+    const loadingSignal = provider === 'google' ? this.isGoogleLoading : this.isFacebookLoading;
+    loadingSignal.set(true);
+
+    try {
+      const result = await this.oauthService.signInWithProvider(provider);
+
+      if (!result.success) {
+        await this.showToast(result.error || `${provider} sign-in failed`, 'danger');
+      }
+      // On success for mobile, the browser opens and auth state change handles the rest
+      // On success for web, the page redirects to the OAuth provider
+    } catch (error) {
+      console.error(`${provider} login error:`, error);
+      await this.showToast('An unexpected error occurred', 'danger');
+    } finally {
+      loadingSignal.set(false);
     }
   }
 

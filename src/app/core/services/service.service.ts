@@ -99,19 +99,21 @@ export interface ProviderOffering {
   id: string;  // provider_offerings.id
   providerId: string;
   providerName: string;
+  displayName: string;  // "After5 Expert - <firstName>" for UI display
   avatarUrl?: string;
   rating: number;
   reviewCount: number;
   yearsExperience: number;
   serviceRadius: number;
   status: string;
+  onlineSince?: Date;  // When provider went online (null if offline)
   isDefault: boolean;  // highest rated = default
 }
 
 export interface ServiceWithProviders extends ServiceVariant {
   service: Service;
-  providers: ProviderOffering[];  // ALL providers
-  selectedProvider: ProviderOffering;  // Default (highest rated)
+  providers: ProviderOffering[];  // Online/busy providers
+  selectedProvider: ProviderOffering | null;  // Default (highest rated) or null if none available
   category: {
     name: string;
     icon_url?: string;
@@ -246,29 +248,45 @@ export class ServiceService {
         return null;
       }
 
-      // Get ALL provider offerings for this service variant
+      // Get ONLINE/BUSY provider offerings for this service variant
       const { data: offeringsData, error: offeringError } = await client
         .from('provider_offerings')
         .select(`
           id,
-          provider:providers(
-            id, bio, years_of_experience, service_radius_km, status,
+          provider:providers!inner(
+            id, bio, years_of_experience, service_radius_km, status, online_since,
             rating_avg, rating_count,
             profiles!providers_id_fkey(full_name, avatar_url)
           )
         `)
         .eq('service_variant_id', serviceVariantId)
-        .eq('is_active', true);
+        .eq('is_active', true)
+        .in('provider.status', ['online', 'busy']);
 
       if (offeringError) {
         console.error('Error fetching provider offerings:', offeringError);
         return null;
       }
 
+      // Return empty providers array if no online providers (don't treat as error)
       if (!offeringsData || offeringsData.length === 0) {
-        console.error('No provider offerings found for service variant:', serviceVariantId);
-        return null;
+        return {
+          ...variantData,
+          service: variantData.service,
+          providers: [],
+          selectedProvider: null as any,
+          category: {
+            name: variantData.service.service_categories?.name,
+            icon_url: variantData.service.service_categories?.icon_url,
+          },
+        };
       }
+
+      // Helper function to generate display name
+      const generateDisplayName = (fullName: string): string => {
+        const firstName = fullName.split(' ')[0] || 'Expert';
+        return `After5 Expert - ${firstName}`;
+      };
 
       // Map to ProviderOffering and sort by rating (highest first)
       const providers: ProviderOffering[] = offeringsData
@@ -276,12 +294,14 @@ export class ServiceService {
           id: o.id,
           providerId: o.provider.id,
           providerName: o.provider.profiles?.full_name || 'Provider',
+          displayName: generateDisplayName(o.provider.profiles?.full_name || 'Expert'),
           avatarUrl: o.provider.profiles?.avatar_url,
           rating: o.provider.rating_avg || 0,
           reviewCount: o.provider.rating_count || 0,
           yearsExperience: o.provider.years_of_experience || 0,
           serviceRadius: o.provider.service_radius_km || 10,
           status: o.provider.status,
+          onlineSince: o.provider.online_since ? new Date(o.provider.online_since) : undefined,
           isDefault: false
         }))
         .sort((a: ProviderOffering, b: ProviderOffering) => b.rating - a.rating);
@@ -295,7 +315,7 @@ export class ServiceService {
         ...variantData,
         service: variantData.service,
         providers,
-        selectedProvider: providers[0],
+        selectedProvider: providers[0] || null,
         category: {
           name: variantData.service.service_categories?.name,
           icon_url: variantData.service.service_categories?.icon_url,

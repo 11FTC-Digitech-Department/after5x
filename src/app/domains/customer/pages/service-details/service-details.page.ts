@@ -1,7 +1,10 @@
-import { Component, OnInit, inject, signal, computed } from '@angular/core';
+import { Component, OnInit, OnDestroy, inject, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
+import { formatDistanceToNow } from 'date-fns';
+import { addIcons } from 'ionicons';
+import { ellipse, peopleOutline } from 'ionicons/icons';
 import {
   IonContent,
   IonHeader,
@@ -27,9 +30,13 @@ import {
   IonItem,
   IonChip,
   IonAvatar,
-  IonBadge
+  IonBadge,
+  IonRefresher,
+  IonRefresherContent,
+  RefresherCustomEvent
 } from '@ionic/angular/standalone';
 import { ServiceService, ServiceWithProviders, ProviderOffering, ProviderService } from '@core/services/service.service';
+import { RealTimeService } from '@core/services/real-time.service';
 
 @Component({
   selector: 'app-service-details',
@@ -62,14 +69,20 @@ import { ServiceService, ServiceWithProviders, ProviderOffering, ProviderService
     IonChip,
     IonAvatar,
     IonBadge,
+    IonRefresher,
+    IonRefresherContent,
     CommonModule,
     FormsModule
   ]
 })
-export class ServiceDetailsPage implements OnInit {
+export class ServiceDetailsPage implements OnInit, OnDestroy {
   private route = inject(ActivatedRoute);
   private router = inject(Router);
   private serviceService = inject(ServiceService);
+  private realTimeService = inject(RealTimeService);
+
+  // Real-time subscription cleanup
+  private providerAvailabilityUnsubscribe: (() => void) | null = null;
 
   serviceVariantId = signal<string>('');
   serviceData = signal<ServiceWithProviders | null>(null);
@@ -104,10 +117,28 @@ export class ServiceDetailsPage implements OnInit {
   providerName = computed(() => {
     const provider = this.selectedProvider();
     if (!provider) return '';
-    return provider.providerName || '';
+    return provider.displayName || '';
   });
 
-  constructor() { }
+  constructor() {
+    addIcons({ ellipse, peopleOutline });
+  }
+
+  ngOnDestroy() {
+    // Clean up real-time subscription
+    if (this.providerAvailabilityUnsubscribe) {
+      this.providerAvailabilityUnsubscribe();
+      this.providerAvailabilityUnsubscribe = null;
+    }
+  }
+
+  /**
+   * Get human-readable duration for how long provider has been online
+   */
+  getOnlineDuration(provider: ProviderOffering): string {
+    if (!provider.onlineSince) return '';
+    return formatDistanceToNow(provider.onlineSince, { addSuffix: false });
+  }
 
   async ngOnInit() {
     const serviceVariantId = this.route.snapshot.paramMap.get('serviceVariantId');
@@ -128,12 +159,92 @@ export class ServiceDetailsPage implements OnInit {
         this.selectedProvider.set(serviceData.selectedProvider);
 
         // Load other services and reviews for the default (selected) provider
-        await this.loadProviderData(serviceData.selectedProvider.providerId, serviceVariantId);
+        if (serviceData.selectedProvider) {
+          await this.loadProviderData(serviceData.selectedProvider.providerId, serviceVariantId);
+        }
+
+        // Set up real-time subscription for provider availability changes
+        this.setupProviderAvailabilitySubscription(serviceVariantId);
       }
     } catch (error) {
       console.error('Error loading service data:', error);
     } finally {
       this.isLoading.set(false);
+    }
+  }
+
+  /**
+   * Set up real-time subscription for provider availability
+   */
+  private setupProviderAvailabilitySubscription(serviceVariantId: string) {
+    // Clean up existing subscription
+    if (this.providerAvailabilityUnsubscribe) {
+      this.providerAvailabilityUnsubscribe();
+    }
+
+    // Subscribe to provider status changes
+    this.providerAvailabilityUnsubscribe = this.realTimeService.subscribeToProviderAvailability(
+      (providerId: string, status: string, onlineSince: Date | null) => {
+        this.handleProviderStatusChange(providerId, status, onlineSince, serviceVariantId);
+      }
+    );
+  }
+
+  /**
+   * Handle real-time provider status changes
+   */
+  private async handleProviderStatusChange(
+    providerId: string,
+    status: string,
+    onlineSince: Date | null,
+    serviceVariantId: string
+  ) {
+    const currentProviders = this.availableProviders();
+    const isAvailableStatus = status === 'online' || status === 'busy';
+    const providerInList = currentProviders.find(p => p.providerId === providerId);
+
+    if (isAvailableStatus && !providerInList) {
+      // Provider came online - refresh the full list to include them
+      console.log('Provider came online, refreshing list:', providerId);
+      const serviceData = await this.serviceService.getServiceWithAllProviders(serviceVariantId);
+      if (serviceData) {
+        this.availableProviders.set(serviceData.providers);
+        // If no provider was selected and now we have providers, select the first one
+        if (!this.selectedProvider() && serviceData.providers.length > 0) {
+          this.selectedProvider.set(serviceData.providers[0]);
+          await this.loadProviderData(serviceData.providers[0].providerId, serviceVariantId);
+        }
+      }
+    } else if (!isAvailableStatus && providerInList) {
+      // Provider went offline - remove from list
+      console.log('Provider went offline, removing from list:', providerId);
+      const filteredProviders = currentProviders.filter(p => p.providerId !== providerId);
+      this.availableProviders.set(filteredProviders);
+
+      // If the selected provider went offline, select another one
+      if (this.selectedProvider()?.providerId === providerId) {
+        if (filteredProviders.length > 0) {
+          this.selectedProvider.set(filteredProviders[0]);
+          await this.loadProviderData(filteredProviders[0].providerId, serviceVariantId);
+        } else {
+          this.selectedProvider.set(null);
+          this.providerServices.set([]);
+          this.providerReviews.set([]);
+        }
+      }
+    } else if (isAvailableStatus && providerInList) {
+      // Provider status or onlineSince updated - update in place
+      const updatedProviders = currentProviders.map(p =>
+        p.providerId === providerId
+          ? { ...p, status, onlineSince: onlineSince || undefined }
+          : p
+      );
+      this.availableProviders.set(updatedProviders);
+
+      // Also update selectedProvider if it's the same one
+      if (this.selectedProvider()?.providerId === providerId) {
+        this.selectedProvider.set(updatedProviders.find(p => p.providerId === providerId) || null);
+      }
     }
   }
 
@@ -191,5 +302,41 @@ export class ServiceDetailsPage implements OnInit {
     // For now, just log the action
     console.log('Adding review:', { rating, comment, providerId: this.selectedProvider()?.providerId });
     // TODO: Implement review form and submission
+  }
+
+  /**
+   * Handle pull-to-refresh to reload provider list
+   */
+  async doRefresh(event: RefresherCustomEvent) {
+    try {
+      const serviceVariantId = this.serviceVariantId();
+      if (serviceVariantId) {
+        const serviceData = await this.serviceService.getServiceWithAllProviders(serviceVariantId);
+        if (serviceData) {
+          this.availableProviders.set(serviceData.providers);
+
+          // Update selected provider if current one is no longer available
+          const currentSelected = this.selectedProvider();
+          if (currentSelected) {
+            const stillAvailable = serviceData.providers.find(p => p.providerId === currentSelected.providerId);
+            if (!stillAvailable && serviceData.providers.length > 0) {
+              this.selectedProvider.set(serviceData.providers[0]);
+              await this.loadProviderData(serviceData.providers[0].providerId, serviceVariantId);
+            } else if (stillAvailable) {
+              // Update with fresh data
+              this.selectedProvider.set(stillAvailable);
+            }
+          } else if (serviceData.providers.length > 0) {
+            // No provider selected, select the first one
+            this.selectedProvider.set(serviceData.providers[0]);
+            await this.loadProviderData(serviceData.providers[0].providerId, serviceVariantId);
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Error refreshing provider list:', error);
+    } finally {
+      event.target.complete();
+    }
   }
 }

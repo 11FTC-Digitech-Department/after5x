@@ -511,6 +511,61 @@ export class RealTimeService {
     };
   }
 
+  /**
+   * Subscribe to provider availability changes for service details page.
+   * Used to update the provider list in real-time when providers go online/offline.
+   * @param onProviderStatusChange Callback when any provider's status changes
+   * @returns Unsubscribe function
+   */
+  subscribeToProviderAvailability(
+    onProviderStatusChange: (providerId: string, status: string, onlineSince: Date | null) => void
+  ): () => void {
+    const client = this.supabaseService.client;
+    const channelName = `provider-availability-${Date.now()}`;
+
+    this.log(`Setting up provider availability subscription: ${channelName}`);
+
+    const channel = client
+      .channel(channelName)
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'providers'
+        },
+        (payload: RealtimePostgresChangesPayload<any>) => {
+          const oldStatus = (payload.old as any)?.status;
+          const newStatus = (payload.new as any).status;
+
+          // Only trigger callback if status actually changed
+          if (oldStatus !== newStatus) {
+            const providerId = (payload.new as any).id;
+            const onlineSince = (payload.new as any).online_since
+              ? new Date((payload.new as any).online_since)
+              : null;
+
+            this.log('Provider status change:', {
+              providerId,
+              oldStatus,
+              newStatus,
+              onlineSince
+            });
+
+            onProviderStatusChange(providerId, newStatus, onlineSince);
+          }
+        }
+      )
+      .subscribe((status, err) => {
+        this.handleSubscriptionStatus(channelName, status, err);
+      });
+
+    return () => {
+      this.log(`Unsubscribing from channel: ${channelName}`);
+      client.removeChannel(channel);
+    };
+  }
+
   // Broadcast location update for provider
   async broadcastProviderLocation(
     bookingId: string,

@@ -45,8 +45,42 @@
                 Sign in with {{ biometricService.getBiometryTypeName() }}
               }
             </ion-button>
+          </div>
+          }
+
+          <!-- Social Login Buttons (Login tab only) -->
+          @if (selectedSegment() === 'login') {
+          <div class="social-login-container">
+            <ion-button
+              expand="block"
+              fill="outline"
+              class="social-button google-button"
+              (click)="onGoogleLogin()"
+              [disabled]="isGoogleLoading() || isLoginLoading() || isFacebookLoading() || isBiometricLoading()">
+              <ion-icon name="logo-google" slot="start"></ion-icon>
+              @if (isGoogleLoading()) {
+                Signing in...
+              } @else {
+                Continue with Google
+              }
+            </ion-button>
+
+            <ion-button
+              expand="block"
+              fill="outline"
+              class="social-button facebook-button"
+              (click)="onFacebookLogin()"
+              [disabled]="isFacebookLoading() || isLoginLoading() || isGoogleLoading() || isBiometricLoading()">
+              <ion-icon name="logo-facebook" slot="start"></ion-icon>
+              @if (isFacebookLoading()) {
+                Signing in...
+              } @else {
+                Continue with Facebook
+              }
+            </ion-button>
+
             <div class="divider">
-              <span>or continue with</span>
+              <span>or continue with email</span>
             </div>
           </div>
           }
@@ -77,6 +111,16 @@
   <div class="app-version-info">
     <small>{{ appVersion() }}.{{ buildNumber() }} {{ environmentType() }}</small>
   </div>
+
+  <!-- OAuth Processing Overlay -->
+  @if (oauthService.isProcessingCallback()) {
+  <div class="oauth-processing-overlay">
+    <div class="oauth-processing-content">
+      <ion-spinner name="crescent" color="primary"></ion-spinner>
+      <p>Completing sign in...</p>
+    </div>
+  </div>
+  }
 
   <!-- Signup Success Modal -->
   @if (showSuccessModal()) {

@@ -122,7 +122,7 @@ enabled = true
 # in emails.
 site_url = "https://app.after5.ph"
 # A list of *exact* URLs that auth providers are permitted to redirect to post authentication.
-additional_redirect_urls = ["https://localhost:8100", "http://localhost:8100", "https://app.after5.ph", "https://app.after5.ph/auth/verify-email"]
+additional_redirect_urls = ["https://localhost:8100", "http://localhost:8100", "https://app.after5.ph", "https://app.after5.ph/auth/verify-email", "after5://auth/callback", "http://localhost:8100/auth/callback"]
 # How long tokens are valid for, in seconds. Defaults to 3600 (1 hour), maximum 604,800 (1 week).
 jwt_expiry = 3600
 # Refresh token expiry: 30 days in seconds (2592000 = 30 * 24 * 60 * 60)
@@ -276,12 +276,12 @@ max_frequency = "5s"
 # `discord`, `facebook`, `github`, `gitlab`, `google`, `keycloak`, `linkedin_oidc`, `notion`, `twitch`,
 # `twitter`, `slack`, `spotify`, `workos`, `zoom`.
 [auth.external.google]
-enabled = false
+enabled = true
 client_id = "env(GOOGLE_CLIENT_ID)"
 secret = "env(GOOGLE_CLIENT_SECRET)"
 redirect_uri="http://localhost:54321/auth/v1/callback"
 [auth.external.facebook]
-enabled = false
+enabled = true
 client_id = "env(FACEBOOK_CLIENT_ID)"
 secret = "env(FACEBOOK_SECRET)"
 redirect_uri = "http://localhost:54321/auth/v1/callback"

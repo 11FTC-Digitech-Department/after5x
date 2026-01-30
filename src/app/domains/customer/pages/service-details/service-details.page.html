@@ -15,6 +15,11 @@
 </ion-header>
 
 <ion-content [fullscreen]="true">
+  <!-- Pull to refresh -->
+  <ion-refresher slot="fixed" (ionRefresh)="doRefresh($event)">
+    <ion-refresher-content pullingText="Pull to refresh experts" refreshingSpinner="circles"></ion-refresher-content>
+  </ion-refresher>
+
   <ion-grid fixed class="ion-no-padding">
     <!-- Hero Image -->
     <ion-row>
@@ -85,13 +90,22 @@
       <ion-col size="12">
         <ion-card class="providers-card">
           <ion-card-content>
-            <ion-card-title>Choose a Provider</ion-card-title>
+            <ion-card-title>Choose an Expert</ion-card-title>
             @if (isLoading()) {
               <ion-skeleton-text animated style="height: 60px; width: 100%; margin-bottom: 8px;"></ion-skeleton-text>
               <ion-skeleton-text animated style="height: 60px; width: 100%;"></ion-skeleton-text>
+            } @else if (availableProviders().length === 0) {
+              <!-- No online providers state -->
+              <div class="no-providers-message">
+                <ion-icon name="people-outline" color="medium"></ion-icon>
+                <ion-text color="medium">
+                  <p>No experts are currently online for this service.</p>
+                  <p>Please check back later or browse other services.</p>
+                </ion-text>
+              </div>
             } @else {
               <ion-text color="medium" class="provider-hint">
-                {{ availableProviders().length }} provider(s) available
+                {{ availableProviders().length }} expert(s) online now
               </ion-text>
 
               <ion-list class="provider-list">
@@ -105,7 +119,7 @@
                     </ion-avatar>
                     <ion-label>
                       <h2>
-                        {{ provider.providerName }}
+                        {{ provider.displayName }}
                         @if (provider.isDefault) {
                           <ion-badge color="success">Recommended</ion-badge>
                         }
@@ -115,6 +129,13 @@
                         {{ provider.rating | number:'1.1-1' }} ({{ provider.reviewCount }} reviews)
                         &bull; {{ provider.yearsExperience }} yrs exp
                       </p>
+                      <!-- Online duration indicator -->
+                      @if (provider.onlineSince) {
+                        <p class="online-status">
+                          <ion-icon name="ellipse" color="success"></ion-icon>
+                          Online for {{ getOnlineDuration(provider) }}
+                        </p>
+                      }
                     </ion-label>
                     @if (selectedProvider()?.providerId === provider.providerId) {
                       <ion-icon name="checkmark-circle" color="primary" slot="end"></ion-icon>
