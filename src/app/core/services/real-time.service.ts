@@ -435,10 +435,11 @@ export class RealTimeService {
           filter: `provider_id=eq.${providerId},booking_id=eq.${bookingId}`
         },
         (payload: RealtimePostgresChangesPayload<any>) => {
-          if (payload.new.location) {
+          // Read from latitude/longitude columns (not PostGIS location which returns WKB hex)
+          if (payload.new.latitude !== undefined && payload.new.longitude !== undefined) {
             const location = {
-              lat: payload.new.location.coordinates[1], // PostGIS stores as [lng, lat]
-              lng: payload.new.location.coordinates[0],
+              lat: payload.new.latitude,
+              lng: payload.new.longitude,
               timestamp: new Date(payload.new.recorded_at || payload.new.created_at)
             };
             onLocationUpdate(location);
@@ -583,6 +584,8 @@ export class RealTimeService {
       booking_id: bookingId,
       provider_id: providerId,
       location: `POINT(${location.lng} ${location.lat})`, // PostGIS format: lng lat
+      latitude: location.lat,
+      longitude: location.lng,
       battery_level: additionalData?.batteryLevel,
       heading: additionalData?.heading,
       speed_kmh: additionalData?.speedKmh,

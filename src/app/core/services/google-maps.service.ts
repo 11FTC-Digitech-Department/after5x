@@ -31,7 +31,7 @@ export class GoogleMapsService {
       const newMap = await GoogleMap.create({
         id: mapId,
         element: element,
-        apiKey: 'AIzaSyC6UXRkbdChigjhccoNb4WOWptb6IWLLg4',
+        apiKey: environment.googleMaps.apiKey,
         config: {
           center,
           zoom,
@@ -159,6 +159,11 @@ export class GoogleMapsService {
 
       const data = await response.json();
 
+      console.log('[GoogleMapsService] Geocode API status:', data.status);
+      if (data.status !== 'OK') {
+        console.error('[GoogleMapsService] Geocode error:', data.status, data.error_message);
+      }
+
       if (data.status === 'OK' && data.results.length > 0) {
         const result = data.results[0];
         return {
@@ -189,6 +194,11 @@ export class GoogleMapsService {
 
       const response = await fetch(url);
       const data = await response.json();
+
+      console.log('[GoogleMapsService] Places API status:', data.status);
+      if (data.status !== 'OK') {
+        console.error('[GoogleMapsService] Places error:', data.status, data.error_message);
+      }
 
       if (data.status === 'OK') {
         return data.predictions.map((prediction: any) => ({
@@ -227,6 +237,11 @@ export class GoogleMapsService {
       );
 
       const data = await response.json();
+
+      console.log('[GoogleMapsService] Place Details API status:', data.status);
+      if (data.status !== 'OK') {
+        console.error('[GoogleMapsService] Place Details error:', data.status, data.error_message);
+      }
 
       if (data.status === 'OK') {
         const result = data.result;

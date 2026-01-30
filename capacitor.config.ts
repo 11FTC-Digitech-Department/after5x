@@ -14,7 +14,7 @@ const config: CapacitorConfig = {
     GoogleMaps: {
       // Uncomment when you have the API key configured
       // Add your Google Maps configuration here
-      apiKey: 'AIzaSyC6UXRkbdChigjhccoNb4WOWptb6IWLLg4'
+      apiKey: 'AIzaSyA8rkDOlrtvIrMvu9kEcQgkUvFAs7cP-RA'
     },
     EdgeToEdge: {
       backgroundColor: '#FFFFFF',

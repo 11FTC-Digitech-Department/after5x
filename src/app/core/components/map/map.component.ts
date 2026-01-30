@@ -138,9 +138,22 @@ export class MapComponent implements OnInit, OnDestroy, AfterViewInit {
           const geocodeResult = await this.googleMapsService.reverseGeocode(lat, lng);
           if (geocodeResult) {
             this.locationSelected.emit(geocodeResult);
+          } else {
+            // Fallback: emit location with descriptive address when geocoding returns null
+            this.locationSelected.emit({
+              lat,
+              lng,
+              address: `Unknown Location (${lat.toFixed(6)}, ${lng.toFixed(6)})`
+            });
           }
         } catch (error) {
           console.error('Error reverse geocoding location:', error);
+          // Emit fallback even on error so the UI always updates
+          this.locationSelected.emit({
+            lat,
+            lng,
+            address: `Unknown Location (${lat.toFixed(6)}, ${lng.toFixed(6)})`
+          });
         }
 
         // Center the camera on the clicked position

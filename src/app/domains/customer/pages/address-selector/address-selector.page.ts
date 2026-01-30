@@ -226,7 +226,7 @@ export class AddressSelectorPage implements ViewWillEnter, OnInit, OnDestroy {
         this.selectedLocation.set({
           lat: position.lat,
           lng: position.lng,
-          address: `${position.lat.toFixed(6)}, ${position.lng.toFixed(6)}`
+          address: `Unknown Location (${position.lat.toFixed(6)}, ${position.lng.toFixed(6)})`
         });
         this.showMap.set(true);
       }
