@@ -182,6 +182,9 @@ export class ProviderApplicationFormPage implements OnInit {
     if (errors['min']) {
       return 'Years of experience must be 0 or greater';
     }
+    if (errors['serverError'] && typeof errors['serverError'] === 'string') {
+      return errors['serverError'];
+    }
 
     return null;
   }
@@ -207,23 +210,27 @@ export class ProviderApplicationFormPage implements OnInit {
   }
 
   async onSubmit() {
+    // Prevent double submit (e.g. form + button or double click)
+    if (this.isSubmitting()) return;
+    this.isSubmitting.set(true);
+
     // Mark all fields as touched to show validation errors
     Object.keys(this.applicationForm.controls).forEach(key => {
       this.applicationForm.get(key)?.markAsTouched();
     });
 
     if (this.applicationForm.invalid) {
+      this.isSubmitting.set(false);
       await this.showToast('Please fix the errors in the form', 'warning');
       return;
     }
 
     // Check smartphone requirement
     if (this.applicationForm.value.hasSmartphone !== 'yes') {
+      this.isSubmitting.set(false);
       await this.showToast('Smartphone ownership is required to become a provider', 'warning');
       return;
     }
-
-    this.isSubmitting.set(true);
 
     try {
       // Format date of birth to YYYY-MM-DD if it's an ISO string
@@ -233,7 +240,7 @@ export class ProviderApplicationFormPage implements OnInit {
       }
 
       // Call Edge Function
-      const { data, error } = await this.supabaseService.client.functions.invoke(
+      const response = await this.supabaseService.client.functions.invoke(
         'create-provider-application',
         {
           body: {
@@ -251,30 +258,68 @@ export class ProviderApplicationFormPage implements OnInit {
         }
       );
 
-      if (error) {
-        console.error('Edge Function error:', error);
-        await this.showToast(error.message || 'Failed to submit application', 'danger');
+      const { data, error } = response;
+
+      // Extract { message, code } from Edge Function response
+      const getEdgeFunctionError = (): { message: string; code: string | null } | null => {
+        const fromPayload = (payload: any): { message: string; code: string | null } | null => {
+          if (!payload) return null;
+          let message: string | null = null;
+          let code: string | null = null;
+          if (typeof payload === 'string') {
+            message = payload;
+          } else {
+            if (payload.error !== undefined && payload.error !== null) {
+              message = typeof payload.error === 'string'
+                ? payload.error
+                : payload.error?.error ?? payload.error?.message ?? null;
+            } else if (payload.message) {
+              message = payload.message;
+            }
+            if (payload.code && typeof payload.code === 'string') code = payload.code;
+          }
+          if (!message) return null;
+          return { message, code };
+        };
+        if (data) {
+          const result = fromPayload(data);
+          if (result) return result;
+        }
+        const err = error as any;
+        if (err?.context) {
+          let body = err.context;
+          if (typeof body === 'string') {
+            try { body = JSON.parse(body); } catch { return body ? { message: body, code: null } : null; }
+          }
+          const result = fromPayload(body);
+          if (result) return result;
+        }
+        if (err?.error && typeof err.error === 'object') {
+          const result = fromPayload(err.error);
+          if (result) return result;
+        }
+        return null;
+      };
+
+      const edgeError = getEdgeFunctionError();
+
+      if (data?.error !== undefined && data?.error !== null || error || !data || data.success !== true) {
+        const msg = edgeError?.message ?? 'Try again.';
+        await this.showToast(msg, 'danger');
+        if (edgeError?.code === 'EMAIL_EXISTS') {
+          this.applicationForm.get('email')?.setErrors({ serverError: edgeError.message });
+          this.applicationForm.get('email')?.markAsTouched();
+        } else if (edgeError?.code === 'PHONE_EXISTS') {
+          this.applicationForm.get('mobileNumber')?.setErrors({ serverError: edgeError.message });
+          this.applicationForm.get('mobileNumber')?.markAsTouched();
+        }
         return;
       }
 
-      if (data?.error) {
-        console.error('Edge Function returned error:', data.error);
-        await this.showToast(data.error, 'danger');
-        return;
-      }
-
-      // Check if the response indicates success
-      if (!data || (data.success !== true && data.success !== undefined)) {
-        console.error('Unexpected response format:', data);
-        await this.showToast('Unexpected response from server. Please try again.', 'danger');
-        return;
-      }
-
-      // Success - show success modal instead of OTP navigation
       this.showSuccessModal.set(true);
-    } catch (error) {
-      console.error('Unexpected error:', error);
-      await this.showToast('An unexpected error occurred. Please try again', 'danger');
+    } catch (err) {
+      console.error('Submit error:', err);
+      await this.showToast('Try again.', 'danger');
     } finally {
       this.isSubmitting.set(false);
     }
