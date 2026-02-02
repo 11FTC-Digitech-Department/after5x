@@ -4,6 +4,7 @@ import { Geolocation } from '@capacitor/geolocation';
 import { Platform } from '@ionic/angular';
 import { GooglePlaceResult, GeocodeResult } from '../models/address.model';
 import { environment } from '../../../environments/environment';
+import { CapacitorHttp } from '@capacitor/core';
 
 @Injectable({
   providedIn: 'root',
@@ -31,7 +32,7 @@ export class GoogleMapsService {
       const newMap = await GoogleMap.create({
         id: mapId,
         element: element,
-        apiKey: 'AIzaSyC6UXRkbdChigjhccoNb4WOWptb6IWLLg4',
+        apiKey: environment.googleMaps.apiKey,
         config: {
           center,
           zoom,
@@ -187,9 +188,10 @@ export class GoogleMapsService {
         url += `&location=${location.lat},${location.lng}&radius=50000`;
       }
 
-      const response = await fetch(url);
-      const data = await response.json();
-
+      const response = await CapacitorHttp.get({ url: url });
+      const data = await response.data;
+      console.log(data);
+      
       if (data.status === 'OK') {
         return data.predictions.map((prediction: any) => ({
           place_id: prediction.place_id,

@@ -38,7 +38,7 @@
         </provider>
         <meta-data
             android:name="com.google.android.geo.API_KEY"
-            android:value="AIzaSyC6UXRkbdChigjhccoNb4WOWptb6IWLLg4"
+            android:value="AIzaSyA8rkDOlrtvIrMvu9kEcQgkUvFAs7cP-RA"
         />
         <!-- FCM Push Notification Configuration -->
         <meta-data
