@@ -121,10 +121,20 @@ fi
 # Capitalize first letter for Gradle task
 FLAVOR_CAP="$(tr '[:lower:]' '[:upper:]' <<< ${FLAVOR:0:1})${FLAVOR:1}"
 
+# Read version from android/app/build.gradle
+BUILD_GRADLE="${SCRIPT_DIR}/../android/app/build.gradle"
+if [[ -f "$BUILD_GRADLE" ]]; then
+    VERSION_NAME=$(grep 'versionName ' "$BUILD_GRADLE" | head -1 | sed -E 's/.*versionName[[:space:]]+"([^"]+)".*/\1/')
+    VERSION_CODE=$(grep 'versionCode ' "$BUILD_GRADLE" | head -1 | sed -E 's/.*versionCode[[:space:]]+([0-9]+).*/\1/')
+fi
+VERSION_NAME="${VERSION_NAME:-?}"
+VERSION_CODE="${VERSION_CODE:-?}"
+
 echo ""
 echo -e "${BLUE}╔════════════════════════════════════════════════════════════╗${NC}"
 echo -e "${BLUE}║             After5 Android Build Script                   ║${NC}"
 echo -e "${BLUE}╠════════════════════════════════════════════════════════════╣${NC}"
+echo -e "${BLUE}║${NC} Version:     ${GREEN}$VERSION_NAME (build $VERSION_CODE)${NC}"
 echo -e "${BLUE}║${NC} Command:     ${GREEN}$COMMAND${NC}"
 echo -e "${BLUE}║${NC} Flavor:      ${GREEN}$FLAVOR${NC}"
 echo -e "${BLUE}║${NC} Environment: ${GREEN}$ENVIRONMENT${NC}"
