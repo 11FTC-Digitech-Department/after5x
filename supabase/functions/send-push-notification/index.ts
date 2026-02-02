@@ -25,6 +25,24 @@ interface PushNotificationRequest {
   }
 }
 
+// Database webhook payload format
+interface WebhookPayload {
+  type: 'INSERT' | 'UPDATE' | 'DELETE'
+  table: string
+  schema: string
+  record: {
+    id: string
+    user_ids: string[]
+    type: string
+    title: string
+    body: string
+    booking_id?: string
+    app_type: string
+    status: string
+  }
+  old_record: any
+}
+
 interface DeviceToken {
   user_id: string
   token: string
@@ -100,9 +118,47 @@ serve(async (req) => {
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey)
 
-    // Parse request
-    const request: PushNotificationRequest = await req.json()
-    const { userIds, notification, options = {} } = request
+    // Parse request - handle both direct API calls and database webhook payloads
+    const rawPayload = await req.json()
+    let userIds: string[]
+    let notification: PushNotificationRequest['notification']
+    let options: PushNotificationRequest['options'] = {}
+    let queueRecordId: string | null = null
+
+    // Check if this is a database webhook payload
+    if (rawPayload.type && rawPayload.table === 'push_notification_queue' && rawPayload.record) {
+      const webhook = rawPayload as WebhookPayload
+      const record = webhook.record
+
+      // Only process INSERT events with pending status
+      if (webhook.type !== 'INSERT' || record.status !== 'pending') {
+        console.log(`Skipping webhook: type=${webhook.type}, status=${record.status}`)
+        return new Response(
+          JSON.stringify({ success: true, skipped: true, reason: 'Not a pending INSERT' }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        )
+      }
+
+      queueRecordId = record.id
+      userIds = record.user_ids
+      notification = {
+        type: record.type,
+        title: record.title,
+        body: record.body,
+        data: record.booking_id ? { booking_id: record.booking_id } : undefined,
+      }
+      options = {
+        appType: record.app_type as 'customer' | 'experts' | 'both',
+      }
+
+      console.log(`Processing webhook for queue record: ${queueRecordId}`)
+    } else {
+      // Direct API call format
+      const request = rawPayload as PushNotificationRequest
+      userIds = request.userIds
+      notification = request.notification
+      options = request.options || {}
+    }
 
     if (!userIds?.length || !notification) {
       return new Response(
@@ -345,6 +401,21 @@ serve(async (req) => {
     }
 
     console.log(`Push notification complete: ${successCount} sent, ${failCount} failed`)
+
+    // Mark queue record as processed if this came from a webhook
+    if (queueRecordId) {
+      const { error: updateError } = await supabase
+        .from('push_notification_queue')
+        .update({
+          status: failCount > 0 && successCount === 0 ? 'failed' : 'processed',
+          processed_at: new Date().toISOString(),
+        })
+        .eq('id', queueRecordId)
+
+      if (updateError) {
+        console.error('Failed to update queue record:', updateError)
+      }
+    }
 
     return new Response(
       JSON.stringify({
