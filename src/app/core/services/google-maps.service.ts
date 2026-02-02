@@ -31,7 +31,7 @@ export class GoogleMapsService {
       const newMap = await GoogleMap.create({
         id: mapId,
         element: element,
-        apiKey: 'AIzaSyC6UXRkbdChigjhccoNb4WOWptb6IWLLg4',
+        apiKey: environment.googleMaps.apiKey,
         config: {
           center,
           zoom,

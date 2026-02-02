@@ -6,7 +6,7 @@ export const environment = {
     key: 'sb_publishable_Szhgg3U8rsjPrWh2bSAxhg_Y1Kkr8G7'
   },
   googleMaps: {
-    apiKey: 'AIzaSyC6UXRkbdChigjhccoNb4WOWptb6IWLLg4',
+    apiKey: 'AIzaSyA8rkDOlrtvIrMvu9kEcQgkUvFAs7cP-RA',
   },
   // Xendit configuration (keys stored in Supabase secrets, URLs for reference)
   xendit: {
