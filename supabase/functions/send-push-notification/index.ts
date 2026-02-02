@@ -61,6 +61,13 @@ const notificationTypeToPreference: Record<string, string> = {
   'news_updates': 'news_updates',
 }
 
+// FCM credentials cache for each app type
+interface FCMCredentials {
+  serviceAccount: { project_id: string; client_email: string; private_key: string }
+  accessToken: string
+  projectId: string
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
@@ -69,7 +76,10 @@ serve(async (req) => {
   try {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
-    const fcmServiceAccountKey = Deno.env.get('FCM_SERVICE_ACCOUNT_KEY')
+
+    // Read FCM credentials for both app types
+    const fcmCustomerKey = Deno.env.get('FCM_SERVICE_ACCOUNT_KEY')
+    const fcmExpertsKey = Deno.env.get('FCM_SERVICE_ACCOUNT_KEY_EXPERTS')
 
     if (!supabaseUrl || !supabaseServiceKey) {
       console.error('Missing Supabase configuration')
@@ -79,8 +89,9 @@ serve(async (req) => {
       )
     }
 
-    if (!fcmServiceAccountKey) {
-      console.error('FCM_SERVICE_ACCOUNT_KEY not configured')
+    // At least one FCM key must be configured
+    if (!fcmCustomerKey && !fcmExpertsKey) {
+      console.error('No FCM service account keys configured')
       return new Response(
         JSON.stringify({ error: 'FCM not configured', sent: 0 }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -102,22 +113,49 @@ serve(async (req) => {
 
     console.log(`Processing push notification for ${userIds.length} users, type: ${notification.type}`)
 
-    // Parse service account and get project ID
-    let serviceAccount: { project_id: string; client_email: string; private_key: string }
-    try {
-      serviceAccount = JSON.parse(fcmServiceAccountKey)
-    } catch (e) {
-      console.error('Failed to parse FCM service account key:', e)
-      return new Response(
-        JSON.stringify({ error: 'Invalid FCM service account configuration' }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
+    // Parse and cache FCM credentials for each app type
+    const fcmCredentialsMap = new Map<string, FCMCredentials>()
+
+    // Helper to get or create FCM credentials for an app type
+    async function getFCMCredentials(appType: string): Promise<FCMCredentials | null> {
+      if (fcmCredentialsMap.has(appType)) {
+        return fcmCredentialsMap.get(appType)!
+      }
+
+      // Select the appropriate key based on app type
+      // Experts app uses FCM_SERVICE_ACCOUNT_KEY_EXPERTS, with fallback to customer key
+      // Customer app uses FCM_SERVICE_ACCOUNT_KEY
+      let fcmKey: string | undefined
+      if (appType === 'experts') {
+        fcmKey = fcmExpertsKey || fcmCustomerKey
+        if (!fcmExpertsKey) {
+          console.warn(`FCM_SERVICE_ACCOUNT_KEY_EXPERTS not configured, falling back to customer key for experts app`)
+        }
+      } else {
+        fcmKey = fcmCustomerKey
+      }
+
+      if (!fcmKey) {
+        console.error(`No FCM key available for app type: ${appType}`)
+        return null
+      }
+
+      try {
+        const serviceAccount = JSON.parse(fcmKey)
+        const accessToken = await getAccessToken(serviceAccount)
+        const credentials: FCMCredentials = {
+          serviceAccount,
+          accessToken,
+          projectId: serviceAccount.project_id,
+        }
+        fcmCredentialsMap.set(appType, credentials)
+        console.log(`FCM credentials loaded for ${appType} app (project: ${serviceAccount.project_id})`)
+        return credentials
+      } catch (e) {
+        console.error(`Failed to parse FCM service account key for ${appType}:`, e)
+        return null
+      }
     }
-
-    const fcmProjectId = serviceAccount.project_id
-
-    // Get OAuth2 access token for FCM
-    const accessToken = await getAccessToken(serviceAccount)
 
     // Get device tokens for users
     let tokenQuery = supabase
@@ -190,18 +228,60 @@ serve(async (req) => {
 
     console.log(`${eligibleTokens.length} tokens eligible after preference filtering`)
 
-    // Send to FCM
-    const results = await Promise.allSettled(
-      eligibleTokens.map((tokenData: DeviceToken) =>
-        sendToFCM(
-          accessToken,
-          fcmProjectId,
-          tokenData,
-          notification,
-          options.priority || 'high'
+    // Group tokens by app_type for sending with correct FCM credentials
+    const tokensByAppType = new Map<string, DeviceToken[]>()
+    for (const token of eligibleTokens) {
+      const appType = token.app_type || 'customer'
+      if (!tokensByAppType.has(appType)) {
+        tokensByAppType.set(appType, [])
+      }
+      tokensByAppType.get(appType)!.push(token)
+    }
+
+    console.log(`Tokens grouped by app type: ${[...tokensByAppType.entries()].map(([k, v]) => `${k}=${v.length}`).join(', ')}`)
+
+    // Send to FCM for each app type with appropriate credentials
+    const allResults: { result: PromiseSettledResult<{ messageId: string }>; tokenData: DeviceToken }[] = []
+
+    for (const [appType, tokens] of tokensByAppType) {
+      const credentials = await getFCMCredentials(appType)
+
+      if (!credentials) {
+        // No credentials available for this app type, mark all as failed
+        console.error(`Skipping ${tokens.length} tokens for ${appType} - no FCM credentials`)
+        for (const tokenData of tokens) {
+          allResults.push({
+            result: {
+              status: 'rejected',
+              reason: {
+                code: 'MISSING_CREDENTIALS',
+                message: `FCM credentials not configured for app type: ${appType}`,
+              },
+            },
+            tokenData,
+          })
+        }
+        continue
+      }
+
+      // Send notifications for this app type
+      const results = await Promise.allSettled(
+        tokens.map((tokenData: DeviceToken) =>
+          sendToFCM(
+            credentials.accessToken,
+            credentials.projectId,
+            tokenData,
+            notification,
+            options.priority || 'high'
+          )
         )
       )
-    )
+
+      // Collect results with token data
+      for (let i = 0; i < results.length; i++) {
+        allResults.push({ result: results[i], tokenData: tokens[i] })
+      }
+    }
 
     // Process results
     let successCount = 0
@@ -209,10 +289,7 @@ serve(async (req) => {
     const logEntries: any[] = []
     const tokensToDeactivate: string[] = []
 
-    for (let i = 0; i < results.length; i++) {
-      const result = results[i]
-      const tokenData = eligibleTokens[i]
-
+    for (const { result, tokenData } of allResults) {
       if (result.status === 'fulfilled') {
         successCount++
         logEntries.push({
@@ -229,6 +306,7 @@ serve(async (req) => {
         const errorCode = result.reason?.code
 
         // Check for invalid token and mark for deactivation
+        // Don't deactivate for missing credentials - that's a server config issue
         if (
           errorCode === 'UNREGISTERED' ||
           errorCode === 'INVALID_ARGUMENT' ||
