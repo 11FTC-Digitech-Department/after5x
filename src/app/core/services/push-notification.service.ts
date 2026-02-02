@@ -131,9 +131,22 @@ export class PushNotificationService {
       const permStatus = await PushNotifications.checkPermissions();
       this._permissionStatus.set(permStatus.receive);
 
-      // If already granted, register
+      // If already granted, register immediately
       if (permStatus.receive === 'granted') {
         await PushNotifications.register();
+      } else if (permStatus.receive === 'prompt' || permStatus.receive === 'prompt-with-rationale') {
+        // Request permission if not yet decided
+        console.log('PushNotificationService: Requesting push notification permission');
+        const requestResult = await PushNotifications.requestPermissions();
+        this._permissionStatus.set(requestResult.receive);
+
+        if (requestResult.receive === 'granted') {
+          await PushNotifications.register();
+        } else {
+          console.log('PushNotificationService: Permission denied by user');
+        }
+      } else {
+        console.log('PushNotificationService: Permission previously denied');
       }
 
       // Load user preferences

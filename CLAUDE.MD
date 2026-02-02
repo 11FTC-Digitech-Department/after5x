@@ -126,6 +126,9 @@ Core backend integration:
 # ONLY run these when explicitly asked:
 npm start                 # Web development server (0.0.0.0:8100)
 npm run start:local       # Local development (localhost)
+npm run start:local-db    # Dev server using local Supabase (supabase start first)
+npm run android:run:customer:local  # Android with local Supabase via ngrok (ensure-ngrok-local + build)
+npm run android:run:experts:local   # Android Experts app with local Supabase via ngrok
 npm run android:dev       # Android with live reload
 
 # Build commands (safe to run):
@@ -134,7 +137,9 @@ npm run build             # Production build
 ```
 
 ### Build Configuration
-- Development: `environment.ts`
+- Development: `environment.ts` (remote/ngrok Supabase by default)
+- Local Supabase (browser): `environment.local.ts` (use `--configuration=local` or `npm run start:local-db`)
+- Local Supabase (Android/device): `environment.local-ngrok.generated.ts` from `ensure-ngrok-local.sh`; use `--configuration=local-ngrok` or `./scripts/android-build.sh ... local`
 - Production: `environment.prod.ts` (via `ng build`)
 - File replacements configured in `angular.json`
 

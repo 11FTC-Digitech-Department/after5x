@@ -11,7 +11,7 @@ import { SupabaseService } from './app/core/supabase/supabase';
 import { SessionService } from './app/core/auth/session';
 
 import { defineCustomElements } from '@ionic/pwa-elements/loader';
-import { environment } from './environments/environment.prod';
+import { environment } from './environments/environment';
 
 defineCustomElements(window);
 if (environment.production) {
