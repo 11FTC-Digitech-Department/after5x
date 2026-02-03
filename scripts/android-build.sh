@@ -17,7 +17,8 @@
 #   experts  - After5 Experts provider app
 #
 # Environments:
-#   dev      - Development environment (default)
+#   dev      - Development environment (default, remote Supabase)
+#   local    - Local Supabase via ngrok (for Android/device testing)
 #   prod     - Production environment
 #
 # Examples:
@@ -27,6 +28,8 @@
 # =============================================================================
 
 set -e
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 # Colors for output
 RED='\033[0;31m'
@@ -53,7 +56,8 @@ show_help() {
     echo "  experts  After5 Experts provider app"
     echo ""
     echo "Environments:"
-    echo "  dev      Development build (default)"
+    echo "  dev      Development build (default, remote Supabase)"
+    echo "  local    Local Supabase via ngrok (for Android/device)"
     echo "  prod     Production build"
     echo ""
     echo "Examples:"
@@ -96,9 +100,9 @@ if [[ ! "$FLAVOR" =~ ^(customer|experts)$ ]]; then
 fi
 
 # Validate environment
-if [[ ! "$ENVIRONMENT" =~ ^(dev|prod)$ ]]; then
+if [[ ! "$ENVIRONMENT" =~ ^(dev|prod|local)$ ]]; then
     echo -e "${RED}Error: Invalid environment '$ENVIRONMENT'${NC}"
-    echo "Valid environments: dev, prod"
+    echo "Valid environments: dev, prod, local"
     exit 1
 fi
 
@@ -106,6 +110,9 @@ fi
 if [ "$ENVIRONMENT" == "prod" ]; then
     NG_CONFIG="production"
     BUILD_TYPE="Release"
+elif [ "$ENVIRONMENT" == "local" ]; then
+    NG_CONFIG="local-ngrok"
+    BUILD_TYPE="Debug"
 else
     NG_CONFIG="development"
     BUILD_TYPE="Debug"
@@ -114,10 +121,20 @@ fi
 # Capitalize first letter for Gradle task
 FLAVOR_CAP="$(tr '[:lower:]' '[:upper:]' <<< ${FLAVOR:0:1})${FLAVOR:1}"
 
+# Read version from android/app/build.gradle
+BUILD_GRADLE="${SCRIPT_DIR}/../android/app/build.gradle"
+if [[ -f "$BUILD_GRADLE" ]]; then
+    VERSION_NAME=$(grep 'versionName ' "$BUILD_GRADLE" | head -1 | sed -E 's/.*versionName[[:space:]]+"([^"]+)".*/\1/')
+    VERSION_CODE=$(grep 'versionCode ' "$BUILD_GRADLE" | head -1 | sed -E 's/.*versionCode[[:space:]]+([0-9]+).*/\1/')
+fi
+VERSION_NAME="${VERSION_NAME:-?}"
+VERSION_CODE="${VERSION_CODE:-?}"
+
 echo ""
 echo -e "${BLUE}╔════════════════════════════════════════════════════════════╗${NC}"
 echo -e "${BLUE}║             After5 Android Build Script                   ║${NC}"
 echo -e "${BLUE}╠════════════════════════════════════════════════════════════╣${NC}"
+echo -e "${BLUE}║${NC} Version:     ${GREEN}$VERSION_NAME (build $VERSION_CODE)${NC}"
 echo -e "${BLUE}║${NC} Command:     ${GREEN}$COMMAND${NC}"
 echo -e "${BLUE}║${NC} Flavor:      ${GREEN}$FLAVOR${NC}"
 echo -e "${BLUE}║${NC} Environment: ${GREEN}$ENVIRONMENT${NC}"
@@ -127,9 +144,16 @@ echo ""
 
 # Step 1: Build Angular app (skip for sync-only)
 if [ "$COMMAND" != "sync" ]; then
+    if [ "$ENVIRONMENT" == "local" ]; then
+        echo -e "${YELLOW}[0/3] Ensuring ngrok tunnel to local Supabase...${NC}"
+        "$SCRIPT_DIR/ensure-ngrok-local.sh"
+        echo ""
+    fi
     echo -e "${YELLOW}[1/3] Building Angular app ($NG_CONFIG)...${NC}"
     if [ "$ENVIRONMENT" == "prod" ]; then
         npm run build -- --configuration=production
+    elif [ "$ENVIRONMENT" == "local" ]; then
+        npm run build -- --configuration=local-ngrok
     else
         npm run build
     fi

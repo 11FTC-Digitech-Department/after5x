@@ -9,7 +9,7 @@ const config: CapacitorConfig = {
   },
   plugins: {
     CapacitorHttp: {
-      enabled: true,  
+      enabled: false,  // Disabled to prevent auth header stripping on Supabase Edge Functions
     },
     GoogleMaps: {
       // Uncomment when you have the API key configured

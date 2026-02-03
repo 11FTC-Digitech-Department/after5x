@@ -8,6 +8,7 @@ import { AuthEventsService } from './auth-events.service';
 import { AUTH_CONFIG } from './auth.config';
 import { ToastController } from '@ionic/angular/standalone';
 import { PaymentContextService } from '../services/payment-context.service';
+import { PushNotificationService } from '../services/push-notification.service';
 
 export interface UserProfile {
   id: string;
@@ -28,6 +29,7 @@ export class SessionService {
   private authEventsService = inject(AuthEventsService);
   private toastController = inject(ToastController);
   private paymentContextService = inject(PaymentContextService);
+  private pushNotificationService = inject(PushNotificationService);
 
   // --- STATE (Signals) ---
   private _session = signal<Session | null>(null);
@@ -119,6 +121,14 @@ export class SessionService {
               console.log('SessionService: Profile loaded successfully for event:', event);
               // Emit session started event
               this.authEventsService.emit('SESSION_STARTED', session.user.id);
+              // Initialize push notifications after successful authentication
+              const profile = this._profile();
+              if (profile) {
+                this.pushNotificationService.setUserContext({ id: profile.id, role: profile.role });
+                this.pushNotificationService.initialize().catch(err =>
+                  console.warn('SessionService: Push notification initialization failed:', err)
+                );
+              }
               // Navigation is handled by the calling component (LoginPage, etc.)
               // Skip navigation if signup is in progress
               if (this._isSignupInProgress() && event === 'SIGNED_IN') {
@@ -342,6 +352,11 @@ export class SessionService {
 
     try {
       console.log('SessionService: Attempting to sign out...');
+
+      // Clean up push notifications before signing out
+      await this.pushNotificationService.cleanup().catch(err =>
+        console.warn('SessionService: Push notification cleanup failed:', err)
+      );
 
       // Attempt to sign out from Supabase
       const { error } = await this.supabase.auth.signOut();

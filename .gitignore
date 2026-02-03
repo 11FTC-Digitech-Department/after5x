@@ -71,6 +71,8 @@ testem.log
 .env.*.local
 supabase/.env
 supabase/.env.local
+supabase/functions/.env
+src/environments/environment.local-ngrok.generated.ts
 
 # System files
 .DS_Store

@@ -20,9 +20,10 @@ import {
   ToastController
 } from '@ionic/angular/standalone';
 import { Preferences } from '@capacitor/preferences';
+import { PushNotificationService, NotificationPreferences } from '../../../../../core/services/push-notification.service';
 
 interface NotificationSetting {
-  key: string;
+  key: keyof NotificationPreferences;
   label: string;
   description: string;
   enabled: boolean;
@@ -60,11 +61,14 @@ interface NotificationSection {
 export class NotificationSettingsPage implements OnInit {
   private router = inject(Router);
   private toastController = inject(ToastController);
+  private pushNotificationService = inject(PushNotificationService);
 
   private readonly STORAGE_KEY = 'notification_settings';
+  private migrationComplete = false;
 
   isLoading = signal(true);
 
+  // Settings aligned with NotificationPreferences interface
   sections = signal<NotificationSection[]>([
     {
       title: 'Booking Updates',
@@ -139,18 +143,22 @@ export class NotificationSettingsPage implements OnInit {
     try {
       this.isLoading.set(true);
 
-      const { value } = await Preferences.get({ key: this.STORAGE_KEY });
+      // First, try to migrate any existing local settings to server
+      await this.migrateLocalSettings();
 
-      if (value) {
-        const savedSettings = JSON.parse(value);
+      // Load preferences from server
+      await this.pushNotificationService.loadPreferences();
+      const serverPrefs = this.pushNotificationService.preferences();
+
+      if (serverPrefs) {
         const currentSections = this.sections();
 
-        // Merge saved settings with current sections
+        // Update UI with server preferences
         const updatedSections = currentSections.map(section => ({
           ...section,
           settings: section.settings.map(setting => ({
             ...setting,
-            enabled: savedSettings[setting.key] ?? setting.enabled
+            enabled: serverPrefs[setting.key] ?? setting.enabled
           }))
         }));
 
@@ -163,26 +171,48 @@ export class NotificationSettingsPage implements OnInit {
     }
   }
 
+  /**
+   * Migrate existing local Capacitor Preferences to server-side storage
+   */
+  private async migrateLocalSettings(): Promise<void> {
+    if (this.migrationComplete) return;
+
+    try {
+      const { value } = await Preferences.get({ key: this.STORAGE_KEY });
+
+      if (value) {
+        const localSettings = JSON.parse(value);
+        console.log('Migrating local notification settings to server:', localSettings);
+
+        // Update server with local settings
+        const success = await this.pushNotificationService.updatePreferences(localSettings);
+
+        if (success) {
+          // Remove local settings after successful migration
+          await Preferences.remove({ key: this.STORAGE_KEY });
+          console.log('Local notification settings migrated successfully');
+        }
+      }
+    } catch (error) {
+      console.error('Error migrating local settings:', error);
+    }
+
+    this.migrationComplete = true;
+  }
+
   async onToggleChange(setting: NotificationSetting) {
     try {
-      // Build settings object
-      const settings: Record<string, boolean> = {};
-      this.sections().forEach(section => {
-        section.settings.forEach(s => {
-          settings[s.key] = s.enabled;
-        });
-      });
+      // Update server-side preference
+      const success = await this.pushNotificationService.updatePreference(setting.key, setting.enabled);
 
-      // Save to preferences
-      await Preferences.set({
-        key: this.STORAGE_KEY,
-        value: JSON.stringify(settings)
-      });
-
-      await this.showToast(
-        `${setting.label} notifications ${setting.enabled ? 'enabled' : 'disabled'}`,
-        'success'
-      );
+      if (success) {
+        await this.showToast(
+          `${setting.label} notifications ${setting.enabled ? 'enabled' : 'disabled'}`,
+          'success'
+        );
+      } else {
+        throw new Error('Failed to update preference');
+      }
     } catch (error) {
       console.error('Error saving notification settings:', error);
       await this.showToast('Failed to save setting', 'danger');

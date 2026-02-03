@@ -189,10 +189,10 @@ export class GoogleMapsService {
       }
 
       const response = await CapacitorHttp.get({ url: url });
-      const data = await response.data;
-      console.log(data);
       
-      if (data.status === 'OK') {
+      if (response.status === 200) {
+        const data = await response.data;
+       
         return data.predictions.map((prediction: any) => ({
           place_id: prediction.place_id,
           description: prediction.description,
@@ -224,13 +224,13 @@ export class GoogleMapsService {
 
     try {
       const apiKey = environment.googleMaps.apiKey;
-      const response = await fetch(
-        `https://maps.googleapis.com/maps/api/place/details/json?place_id=${placeId}&key=${apiKey}&fields=geometry,formatted_address`
-      );
+      const response = await CapacitorHttp.get({
+        url: `https://maps.googleapis.com/maps/api/place/details/json?place_id=${placeId}&key=${apiKey}&fields=geometry,formatted_address`
+      });
 
-      const data = await response.json();
-
-      if (data.status === 'OK') {
+      if (response.status === 200) {
+        const data = await response.data;
+        
         const result = data.result;
         return {
           lat: result.geometry.location.lat,
