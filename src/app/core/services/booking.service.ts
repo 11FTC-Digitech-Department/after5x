@@ -119,8 +119,34 @@ export class BookingService {
     // Start transaction-like operation
     let bookingId: string | null = null;
     let uploadedMedia: any[] = [];
+    let variantPricing: { name: string; vat_rate: number; basePrice: number; transportationFee: number; priceTier: 'STANDARD_DAY' | 'AFTER5_NIGHT' } | null = null;
+    let bodyCameraFee = 0;
 
     try {
+      if (data.serviceVariantId) {
+        const { data: v, error: vErr } = await client
+          .from('service_variants')
+          .select('name, price_min, price_after5_min, transportation_fee, transportation_fee_after5, urgent_charge, body_camera_fee, vat_rate')
+          .eq('id', data.serviceVariantId)
+          .single();
+        if (!vErr && v) {
+          const tier = this.determinePriceTier(data.preferredDateTime);
+          const base = tier === 'AFTER5_NIGHT' ? (v.price_after5_min ?? v.price_min) : v.price_min;
+          const urgent = data.urgency === 'emergency' ? (v.urgent_charge ?? 0) : 0;
+          const transport: number = tier === 'AFTER5_NIGHT' ? (v.transportation_fee_after5 ?? v.transportation_fee ?? 0) : (v.transportation_fee ?? 0);
+          bodyCameraFee = data.bodyCameraRequested === true ? (v.body_camera_fee ?? 0) : 0;
+          variantPricing = {
+            name: v.name,
+            vat_rate: v.vat_rate ?? 0.12,
+            basePrice: base + urgent,
+            transportationFee: transport,
+            priceTier: tier
+          };
+        }
+      }
+
+      const totalLaborBase = variantPricing ? variantPricing.basePrice + bodyCameraFee : this.calculateBasePrice(data);
+
       // Step 1: Create booking record
       const bookingData = {
         customer_id: userProfile.id,
@@ -131,7 +157,6 @@ export class BookingService {
           contact_person: data.contactInfo.person,
           contact_phone: data.contactInfo.phone,
           special_instructions: data.specialInstructions,
-          // Store additional booking details
           service_type: data.serviceType,
           urgency: data.urgency,
           preferred_date: data.preferredDate,
@@ -140,7 +165,7 @@ export class BookingService {
         },
         service_location: `POINT(${data.location.lng} ${data.location.lat})`,
         status: BookingStatus.FINDING_PROVIDER,
-        total_labor_base: this.calculateBasePrice(data),
+        total_labor_base: totalLaborBase,
         created_at: new Date().toISOString()
       };
 
@@ -162,12 +187,17 @@ export class BookingService {
           uploadedMedia = await this.mediaService.uploadBookingMedia(bookingId, data.mediaFiles, 'PROBLEM_REPORT');
         } catch (mediaError) {
           console.error('Media upload failed:', mediaError);
-          // Continue with booking creation even if media upload fails
         }
       }
 
-      // Step 3: Create booking item if service variant is specified
-      if (data.serviceVariantId) {
+      // Step 3: Create booking item and set transport total when variant is specified
+      if (data.serviceVariantId && variantPricing) {
+        await this.createBookingItemWithPricing(bookingId, data.serviceVariantId, variantPricing);
+        await client
+          .from('bookings')
+          .update({ total_transport_fees: variantPricing.transportationFee })
+          .eq('id', bookingId);
+      } else if (data.serviceVariantId) {
         await this.createBookingItem(bookingId, data.serviceVariantId, data.urgency, data.preferredDateTime);
       }
 
@@ -259,14 +289,35 @@ export class BookingService {
     }
   }
 
+  private async createBookingItemWithPricing(
+    bookingId: string,
+    serviceVariantId: string,
+    pricing: { name: string; vat_rate: number; basePrice: number; transportationFee: number; priceTier: 'STANDARD_DAY' | 'AFTER5_NIGHT' }
+  ): Promise<void> {
+    const client = this.supabaseService.client;
+    try {
+      const { error: itemError } = await client.rpc('create_booking_item', {
+        p_booking_id: bookingId,
+        p_service_variant_id: serviceVariantId,
+        p_variant_name: pricing.name,
+        p_price_tier: pricing.priceTier,
+        p_base_price: pricing.basePrice,
+        p_transportation_fee: pricing.transportationFee,
+        p_vat_rate: pricing.vat_rate
+      });
+      if (itemError) console.error('Failed to create booking item:', itemError);
+    } catch (error) {
+      console.error('Error in createBookingItemWithPricing:', error);
+    }
+  }
+
   private async createBookingItem(bookingId: string, serviceVariantId: string, urgency: string, preferredDateTime: string): Promise<void> {
     const client = this.supabaseService.client;
 
     try {
-      // Get service variant details with all pricing fields
       const { data: variant, error: variantError } = await client
         .from('service_variants')
-        .select('name, price_min, price_after5_min, transportation_fee, vat_rate')
+        .select('name, price_min, price_after5_min, transportation_fee, transportation_fee_after5, vat_rate')
         .eq('id', serviceVariantId)
         .single();
 
@@ -275,28 +326,25 @@ export class BookingService {
         return;
       }
 
-      // Determine price tier based on PREFERRED BOOKING TIME (not current time)
       const priceTier = this.determinePriceTier(preferredDateTime);
-
-      // Select appropriate base price based on tier
       const basePrice = priceTier === 'AFTER5_NIGHT'
-        ? (variant.price_after5_min || variant.price_min)
+        ? (variant.price_after5_min ?? variant.price_min)
         : variant.price_min;
+      const transport: number = priceTier === 'AFTER5_NIGHT'
+        ? (variant.transportation_fee_after5 ?? variant.transportation_fee ?? 0)
+        : (variant.transportation_fee ?? 0);
 
-      // Use SECURITY DEFINER function to bypass RLS
       const { error: itemError } = await client.rpc('create_booking_item', {
         p_booking_id: bookingId,
         p_service_variant_id: serviceVariantId,
         p_variant_name: variant.name,
         p_price_tier: priceTier,
         p_base_price: basePrice,
-        p_transportation_fee: variant.transportation_fee || 0, // Use actual fee from variant
-        p_vat_rate: variant.vat_rate || 0.12
+        p_transportation_fee: transport,
+        p_vat_rate: variant.vat_rate ?? 0.12
       });
 
-      if (itemError) {
-        console.error('Failed to create booking item:', itemError);
-      }
+      if (itemError) console.error('Failed to create booking item:', itemError);
     } catch (error) {
       console.error('Error in createBookingItem:', error);
     }
