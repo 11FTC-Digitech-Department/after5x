@@ -1553,6 +1553,7 @@ export type Database = {
       }
       service_variants: {
         Row: {
+          body_camera_fee: number | null
           commission_rate: number | null
           created_at: string | null
           description: string | null
@@ -1567,10 +1568,13 @@ export type Database = {
           properties: Json | null
           service_id: string
           transportation_fee: number | null
+          transportation_fee_after5: number | null
+          urgent_charge: number | null
           updated_at: string | null
           vat_rate: number | null
         }
         Insert: {
+          body_camera_fee?: number | null
           commission_rate?: number | null
           created_at?: string | null
           description?: string | null
@@ -1585,10 +1589,13 @@ export type Database = {
           properties?: Json | null
           service_id: string
           transportation_fee?: number | null
+          transportation_fee_after5?: number | null
+          urgent_charge?: number | null
           updated_at?: string | null
           vat_rate?: number | null
         }
         Update: {
+          body_camera_fee?: number | null
           commission_rate?: number | null
           created_at?: string | null
           description?: string | null
@@ -1603,6 +1610,8 @@ export type Database = {
           properties?: Json | null
           service_id?: string
           transportation_fee?: number | null
+          transportation_fee_after5?: number | null
+          urgent_charge?: number | null
           updated_at?: string | null
           vat_rate?: number | null
         }

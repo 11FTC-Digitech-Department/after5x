@@ -30,7 +30,14 @@ export class SupabaseService {
   constructor() {
     const config = this.configService.supabase;
 
+    // Bypass ngrok free-tier interstitial (ERR_NGROK_6024) when using local-ngrok URL
+    const isNgrok = config.url.includes('ngrok');
+    const globalOptions = isNgrok
+      ? { headers: { 'ngrok-skip-browser-warning': 'true' } as Record<string, string> }
+      : undefined;
+
     this._client = createClient(config.url, config.key, {
+      ...(globalOptions && { global: globalOptions }),
       auth: {
         storage: this.storage,
         autoRefreshToken: true,

@@ -120,6 +120,18 @@
                     </div>
                   </div>
 
+                @if (selectedService()) {
+                  <div class="body-camera-section">
+                    <ion-item lines="none">
+                      <ion-label>
+                        <ion-text class="section-subtitle">Would you like to include body camera for this service?</ion-text>
+                        <ion-note class="body-cam-note">This is optional. A small additional fee will apply if you choose this.</ion-note>
+                      </ion-label>
+                      <ion-toggle formControlName="bodyCameraRequested" slot="end"></ion-toggle>
+                    </ion-item>
+                  </div>
+                }
+
                 <ion-list>
                   <ion-item lines="none">
                     <ion-label position="stacked">Description *</ion-label>
@@ -630,6 +642,20 @@
                 <div class="price-item">
                   <ion-text class="price-label">Urgency Fee</ion-text>
                   <ion-text class="price-value">₱{{ priceBreakdown().urgencyFee }}</ion-text>
+                </div>
+              }
+
+              @if (priceBreakdown().transportationFee > 0) {
+                <div class="price-item">
+                  <ion-text class="price-label">Transportation {{ selectedTimeslotAfter5() ? "(After 5)" : "(Regular)" }}</ion-text>
+                  <ion-text class="price-value">₱{{ priceBreakdown().transportationFee }}</ion-text>
+                </div>
+              }
+
+              @if (priceBreakdown().bodyCameraFee > 0) {
+                <div class="price-item">
+                  <ion-text class="price-label">Body Camera</ion-text>
+                  <ion-text class="price-value">₱{{ priceBreakdown().bodyCameraFee }}</ion-text>
                 </div>
               }
 
