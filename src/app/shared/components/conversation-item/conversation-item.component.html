@@ -1,0 +1,34 @@
+<ion-item button detail (click)="onClick()" class="conversation-item" [class.unread]="hasUnread">
+  <!-- Avatar -->
+  <ion-avatar slot="start">
+    @if (conversation.other_participant?.avatar_url) {
+      <img [src]="conversation.other_participant.avatar_url" [alt]="conversation.other_participant?.full_name" />
+    } @else {
+      <div class="avatar-placeholder">{{ participantInitial }}</div>
+    }
+  </ion-avatar>
+
+  <!-- Content -->
+  <ion-label>
+    <div class="header-row">
+      <h2 class="participant-name">{{ conversation.other_participant?.full_name || 'Unknown' }}</h2>
+      <span class="timestamp">{{ formattedTime }}</span>
+    </div>
+    <div class="service-name">
+      <ion-badge [color]="statusColor" class="status-badge">{{ conversation.service_name }}</ion-badge>
+    </div>
+    <p class="last-message" [class.has-image]="conversation.last_message?.message_type === 'IMAGE'">
+      @if (conversation.last_message?.message_type === 'IMAGE') {
+        <ion-icon name="image"></ion-icon>
+      }
+      {{ lastMessagePreview }}
+    </p>
+  </ion-label>
+
+  <!-- Unread Badge -->
+  @if (hasUnread) {
+    <ion-badge slot="end" color="danger" class="unread-badge">
+      {{ conversation.unread_count > 99 ? '99+' : conversation.unread_count }}
+    </ion-badge>
+  }
+</ion-item>

@@ -1,13 +1,84 @@
 <ion-header [translucent]="true">
   <ion-toolbar>
-    <ion-title>chat-room</ion-title>
+    <ion-buttons slot="start">
+      <ion-back-button defaultHref="/"></ion-back-button>
+    </ion-buttons>
+
+    @if (otherParticipant()) {
+      <ion-title>
+        <div class="header-content">
+          <span class="participant-name">{{ otherParticipant()?.full_name }}</span>
+          @if (serviceName()) {
+            <ion-badge [color]="statusColor" class="status-badge">{{ serviceName() }}</ion-badge>
+          }
+        </div>
+      </ion-title>
+    } @else {
+      <ion-title>Chat</ion-title>
+    }
   </ion-toolbar>
 </ion-header>
 
-<ion-content [fullscreen]="true">
-  <ion-header collapse="condense">
-    <ion-toolbar>
-      <ion-title size="large">chat-room</ion-title>
-    </ion-toolbar>
-  </ion-header>
+<ion-content [fullscreen]="true" class="chat-content">
+  <!-- Loading state -->
+  @if (loading()) {
+    <div class="loading-container">
+      <ion-spinner name="crescent"></ion-spinner>
+      <ion-text color="medium">Loading messages...</ion-text>
+    </div>
+  }
+
+  <!-- Error state -->
+  @if (error()) {
+    <div class="error-container">
+      <ion-text color="danger">{{ error() }}</ion-text>
+    </div>
+  }
+
+  <!-- Chat not available notice -->
+  @if (!loading() && !canChat()) {
+    <div class="notice-container">
+      <div class="notice-icon">🔒</div>
+      <h3>Chat unavailable</h3>
+      <p>Chat is only available during active bookings.</p>
+    </div>
+  }
+
+  <!-- Empty state -->
+  @if (!loading() && canChat() && messages().length === 0) {
+    <div class="empty-container">
+      <div class="empty-icon">💬</div>
+      <h3>Start the conversation</h3>
+      <p>Send a message to {{ otherParticipant()?.full_name || 'your contact' }}.</p>
+    </div>
+  }
+
+  <!-- Messages list -->
+  @if (!loading() && messages().length > 0) {
+    <div class="messages-container" #messageList>
+      @for (message of messages(); track message.id; let i = $index) {
+        <app-chat-bubble
+          [message]="message"
+          [isOwn]="isOwnMessage(message)"
+          [showAvatar]="shouldShowAvatar(message, i)"
+        ></app-chat-bubble>
+      }
+    </div>
+  }
+
+  <!-- Typing indicator -->
+  <app-typing-indicator
+    [visible]="isOtherTyping()"
+    [userName]="typingUserName()"
+  ></app-typing-indicator>
 </ion-content>
+
+<!-- Chat input -->
+@if (!loading() && canChat()) {
+  <app-chat-input
+    [disabled]="!canChat()"
+    [sending]="sending()"
+    (messageSend)="onSendMessage($event)"
+    (typingChange)="onTypingChange($event)"
+  ></app-chat-input>
+}

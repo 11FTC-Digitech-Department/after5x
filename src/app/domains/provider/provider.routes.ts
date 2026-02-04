@@ -15,6 +15,10 @@ export const PROVIDER_ROUTES: Routes = [
         loadComponent: () => import('./pages/schedule/schedule.page').then(m => m.SchedulePage),
       },
       {
+        path: 'messages',
+        loadComponent: () => import('./pages/messages/messages.page').then(m => m.ProviderMessagesPage),
+      },
+      {
         path: 'wallet',
         loadComponent: () => import('./pages/wallet/wallet.page').then(m => m.WalletPage),
       },
@@ -37,6 +41,10 @@ export const PROVIDER_ROUTES: Routes = [
   {
     path: 'notifications',
     loadComponent: () => import('./pages/notifications/notifications.page').then(m => m.NotificationsPage),
+  },
+  {
+    path: 'chat/:bookingId',
+    loadComponent: () => import('../shared/pages/chat-room/chat-room.page').then(m => m.ChatRoomPage),
   },
   // Profile sub-pages
   {

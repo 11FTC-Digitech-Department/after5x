@@ -228,6 +228,26 @@ ion-card {
     }
   }
 
+  .provider-actions {
+    display: flex;
+    gap: 12px;
+    margin-top: 8px;
+
+    ion-button {
+      flex: 1;
+      --border-radius: 8px;
+      margin: 0;
+    }
+
+    .chat-btn ion-badge {
+      margin-left: 8px;
+      font-size: 10px;
+      min-width: 18px;
+      height: 18px;
+      line-height: 18px;
+    }
+  }
+
   .contact-btn {
     --border-radius: 8px;
     margin-top: 8px;

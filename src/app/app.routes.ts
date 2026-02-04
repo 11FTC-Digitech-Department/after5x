@@ -50,11 +50,6 @@ export const routes: Routes = [
     loadChildren: () => import('./domains/admin/admin.routes').then(m => m.ADMIN_ROUTES),
   },
   {
-    path: 'chat', // Shared Chat Module
-    canActivate: [authGuard],
-    loadComponent: () => import('./domains/shared/pages/chat-room/chat-room.page').then(m => m.ChatRoomPage),
-  },
-  {
     path: 'provider-application', // Provider Application Form (public)
     loadComponent: () => import('./domains/provider/pages/application-form/application-form.page').then(m => m.ProviderApplicationFormPage),
   },

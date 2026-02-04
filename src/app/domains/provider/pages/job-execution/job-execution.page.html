@@ -82,12 +82,23 @@
             }
           </div>
         </div>
-        @if (getCustomerPhone()) {
-          <ion-button expand="block" fill="outline" (click)="callCustomer()" class="contact-btn">
-            <ion-icon name="call-outline" slot="start"></ion-icon>
-            Call Customer
-          </ion-button>
-        }
+        <div class="customer-actions">
+          @if (canChat()) {
+            <ion-button expand="block" fill="solid" color="primary" (click)="goToChat()" class="chat-btn">
+              <ion-icon name="chatbubble-outline" slot="start"></ion-icon>
+              Chat
+              @if (unreadChatCount() > 0) {
+                <ion-badge color="danger" slot="end">{{ unreadChatCount() }}</ion-badge>
+              }
+            </ion-button>
+          }
+          @if (getCustomerPhone()) {
+            <ion-button expand="block" fill="outline" (click)="callCustomer()" class="contact-btn">
+              <ion-icon name="call-outline" slot="start"></ion-icon>
+              Call
+            </ion-button>
+          }
+        </div>
       </ion-card-content>
     </ion-card>
 

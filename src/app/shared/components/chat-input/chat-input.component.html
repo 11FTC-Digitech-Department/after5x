@@ -1,0 +1,63 @@
+<div class="chat-input-container">
+  <!-- Image Preview -->
+  @if (selectedImage) {
+    <div class="image-preview">
+      <img [src]="selectedImage" alt="Selected image" />
+      <ion-button fill="clear" size="small" class="remove-btn" (click)="clearImage()">
+        <ion-icon name="close"></ion-icon>
+      </ion-button>
+    </div>
+  }
+
+  <div class="input-row">
+    <!-- Media Buttons -->
+    <div class="media-buttons">
+      <ion-button fill="clear" size="small" [disabled]="disabled || sending" (click)="openCamera()">
+        <ion-icon name="camera" slot="icon-only"></ion-icon>
+      </ion-button>
+      <ion-button fill="clear" size="small" [disabled]="disabled || sending" (click)="openGallery()">
+        <ion-icon name="image" slot="icon-only"></ion-icon>
+      </ion-button>
+    </div>
+
+    <!-- Text Input -->
+    <div class="text-input-wrapper">
+      <ion-textarea
+        [(ngModel)]="message"
+        [placeholder]="placeholder"
+        [disabled]="disabled || sending"
+        [maxlength]="maxLength"
+        [autoGrow]="true"
+        [rows]="1"
+        (ionInput)="onInput()"
+        (keydown)="onKeyDown($event)"
+        class="message-input"
+      ></ion-textarea>
+    </div>
+
+    <!-- Send Button -->
+    <ion-button
+      fill="solid"
+      size="small"
+      shape="round"
+      [disabled]="!canSend"
+      (click)="send()"
+      class="send-btn"
+    >
+      @if (sending) {
+        <ion-spinner name="crescent"></ion-spinner>
+      } @else {
+        <ion-icon name="send" slot="icon-only"></ion-icon>
+      }
+    </ion-button>
+  </div>
+
+  <!-- Hidden file input for web fallback -->
+  <input
+    #fileInput
+    type="file"
+    accept="image/*"
+    (change)="onFileSelected($event)"
+    style="display: none"
+  />
+</div>

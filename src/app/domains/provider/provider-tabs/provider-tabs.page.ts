@@ -13,12 +13,14 @@ import {
   statsChart,
   calendar,
   wallet,
-  person
+  person,
+  chatbubbles
 } from 'ionicons/icons';
 
 import { SessionService } from '@core/auth/session';
 import { NotificationService } from '@core/services/notification.service';
 import { RealTimeService } from '@core/services/real-time.service';
+import { ChatService } from '@core/services/chat.service';
 
 @Component({
   selector: 'app-provider-tabs',
@@ -39,8 +41,10 @@ export class ProviderTabsPage implements OnInit, OnDestroy {
   private sessionService = inject(SessionService);
   private notificationService = inject(NotificationService);
   private realTimeService = inject(RealTimeService);
+  private chatService = inject(ChatService);
 
   unreadNotificationCount = signal(0);
+  unreadChatCount = signal(0);
 
   private unsubscribeRealTime: (() => void) | null = null;
   private userId: string | null = null;
@@ -50,7 +54,8 @@ export class ProviderTabsPage implements OnInit, OnDestroy {
       statsChart,
       calendar,
       wallet,
-      person
+      person,
+      chatbubbles
     });
 
     // Reactive effect to load notifications when profile becomes available
@@ -61,6 +66,7 @@ export class ProviderTabsPage implements OnInit, OnDestroy {
       if (profile?.id && !isLoading && !this.userId) {
         this.userId = profile.id;
         this.loadUnreadCount();
+        this.loadUnreadChatCount();
         this.setupRealTimeSubscription();
       }
     });
@@ -71,6 +77,7 @@ export class ProviderTabsPage implements OnInit, OnDestroy {
     if (profile?.id && !this.userId) {
       this.userId = profile.id;
       await this.loadUnreadCount();
+      await this.loadUnreadChatCount();
       this.setupRealTimeSubscription();
     }
   }
@@ -88,6 +95,15 @@ export class ProviderTabsPage implements OnInit, OnDestroy {
       this.unreadNotificationCount.set(unreadCount);
     } catch (error) {
       console.error('Failed to load notification count:', error);
+    }
+  }
+
+  async loadUnreadChatCount() {
+    try {
+      const count = await this.chatService.refreshTotalUnreadCount();
+      this.unreadChatCount.set(count);
+    } catch (error) {
+      console.error('Failed to load chat count:', error);
     }
   }
 

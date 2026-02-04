@@ -89,6 +89,10 @@ export const CUSTOMER_ROUTES: Routes = [
     loadComponent: () => import('./pages/notifications/notifications.page').then(m => m.NotificationsPage),
   },
   {
+    path: 'chat/:bookingId',
+    loadComponent: () => import('../shared/pages/chat-room/chat-room.page').then(m => m.ChatRoomPage),
+  },
+  {
     path: 'profile/about',
     loadComponent: () => import('./pages/profile/about/about.page').then(m => m.AboutPage),
   },

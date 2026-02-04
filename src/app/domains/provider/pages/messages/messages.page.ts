@@ -18,7 +18,7 @@ import { Conversation } from '../../../../core/models/chat.model';
 import { ConversationItemComponent } from '../../../../shared/components/conversation-item/conversation-item.component';
 
 @Component({
-  selector: 'app-messages',
+  selector: 'app-provider-messages',
   templateUrl: './messages.page.html',
   styleUrls: ['./messages.page.scss'],
   standalone: true,
@@ -36,7 +36,7 @@ import { ConversationItemComponent } from '../../../../shared/components/convers
     ConversationItemComponent
   ]
 })
-export class MessagesPage implements OnInit, OnDestroy {
+export class ProviderMessagesPage implements OnInit, OnDestroy {
   private chatService = inject(ChatService);
   private sessionService = inject(SessionService);
   private router = inject(Router);
@@ -89,7 +89,7 @@ export class MessagesPage implements OnInit, OnDestroy {
       this.conversations.set(conversations);
       this.dataLoaded.set(true);
     } catch (err) {
-      console.error('[MessagesPage] Error loading conversations:', err);
+      console.error('[ProviderMessagesPage] Error loading conversations:', err);
       this.error.set('Failed to load conversations');
     } finally {
       this.loading.set(false);
@@ -102,7 +102,7 @@ export class MessagesPage implements OnInit, OnDestroy {
   }
 
   onConversationClick(conversation: Conversation): void {
-    this.router.navigate(['/c/chat', conversation.booking_id]);
+    this.router.navigate(['/p/chat', conversation.booking_id]);
   }
 
   get isEmpty(): boolean {
