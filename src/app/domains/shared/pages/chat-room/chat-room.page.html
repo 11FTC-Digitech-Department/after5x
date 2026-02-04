@@ -1,7 +1,7 @@
 <ion-header [translucent]="true">
   <ion-toolbar>
     <ion-buttons slot="start">
-      <ion-back-button defaultHref="/"></ion-back-button>
+      <ion-back-button [defaultHref]="defaultBackHref"></ion-back-button>
     </ion-buttons>
 
     @if (otherParticipant()) {
@@ -38,7 +38,9 @@
   <!-- Chat not available notice -->
   @if (!loading() && !canChat()) {
     <div class="notice-container">
-      <div class="notice-icon">🔒</div>
+      <div class="notice-icon">
+        <ion-icon name="lock-closed-outline"></ion-icon>
+      </div>
       <h3>Chat unavailable</h3>
       <p>Chat is only available during active bookings.</p>
     </div>

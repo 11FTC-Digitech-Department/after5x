@@ -9,7 +9,7 @@ import {
   effect
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import {
   IonContent,
   IonHeader,
@@ -20,8 +20,11 @@ import {
   IonSpinner,
   IonText,
   IonBadge,
+  IonIcon,
   NavController
 } from '@ionic/angular/standalone';
+import { addIcons } from 'ionicons';
+import { lockClosedOutline } from 'ionicons/icons';
 import { ChatService } from '../../../../core/services/chat.service';
 import { SessionService } from '../../../../core/auth/session';
 import { ChatMessage, ChatParticipant, TypingEvent } from '../../../../core/models/chat.model';
@@ -45,6 +48,7 @@ import { TypingIndicatorComponent } from '../../../../shared/components/typing-i
     IonSpinner,
     IonText,
     IonBadge,
+    IonIcon,
     ChatBubbleComponent,
     ChatInputComponent,
     TypingIndicatorComponent
@@ -55,9 +59,15 @@ export class ChatRoomPage implements OnInit, OnDestroy {
   @ViewChild('messageList') messageList!: ElementRef;
 
   private route = inject(ActivatedRoute);
+  private router = inject(Router);
   private navController = inject(NavController);
   private chatService = inject(ChatService);
   private sessionService = inject(SessionService);
+
+  /** Back goes to messages list for the current app context (customer or provider). */
+  get defaultBackHref(): string {
+    return this.router.url.startsWith('/c/') ? '/c/messages' : '/p/messages';
+  }
 
   bookingId: string = '';
   messages = signal<ChatMessage[]>([]);
@@ -79,6 +89,7 @@ export class ChatRoomPage implements OnInit, OnDestroy {
   private unsubscribeChat: (() => void) | null = null;
 
   constructor() {
+    addIcons({ lockClosedOutline });
     // React to profile changes
     effect(() => {
       const profile = this.sessionService.profile();

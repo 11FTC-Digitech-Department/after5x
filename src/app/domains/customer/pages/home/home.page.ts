@@ -1,7 +1,7 @@
 import { Component, OnInit, inject, signal, computed, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Router } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import {
   IonContent,
   IonHeader,
@@ -69,7 +69,8 @@ interface PopularService {
     FormsModule,
     IonList,
     IonListHeader,
-    IonLabel
+    IonLabel,
+    RouterLink
   ]
 })
 export class HomePage implements OnInit {
@@ -87,7 +88,9 @@ export class HomePage implements OnInit {
   });
 
   currentLocation = signal('Select your location');
-  unreadNotificationCount = signal(0);
+
+  /** Unread count from NotificationService (single source of truth with tab bar). */
+  unreadNotificationCount = this.notificationService.unreadCount;
 
   categories: ServiceCategory[] = [
     { id: '1', name: 'Locksmithing', slug: 'locksmithing', icon: 'key' },
@@ -149,7 +152,6 @@ export class HomePage implements OnInit {
     // Otherwise, the effect will trigger when profile becomes available
     if (this.sessionService.profile()?.id) {
       await this.loadDefaultAddress();
-      await this.loadUnreadCount();
     }
   }
 
@@ -195,15 +197,5 @@ export class HomePage implements OnInit {
 
   navigateToNotifications() {
     this.router.navigate(['/c/notifications']);
-  }
-
-  async loadUnreadCount() {
-    try {
-      const notifications = await this.notificationService.getUserNotifications(50);
-      const unreadCount = notifications.filter((n: any) => !n.read).length;
-      this.unreadNotificationCount.set(unreadCount);
-    } catch (error) {
-      console.error('Failed to load notification count:', error);
-    }
   }
 }

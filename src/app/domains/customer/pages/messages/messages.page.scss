@@ -14,10 +14,20 @@
 
 .error-container {
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 24px;
+  padding: 48px 24px;
   text-align: center;
+  gap: 16px;
+
+  ion-icon {
+    font-size: 48px;
+  }
+
+  .retry-btn {
+    margin-top: 8px;
+  }
 }
 
 .empty-container {
@@ -30,9 +40,12 @@
   height: 60vh;
 
   .empty-icon {
-    font-size: 64px;
     margin-bottom: 16px;
     opacity: 0.8;
+
+    ion-icon {
+      font-size: 64px;
+    }
   }
 
   h3 {

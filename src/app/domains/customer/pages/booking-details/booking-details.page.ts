@@ -40,12 +40,15 @@ import {
   car,
   hammer,
   alertCircle,
+  alertCircleOutline,
   imageOutline,
   chatbubbleOutline,
   arrowBack,
+  arrowBackOutline,
   chevronForward,
   cardOutline,
-  walletOutline
+  walletOutline,
+  refreshOutline
 } from 'ionicons/icons';
 
 import { SessionService } from '@core/auth/session';
@@ -244,13 +247,27 @@ export class BookingDetailsPage implements OnInit, OnDestroy {
       car,
       hammer,
       alertCircle,
+      alertCircleOutline,
       imageOutline,
       chatbubbleOutline,
       arrowBack,
+      arrowBackOutline,
       chevronForward,
       cardOutline,
-      walletOutline
+      walletOutline,
+      refreshOutline
     });
+  }
+
+  navigateToBookings(): void {
+    this.router.navigate(['/c/bookings']);
+  }
+
+  retryLoadBooking(): void {
+    const bookingId = this.route.snapshot.paramMap.get('bookingId');
+    if (bookingId) {
+      this.loadBooking(bookingId);
+    }
   }
 
   async ngOnInit() {

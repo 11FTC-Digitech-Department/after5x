@@ -6,11 +6,11 @@
     <ion-title>Book a Service</ion-title>
   </ion-toolbar>
   <ion-toolbar class="progress-toolbar">
-    <ion-segment [(ngModel)]="currentStep" (ionChange)="onSegmentChange($event)">
+    <ion-segment [value]="currentStep()" (ionChange)="onSegmentChange($event)">
       <ion-segment-button [value]="1">
         <ion-label>1. Details</ion-label>
       </ion-segment-button>
-      <ion-segment-button [value]="2" [disabled]="!bookingForm.valid">
+      <ion-segment-button [value]="2" [disabled]="!canProceedToReview()">
         <ion-label>2. Review</ion-label>
       </ion-segment-button>
     </ion-segment>
@@ -668,7 +668,7 @@
     <ion-toolbar>
       <ion-button
         expand="full"
-        [disabled]="!bookingForm.valid"
+        [disabled]="!canProceedToReview()"
         (click)="nextStep()"
       >
         Review Booking

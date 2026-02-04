@@ -16,12 +16,12 @@ import {
   calendarOutline,
   gridOutline,
   chatbubblesOutline,
-  personOutline
+  personOutline,
+  notificationsOutline
 } from 'ionicons/icons';
 
 import { SessionService } from '@core/auth/session';
 import { NotificationService } from '@core/services/notification.service';
-import { RealTimeService } from '@core/services/real-time.service';
 
 @Component({
   selector: 'app-customer-tabs',
@@ -42,10 +42,10 @@ import { RealTimeService } from '@core/services/real-time.service';
 export class CustomerTabsPage implements OnInit, OnDestroy {
   private sessionService = inject(SessionService);
   private notificationService = inject(NotificationService);
-  private realTimeService = inject(RealTimeService);
   private toastController = inject(ToastController);
 
-  unreadNotificationCount = signal(0);
+  /** Unread count from NotificationService (single source of truth). */
+  unreadCount = this.notificationService.unreadCount;
 
   private unsubscribeRealTime: (() => void) | null = null;
   private userId: string | null = null;
@@ -56,17 +56,18 @@ export class CustomerTabsPage implements OnInit, OnDestroy {
       calendarOutline,
       gridOutline,
       chatbubblesOutline,
-      personOutline
+      personOutline,
+      notificationsOutline
     });
 
-    // Reactive effect to load notifications when profile becomes available
+    // Reactive effect to load and subscribe when profile becomes available
     effect(() => {
       const profile = this.sessionService.profile();
       const isLoading = this.sessionService.isLoading();
 
       if (profile?.id && !isLoading && !this.userId) {
         this.userId = profile.id;
-        this.loadUnreadCount();
+        this.notificationService.refreshUnreadCount();
         this.setupRealTimeSubscription();
       }
     });
@@ -76,7 +77,7 @@ export class CustomerTabsPage implements OnInit, OnDestroy {
     const profile = this.sessionService.profile();
     if (profile?.id && !this.userId) {
       this.userId = profile.id;
-      await this.loadUnreadCount();
+      await this.notificationService.refreshUnreadCount();
       this.setupRealTimeSubscription();
     }
   }
@@ -87,26 +88,12 @@ export class CustomerTabsPage implements OnInit, OnDestroy {
     }
   }
 
-  async loadUnreadCount() {
-    try {
-      const notifications = await this.notificationService.getUserNotifications(50);
-      const unreadCount = notifications.filter((n: any) => !n.read).length;
-      this.unreadNotificationCount.set(unreadCount);
-    } catch (error) {
-      console.error('Failed to load notification count:', error);
-    }
-  }
-
   private setupRealTimeSubscription() {
     if (!this.userId) return;
 
-    this.unsubscribeRealTime = this.realTimeService.subscribeToNotifications(
+    this.unsubscribeRealTime = this.notificationService.subscribeToUnreadUpdates(
       this.userId,
-      async (notification: any) => {
-        // Increment badge count
-        this.unreadNotificationCount.update(count => count + 1);
-
-        // Show toast with deduplication check
+      async (notification) => {
         if (notification.id && this.notificationService.shouldShowToast(notification.id)) {
           await this.showToast(notification.title || 'New notification', notification.type);
         }

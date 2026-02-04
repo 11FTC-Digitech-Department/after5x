@@ -249,6 +249,25 @@
       <div class="footer-spacer"></div>
     }
   }
+
+  <!-- Error / not found state -->
+  @else {
+    <div class="error-container">
+      <ion-icon name="alert-circle-outline" color="danger"></ion-icon>
+      <h3>Couldn't load this booking</h3>
+      <p>Something went wrong. You can go back or try again.</p>
+      <div class="error-actions">
+        <ion-button expand="block" (click)="navigateToBookings()">
+          <ion-icon name="arrow-back-outline" slot="start"></ion-icon>
+          Back to bookings
+        </ion-button>
+        <ion-button expand="block" fill="outline" (click)="retryLoadBooking()">
+          <ion-icon name="refresh-outline" slot="start"></ion-icon>
+          Try again
+        </ion-button>
+      </div>
+    </div>
+  }
 </ion-content>
 
 <!-- Cancel Footer -->

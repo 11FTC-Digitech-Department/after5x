@@ -1,4 +1,4 @@
-import { Component, inject, signal, OnInit, OnDestroy } from '@angular/core';
+import { Component, inject, signal, OnInit, OnDestroy, effect } from '@angular/core';
 import { ViewWillEnter } from '@ionic/angular';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -75,6 +75,9 @@ export class AddressSelectorPage implements ViewWillEnter, OnInit, OnDestroy {
   currentLocation = signal<{ lat: number; lng: number } | null>(null);
   locationError = signal<string | null>(null);
 
+  // Android transparency class for fallback (when :has() isn't supported)
+  private ionApp: HTMLElement | null = null;
+
   // Search autocomplete state
   searchQuery = signal('');
   searchResults = signal<GooglePlaceResult[]>([]);
@@ -89,7 +92,19 @@ export class AddressSelectorPage implements ViewWillEnter, OnInit, OnDestroy {
   private searchSubject = new Subject<string>();
   private destroy$ = new Subject<void>();
 
+  constructor() {
+    // Effect to toggle transparency class for Android Google Maps
+    // This is a fallback for browsers that don't support CSS :has()
+    effect(() => {
+      const mapVisible = this.showMap();
+      this.toggleMapTransparency(mapVisible);
+    });
+  }
+
   ngOnInit() {
+    // Get reference to ion-app for transparency toggling
+    this.ionApp = document.querySelector('ion-app');
+
     // Set up debounced search
     this.searchSubject
       .pipe(
@@ -105,6 +120,25 @@ export class AddressSelectorPage implements ViewWillEnter, OnInit, OnDestroy {
   ngOnDestroy() {
     this.destroy$.next();
     this.destroy$.complete();
+    // Clean up transparency class when leaving the page
+    this.toggleMapTransparency(false);
+  }
+
+  /**
+   * Toggle transparency class on ion-app for Android Google Maps.
+   * This is a fallback for WebViews that don't support CSS :has() selector.
+   */
+  private toggleMapTransparency(enable: boolean) {
+    if (!this.ionApp) {
+      this.ionApp = document.querySelector('ion-app');
+    }
+    if (this.ionApp) {
+      if (enable) {
+        this.ionApp.classList.add('transparent-for-maps');
+      } else {
+        this.ionApp.classList.remove('transparent-for-maps');
+      }
+    }
   }
 
   ionViewWillEnter() {

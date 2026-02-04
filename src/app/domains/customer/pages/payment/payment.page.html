@@ -1,7 +1,7 @@
 <ion-header [translucent]="true">
   <ion-toolbar>
     <ion-buttons slot="start">
-      <ion-back-button [defaultHref]="'/c/bookings/' + booking()?.id"></ion-back-button>
+      <ion-back-button [defaultHref]="defaultBackHref"></ion-back-button>
     </ion-buttons>
     <ion-title>Payment {{ getShortBookingId() }}</ion-title>
   </ion-toolbar>
@@ -43,10 +43,18 @@
       <ion-icon name="alert-circle" color="danger"></ion-icon>
       <h3>Something went wrong</h3>
       <p>{{ error() }}</p>
-      <ion-button fill="outline" (click)="loadData(booking()?.id || '')">
-        <ion-icon name="refresh-outline" slot="start"></ion-icon>
-        Try Again
-      </ion-button>
+      <div class="error-actions">
+        <ion-button fill="solid" (click)="navigateToBookings()">
+          <ion-icon name="arrow-back-outline" slot="start"></ion-icon>
+          Back to bookings
+        </ion-button>
+        @if (!isInvalidBookingIdError && bookingIdParam) {
+          <ion-button fill="outline" (click)="loadData(bookingIdParam!)">
+            <ion-icon name="refresh-outline" slot="start"></ion-icon>
+            Try again
+          </ion-button>
+        }
+      </div>
     </div>
   }
 

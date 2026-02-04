@@ -10,8 +10,12 @@ import {
   IonRefresherContent,
   IonList,
   IonSpinner,
-  IonText
+  IonText,
+  IonButton,
+  IonIcon
 } from '@ionic/angular/standalone';
+import { addIcons } from 'ionicons';
+import { alertCircleOutline, refreshOutline, chatbubblesOutline } from 'ionicons/icons';
 import { ChatService } from '../../../../core/services/chat.service';
 import { SessionService } from '../../../../core/auth/session';
 import { Conversation } from '../../../../core/models/chat.model';
@@ -33,6 +37,8 @@ import { ConversationItemComponent } from '../../../../shared/components/convers
     IonList,
     IonSpinner,
     IonText,
+    IonButton,
+    IonIcon,
     ConversationItemComponent
   ]
 })
@@ -48,6 +54,7 @@ export class MessagesPage implements OnInit, OnDestroy {
   private dataLoaded = signal<boolean>(false);
 
   constructor() {
+    addIcons({ alertCircleOutline, refreshOutline, chatbubblesOutline });
     // Load data when profile becomes available
     effect(() => {
       const profile = this.sessionService.profile();
@@ -99,6 +106,11 @@ export class MessagesPage implements OnInit, OnDestroy {
   async handleRefresh(event: any): Promise<void> {
     await this.loadConversations(true);
     event.target.complete();
+  }
+
+  retry(): void {
+    this.error.set(null);
+    this.loadConversations();
   }
 
   onConversationClick(conversation: Conversation): void {

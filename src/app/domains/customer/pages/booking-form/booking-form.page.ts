@@ -272,6 +272,15 @@ export class BookingFormPage implements OnInit {
     return disabled;
   });
 
+  /** True when form is valid and a valid location is selected (required for step 2). */
+  canProceedToReview = computed(() => {
+    if (!this.bookingForm.valid) return false;
+    const loc = this.selectedLocation();
+    if (!loc?.lat || !loc?.lng) return false;
+    if (loc.lat === 0 && loc.lng === 0) return false;
+    return true;
+  });
+
   // Smart timeslot recommendations based on urgency and current time
   getRecommendedTimeslot(urgency: string): string {
     const now = new Date();
@@ -735,7 +744,7 @@ export class BookingFormPage implements OnInit {
 
   // Navigation methods (arrow functions to preserve 'this' context)
   nextStep = () => {
-    if (this.bookingForm.valid && this.currentStep() === 1) {
+    if (this.canProceedToReview() && this.currentStep() === 1) {
       this.currentStep.set(2);
     }
   }
@@ -747,10 +756,11 @@ export class BookingFormPage implements OnInit {
   }
 
   onSegmentChange = (event: any) => {
-    const value = event.detail.value;
+    const raw = event.detail?.value;
+    const value = (typeof raw === 'string' ? parseInt(raw, 10) : raw) as 1 | 2;
     if (value === 1 || value === 2) {
-      // Only allow navigation to step 2 if form is valid
-      if (value === 2 && !this.bookingForm.valid) {
+      // Only allow navigation to step 2 if form valid and location selected
+      if (value === 2 && !this.canProceedToReview()) {
         return;
       }
       this.currentStep.set(value);

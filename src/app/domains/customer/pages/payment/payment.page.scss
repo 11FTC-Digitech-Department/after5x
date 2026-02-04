@@ -65,6 +65,14 @@
     color: var(--ion-color-medium);
     margin: 0 0 24px;
   }
+
+  .error-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    width: 100%;
+    max-width: 280px;
+  }
 }
 
 // Payment header

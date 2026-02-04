@@ -1,6 +1,7 @@
-import { Injectable, inject } from '@angular/core';
+import { Injectable, inject, signal } from '@angular/core';
 import { SupabaseService } from '../supabase/supabase';
 import { SessionService } from '../auth/session';
+import { RealTimeService } from './real-time.service';
 import { NotificationChannel, NotificationType, NotificationPayload } from '../models/booking.model';
 
 @Injectable({
@@ -9,6 +10,11 @@ import { NotificationChannel, NotificationType, NotificationPayload } from '../m
 export class NotificationService {
   private supabaseService = inject(SupabaseService);
   private sessionService = inject(SessionService);
+  private realTimeService = inject(RealTimeService);
+
+  /** Single source of truth for unread notification count (used by tabs and home header). */
+  private _unreadCount = signal(0);
+  readonly unreadCount = this._unreadCount.asReadonly();
 
   // Toast deduplication - track recent toasts to prevent duplicates
   private recentToasts = new Map<string, number>();
@@ -409,5 +415,26 @@ export class NotificationService {
     }
 
     return data || [];
+  }
+
+  /**
+   * Refresh unread count from API. Call on init and when notifications list is viewed.
+   */
+  async refreshUnreadCount(): Promise<void> {
+    const notifications = await this.getUserNotifications(50);
+    const count = notifications.filter((n: { read?: boolean }) => !n.read).length;
+    this._unreadCount.set(count);
+  }
+
+  /**
+   * Subscribe to real-time notification inserts and refresh unread count.
+   * Optional callback is called for each new notification (e.g. to show toast).
+   * Returns unsubscribe function.
+   */
+  subscribeToUnreadUpdates(userId: string, onNotification?: (notification: { id?: string; title?: string; type?: string }) => void): () => void {
+    return this.realTimeService.subscribeToNotifications(userId, (notification) => {
+      this.refreshUnreadCount();
+      onNotification?.(notification);
+    });
   }
 }

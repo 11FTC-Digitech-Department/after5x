@@ -32,6 +32,10 @@ export const CUSTOMER_ROUTES: Routes = [
         loadComponent: () => import('./pages/messages/messages.page').then(m => m.MessagesPage),
       },
       {
+        path: 'notifications',
+        loadComponent: () => import('./pages/notifications/notifications.page').then(m => m.NotificationsPage),
+      },
+      {
         path: 'profile',
         loadComponent: () => import('./pages/profile/profile.page').then(m => m.ProfilePage),
       },
@@ -83,10 +87,6 @@ export const CUSTOMER_ROUTES: Routes = [
   {
     path: 'profile/support',
     loadComponent: () => import('./pages/profile/support/support.page').then(m => m.SupportPage),
-  },
-  {
-    path: 'notifications',
-    loadComponent: () => import('./pages/notifications/notifications.page').then(m => m.NotificationsPage),
   },
   {
     path: 'chat/:bookingId',
