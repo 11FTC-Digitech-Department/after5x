@@ -633,11 +633,13 @@
               </ion-card-title>
             </ion-card-header>
             <ion-card-content>
+              <!-- Base Service Fee -->
               <div class="price-item">
                 <ion-text class="price-label">Base Service Fee</ion-text>
                 <ion-text class="price-value">₱{{ priceBreakdown().baseService }}</ion-text>
               </div>
 
+              <!-- Urgency Fee -->
               @if (priceBreakdown().urgencyFee > 0) {
                 <div class="price-item">
                   <ion-text class="price-label">Urgency Fee</ion-text>
@@ -645,6 +647,7 @@
                 </div>
               }
 
+              <!-- Transportation -->
               @if (priceBreakdown().transportationFee > 0) {
                 <div class="price-item">
                   <ion-text class="price-label">Transportation {{ selectedTimeslotAfter5() ? "(After 5)" : "(Regular)" }}</ion-text>
@@ -652,6 +655,7 @@
                 </div>
               }
 
+              <!-- Body Camera -->
               @if (priceBreakdown().bodyCameraFee > 0) {
                 <div class="price-item">
                   <ion-text class="price-label">Body Camera</ion-text>
@@ -659,15 +663,17 @@
                 </div>
               }
 
-              @if (priceBreakdown().mediaProcessing > 0) {
+              <!-- Platform Fee (Commission) -->
+              @if (priceBreakdown().commissionFee > 0) {
                 <div class="price-item">
-                  <ion-text class="price-label">Media Processing ({{ mediaFiles().length }} files)</ion-text>
-                  <ion-text class="price-value">₱{{ priceBreakdown().mediaProcessing }}</ion-text>
+                  <ion-text class="price-label">Platform Fee</ion-text>
+                  <ion-text class="price-value">₱{{ priceBreakdown().commissionFee }}</ion-text>
                 </div>
               }
 
               <div class="price-divider"></div>
 
+              <!-- Total -->
               <div class="price-item total-price">
                 <ion-text class="price-label total-label">Total Amount</ion-text>
                 <ion-text class="price-value total-value">₱{{ priceBreakdown().total }}</ion-text>
