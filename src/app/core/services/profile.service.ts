@@ -176,6 +176,9 @@ export class ProfileService {
         .single();
 
       if (error) {
+        if (error.code === '23505' && String(error.message || '').includes('phone_number')) {
+          return { error: 'This phone number is already registered to another account.' };
+        }
         console.error('Error updating profile:', error);
         return { error: error.message };
       }

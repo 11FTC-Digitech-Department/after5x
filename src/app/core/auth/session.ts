@@ -276,25 +276,44 @@ export class SessionService {
       // Set activated based on role - all roles activated except provider
       const activated = userRole !== 'provider';
 
-      // Create profile for new user
+      let phoneNumber: string | null = user.user_metadata?.['phone'] || user.phone || null;
+
       const profileData = {
         id: userId,
         email: user.email || '',
         full_name: this.extractFullName(user),
         role: userRole,
-        activated: activated,
-        phone_number: user.user_metadata?.['phone'] || user.phone || null,
+        activated,
+        phone_number: phoneNumber,
         avatar_url: user.user_metadata?.['avatar_url'] || null,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
       };
 
-      // Create profile
-      const { error: profileError } = await this.supabase
-        .from('profiles')
-        .insert(profileData);
+      let { error: profileError } = await this.supabase.from('profiles').insert(profileData);
 
       if (profileError) {
+        const isConflict = profileError.code === '23505' || (profileError as any).status === 409;
+        if (isConflict) {
+          const isPhoneDuplicate = String(profileError.message || '').includes('phone_number');
+          if (isPhoneDuplicate) {
+            profileData.phone_number = null;
+            const retry = await this.supabase.from('profiles').insert(profileData);
+            if (!retry.error) {
+              if (profileData.role === 'customer') {
+                await this.supabase.from('customers').insert({
+                  id: userId,
+                  created_at: new Date().toISOString(),
+                  updated_at: new Date().toISOString()
+                });
+              }
+              this._profile.set(profileData as UserProfile);
+              return;
+            }
+          }
+          await this.fetchProfile(userId);
+          return;
+        }
         console.error('Error creating profile:', profileError);
         return;
       }
