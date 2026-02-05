@@ -629,7 +629,7 @@
             <ion-card-content>
               <div class="price-item total-price">
                 <ion-text class="price-label total-label">Total Amount</ion-text>
-                <ion-text class="price-value total-value">₱{{ priceBreakdown().total }}</ion-text>
+                <ion-text class="price-value total-value">{{ formatPrice(priceBreakdown().total) }}</ion-text>
               </div>
             </ion-card-content>
           </ion-card>

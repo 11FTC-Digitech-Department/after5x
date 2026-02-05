@@ -16,6 +16,7 @@ export interface UserProfile {
   full_name: string;
   role: 'customer' | 'provider' | 'admin';
   activated: boolean;
+  phone_number?: string | null;
 }
 
 @Injectable({
@@ -197,7 +198,7 @@ export class SessionService {
       // Try to fetch with activated column first
       const result = await this.supabase
         .from('profiles')
-        .select('id, email, full_name, role, activated')
+        .select('id, email, full_name, role, activated, phone_number')
         .eq('id', userId)
         .maybeSingle();
 
@@ -210,7 +211,7 @@ export class SessionService {
         console.warn('SessionService: activated column not found, fetching without it');
         const fallbackResult = await this.supabase
           .from('profiles')
-          .select('id, email, full_name, role')
+          .select('id, email, full_name, role, phone_number')
           .eq('id', userId)
           .maybeSingle();
         

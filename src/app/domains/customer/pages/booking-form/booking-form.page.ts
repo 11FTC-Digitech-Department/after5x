@@ -438,9 +438,9 @@ export class BookingFormPage implements OnInit {
     const maxPrice = service.price_max;
 
     if (minPrice === maxPrice) {
-      return `₱${minPrice}`;
+      return this.formatPrice(minPrice);
     }
-    return `₱${minPrice} - ₱${maxPrice}`;
+    return `${this.formatPrice(minPrice)} - ${this.formatPrice(maxPrice)}`;
   });
 
   // Step state computations
@@ -612,12 +612,16 @@ export class BookingFormPage implements OnInit {
     const profile = this.sessionService.profile();
     if (profile) {
       // Pre-populate contact person with user's full name
-      this.bookingForm.patchValue({
+      const formValues: any = {
         contactPerson: profile.full_name
-      });
+      };
 
-      // Note: phone number is not available in the current UserProfile interface
-      // We can add it later if needed
+      // Pre-populate contact number if available
+      if (profile.phone_number) {
+        formValues.contactNumber = profile.phone_number;
+      }
+
+      this.bookingForm.patchValue(formValues);
     }
   }
 
@@ -1165,5 +1169,15 @@ export class BookingFormPage implements OnInit {
 
     const startTime = timeslotStartTimes[timeslot] || '09:00';
     return `${date}T${startTime}:00`;
+  }
+
+  formatPrice(amount: number | null | undefined): string {
+    if (amount === null || amount === undefined) return '---';
+    return new Intl.NumberFormat('en-PH', {
+      style: 'currency',
+      currency: 'PHP',
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    }).format(amount);
   }
 }

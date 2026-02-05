@@ -419,21 +419,24 @@ export class BookingService {
       throw new BookingError('Failed to calculate pricing', 'PRICING_CALCULATION_FAILED');
     }
 
-    const baseService = booking.total_labor_base || 0;
+    // Use individual breakdown fields for accurate calculation (matches frontend)
+    const baseService = booking.base_service_fee || 0;
+    const urgencyFee = booking.urgent_fee || 0;
+    const bodyCameraFee = booking.body_camera_fee || 0;
     const transportationFee = booking.total_transport_fees || 0;
     const materialsAmount = booking.total_materials_amount || 0;
-    const vatRate = 0.12;
-    const subtotal = baseService + transportationFee + materialsAmount;
-    const vatAmount = subtotal * vatRate;
-    const total = subtotal + vatAmount;
+    
+    // Grand total = baseService + urgencyFee + transportationFee + bodyCameraFee
+    // This matches frontend calculation exactly (no VAT, no materials in grand_total)
+    const grandTotal = baseService + urgencyFee + transportationFee + bodyCameraFee;
 
     return {
       baseService,
-      urgencyFee: 0, // Already included in base service
+      urgencyFee,
       transportationFee,
-      mediaProcessingFee: 0, // Handled separately
-      vatAmount,
-      total,
+      mediaProcessingFee: bodyCameraFee, // Body camera fee
+      vatAmount: 0, // VAT computation removed - will be implemented later
+      total: grandTotal, // grand_total does NOT include VAT or materials
       tier: 'STANDARD_DAY' // Default tier
     };
   }
