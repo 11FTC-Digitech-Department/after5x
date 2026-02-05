@@ -682,7 +682,7 @@ export class BookingFormPage implements OnInit {
       preferredDate: [today, Validators.required], // Default to today
       preferredTimeslot: ['', Validators.required],
       address: ['', Validators.required],
-      contactNumber: ['', [Validators.pattern(/^(\+63|0)[9]\d{9}$/)]],
+      contactNumber: ['', [Validators.required, Validators.pattern(/^(\+63|0)[9]\d{9}$/)]],
       contactPerson: ['', Validators.required],
       latitude: [null],
       longitude: [null],
