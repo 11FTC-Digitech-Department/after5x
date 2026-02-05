@@ -263,6 +263,25 @@ export class LoginPage implements OnInit, AfterViewChecked {
     this.sessionService.setSignupInProgress(true);
 
     try {
+      // Check if mobile number already exists (similar to email validation)
+      if (formData.mobile?.trim()) {
+        const normalizedMobile = formData.mobile.trim().replace(/\s+/g, '');
+        const { data: existingPhone } = await this.supabaseService.client
+          .from('profiles')
+          .select('id')
+          .eq('phone_number', normalizedMobile)
+          .maybeSingle();
+
+        if (existingPhone) {
+          await this.showToast('This mobile number is already registered. Please use a different number or try signing in.', 'danger');
+          this.isSignupLoading.set(false);
+          setTimeout(() => {
+            this.sessionService.setSignupInProgress(false);
+          }, 100);
+          return;
+        }
+      }
+
       const result = await this.supabaseService.signUpWithEmail(
         formData.email,
         formData.password,
