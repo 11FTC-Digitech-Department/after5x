@@ -418,8 +418,14 @@ ion-card {
   }
 }
 
-// Price card
+// Price card (booking details shows total only)
 .price-card {
+  .price-row.single-total {
+    border-bottom: none;
+    padding-top: 8px;
+    padding-bottom: 8px;
+  }
+
   .price-row {
     display: flex;
     justify-content: space-between;

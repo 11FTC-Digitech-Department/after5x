@@ -5,6 +5,7 @@ import {
   Token,
   PushNotificationSchema,
   ActionPerformed,
+  RegistrationError,
 } from '@capacitor/push-notifications';
 import { Capacitor } from '@capacitor/core';
 import { SupabaseService } from '../supabase/supabase';
@@ -198,8 +199,8 @@ export class PushNotificationService {
     });
 
     // Registration error
-    PushNotifications.addListener('registrationError', (error) => {
-      console.error('PushNotificationService: Registration error:', error);
+    PushNotifications.addListener('registrationError', (error: RegistrationError) => {
+      console.error('PushNotificationService: Registration error:', error.error);
     });
 
     // Notification received while app is in foreground

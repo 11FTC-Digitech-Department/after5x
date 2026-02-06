@@ -8,6 +8,7 @@ export const environment = {
   supabase: {
     // url: 'https://344a134aeec4.ngrok-free.app/',
     url: 'https://nonpracticably-unbreathing-vincenzo.ngrok-free.dev/',
+    // url: 'http://127.0.0.1:54321/',
     key: 'sb_publishable_ACJWlzQHlZjBrEguHvfOxg_3BJgxAaH',
   },
   googleMaps: {

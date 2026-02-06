@@ -1283,18 +1283,14 @@ ion-content {
   }
 
   &.total-price {
-    border-top: 2px solid var(--ion-color-primary);
-    margin-top: 8px;
-    padding-top: 16px;
-
     .total-label {
-      font-size: 16px;
+      font-size: 20px;
       color: var(--ion-color-dark);
       font-weight: 600;
     }
 
     .total-value {
-      font-size: 18px;
+      font-size: 24px;
       color: var(--ion-color-primary);
       font-weight: 700;
     }
