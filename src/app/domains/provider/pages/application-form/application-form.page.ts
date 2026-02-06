@@ -96,14 +96,36 @@ export class ProviderApplicationFormPage implements OnInit {
       firstName: ['', [Validators.required, Validators.minLength(2)]],
       middleName: [''],
       lastName: ['', [Validators.required, Validators.minLength(2)]],
-      email: ['', [Validators.required, Validators.email]],
+      email: ['', [Validators.required, Validators.email, this.emailValidator.bind(this)]],
       password: ['', [Validators.required, Validators.minLength(8)]],
-      mobileNumber: ['', [Validators.required, Validators.pattern(/^(\+639|09)\d{9}$/)]],
+      mobileNumber: ['', [Validators.required, Validators.pattern(/^(\+63|0)[9]\d{9}$/)]],
       dateOfBirth: ['', [Validators.required, this.ageValidator.bind(this)]],
       hasSmartphone: ['yes', Validators.required],
       yearsOfExperience: [0, [Validators.required, Validators.min(0)]],
       selectedCategories: [[], [Validators.required, this.arrayMinLengthValidator(1)]]
     });
+  }
+
+  // Custom validator for email format (more strict than Angular's default)
+  private emailValidator(control: AbstractControl): ValidationErrors | null {
+    if (!control.value) {
+      return null; // Let required validator handle empty values
+    }
+
+    const email = control.value.trim().toLowerCase();
+    // RFC 5322 compliant email regex (simplified but more strict than Angular's default)
+    const emailPattern = /^[a-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\.[a-z0-9!#$%&'*+/=?^_`{|}~-]+)*@(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$/;
+    
+    if (!emailPattern.test(email)) {
+      return { invalidEmailFormat: true };
+    }
+
+    // Additional checks
+    if (email.length > 254) {
+      return { emailTooLong: true };
+    }
+
+    return null;
   }
 
   // Custom validator for age (must be 18+)
@@ -164,8 +186,11 @@ export class ProviderApplicationFormPage implements OnInit {
     if (errors['required']) {
       return `${this.getFieldLabel(fieldName)} is required`;
     }
-    if (errors['email']) {
-      return 'Invalid email format';
+    if (errors['email'] || errors['invalidEmailFormat']) {
+      return 'Invalid email format. Please enter a valid email address';
+    }
+    if (errors['emailTooLong']) {
+      return 'Email address is too long (maximum 254 characters)';
     }
     if (errors['minlength']) {
       return `${this.getFieldLabel(fieldName)} must be at least ${errors['minlength'].requiredLength} characters`;
@@ -182,8 +207,10 @@ export class ProviderApplicationFormPage implements OnInit {
     if (errors['min']) {
       return 'Years of experience must be 0 or greater';
     }
-    if (errors['serverError'] && typeof errors['serverError'] === 'string') {
-      return errors['serverError'];
+    if (errors['serverError']) {
+      return typeof errors['serverError'] === 'string' 
+        ? errors['serverError'] 
+        : 'This value is already in use. Please try a different one.';
     }
 
     return null;
@@ -233,85 +260,301 @@ export class ProviderApplicationFormPage implements OnInit {
     }
 
     try {
+      // Additional client-side validation before submission
+      const email = this.applicationForm.value.email?.trim().toLowerCase();
+      const mobileNumber = this.applicationForm.value.mobileNumber?.trim();
+
+      // Validate email format (double-check)
+      if (!email || !/^[a-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\.[a-z0-9!#$%&'*+/=?^_`{|}~-]+)*@(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$/.test(email)) {
+        this.applicationForm.get('email')?.setErrors({ invalidEmailFormat: true });
+        this.applicationForm.get('email')?.markAsTouched();
+        this.isSubmitting.set(false);
+        await this.showToast('Please enter a valid email address', 'warning');
+        return;
+      }
+
+      // Validate mobile number format (double-check)
+      if (!mobileNumber || !/^(\+63|0)[9]\d{9}$/.test(mobileNumber)) {
+        this.applicationForm.get('mobileNumber')?.setErrors({ pattern: true });
+        this.applicationForm.get('mobileNumber')?.markAsTouched();
+        this.isSubmitting.set(false);
+        await this.showToast('Invalid phone number format. Use +639XXXXXXXXX or 09XXXXXXXXX', 'warning');
+        return;
+      }
+
+      // Check if email already exists in database
+      console.log('[Provider Signup] Checking if email already exists...');
+      const { data: existingEmailProfile } = await this.supabaseService.client
+        .from('profiles')
+        .select('id, email')
+        .eq('email', email)
+        .maybeSingle();
+
+      if (existingEmailProfile) {
+        this.applicationForm.get('email')?.setErrors({ 
+          serverError: 'This email address is already registered. Please use a different email or try signing in.' 
+        });
+        this.applicationForm.get('email')?.markAsTouched();
+        this.isSubmitting.set(false);
+        await this.showToast('This email address is already registered. Please use a different email or try signing in.', 'danger');
+        return;
+      }
+
+      // Check if mobile number already exists in database
+      console.log('[Provider Signup] Checking if mobile number already exists...');
+      const normalizedMobile = mobileNumber.replace(/\s+/g, '');
+      const { data: existingPhoneProfile } = await this.supabaseService.client
+        .from('profiles')
+        .select('id, phone_number')
+        .eq('phone_number', normalizedMobile)
+        .maybeSingle();
+
+      if (existingPhoneProfile) {
+        this.applicationForm.get('mobileNumber')?.setErrors({ 
+          serverError: 'This mobile number is already registered. Please use a different mobile number or try signing in.' 
+        });
+        this.applicationForm.get('mobileNumber')?.markAsTouched();
+        this.isSubmitting.set(false);
+        await this.showToast('This mobile number is already registered. Please use a different mobile number or try signing in.', 'danger');
+        return;
+      }
+
       // Format date of birth to YYYY-MM-DD if it's an ISO string
       let dateOfBirth = this.applicationForm.value.dateOfBirth;
+      if (!dateOfBirth) {
+        this.applicationForm.get('dateOfBirth')?.setErrors({ required: true });
+        this.applicationForm.get('dateOfBirth')?.markAsTouched();
+        this.isSubmitting.set(false);
+        await this.showToast('Date of birth is required', 'warning');
+        return;
+      }
       if (dateOfBirth && dateOfBirth.includes('T')) {
         dateOfBirth = dateOfBirth.split('T')[0];
       }
 
-      // Call Edge Function
+      // Validate selected categories
+      const selectedCategories = this.applicationForm.value.selectedCategories;
+      if (!selectedCategories || !Array.isArray(selectedCategories) || selectedCategories.length === 0) {
+        this.applicationForm.get('selectedCategories')?.setErrors({ required: true });
+        this.applicationForm.get('selectedCategories')?.markAsTouched();
+        this.isSubmitting.set(false);
+        await this.showToast('Please select at least one specialization', 'warning');
+        return;
+      }
+
+      // Step 1: Create user using signUp() - automatically sends verification email (same as customer signup)
+      const fullName = [
+        this.applicationForm.value.firstName,
+        this.applicationForm.value.middleName,
+        this.applicationForm.value.lastName
+      ].filter(Boolean).join(' ');
+
+      console.log('[Provider Signup] Creating user with signUp()...');
+      const signUpResult = await this.supabaseService.signUpWithEmail(
+        email,
+        this.applicationForm.value.password,
+        {
+          phone: mobileNumber,
+          role: 'provider',
+          full_name: fullName
+        }
+      );
+
+      if (!signUpResult.success || !signUpResult.user) {
+        await this.showToast(signUpResult.error || 'Failed to create account', 'danger');
+        this.isSubmitting.set(false);
+        return;
+      }
+
+      console.log('[Provider Signup] User created:', signUpResult.user.id);
+      console.log('[Provider Signup] Verification email automatically sent by Supabase');
+
+      // Step 2: Create provider records via Edge Function (user already created)
+      console.log('[Provider Signup] Calling Edge Function with:', {
+        userId: signUpResult.user.id,
+        dateOfBirth: dateOfBirth,
+        selectedCategories: selectedCategories.length
+      });
+
       const response = await this.supabaseService.client.functions.invoke(
         'create-provider-application',
         {
           body: {
-            firstName: this.applicationForm.value.firstName,
-            middleName: this.applicationForm.value.middleName || null,
-            lastName: this.applicationForm.value.lastName,
-            email: this.applicationForm.value.email,
-            password: this.applicationForm.value.password,
-            mobileNumber: this.applicationForm.value.mobileNumber,
+            userId: signUpResult.user.id, // User already created
+            firstName: this.applicationForm.value.firstName.trim(),
+            middleName: this.applicationForm.value.middleName?.trim() || null,
+            lastName: this.applicationForm.value.lastName.trim(),
             dateOfBirth: dateOfBirth,
             hasSmartphone: this.applicationForm.value.hasSmartphone === 'yes',
             yearsOfExperience: parseInt(this.applicationForm.value.yearsOfExperience, 10),
-            selectedCategories: this.applicationForm.value.selectedCategories
+            selectedCategories: selectedCategories
           }
         }
       );
 
       const { data, error } = response;
 
-      // Extract { message, code } from Edge Function response
-      const getEdgeFunctionError = (): { message: string; code: string | null } | null => {
-        const fromPayload = (payload: any): { message: string; code: string | null } | null => {
+      // Log full response for debugging
+      console.log('[Provider Signup] Edge Function Response:', {
+        data: data,
+        error: error,
+        dataType: typeof data,
+        errorType: typeof error
+      });
+
+      // Extract { message, code, missingFields } from Edge Function response
+      const getEdgeFunctionError = (): { message: string; code: string | null; missingFields?: string[] } | null => {
+        const fromPayload = (payload: any): { message: string; code: string | null; missingFields?: string[] } | null => {
           if (!payload) return null;
+          
+          console.log('[Provider Signup] Extracting error from payload:', payload);
+          
           let message: string | null = null;
           let code: string | null = null;
+          let missingFields: string[] | undefined = undefined;
+          
           if (typeof payload === 'string') {
             message = payload;
           } else {
+            // Check for error field (most common)
             if (payload.error !== undefined && payload.error !== null) {
-              message = typeof payload.error === 'string'
-                ? payload.error
-                : payload.error?.error ?? payload.error?.message ?? null;
-            } else if (payload.message) {
+              if (typeof payload.error === 'string') {
+                message = payload.error;
+              } else {
+                message = payload.error?.error ?? payload.error?.message ?? null;
+              }
+            } 
+            // Check for message field
+            else if (payload.message) {
               message = payload.message;
             }
-            if (payload.code && typeof payload.code === 'string') code = payload.code;
+            
+            // Extract code
+            if (payload.code && typeof payload.code === 'string') {
+              code = payload.code;
+            }
+            
+            // Extract missingFields (can be at root level or nested)
+            if (payload.missingFields && Array.isArray(payload.missingFields)) {
+              missingFields = payload.missingFields;
+            } else if (payload.error?.missingFields && Array.isArray(payload.error.missingFields)) {
+              missingFields = payload.error.missingFields;
+            }
           }
+          
           if (!message) return null;
-          return { message, code };
+          
+          console.log('[Provider Signup] Extracted error:', { message, code, missingFields });
+          return { message, code, missingFields };
         };
+        
+        // Try data first
         if (data) {
           const result = fromPayload(data);
           if (result) return result;
         }
+        
+        // Try error object
         const err = error as any;
+        if (err) {
+          const result = fromPayload(err);
+          if (result) return result;
+        }
+        
+        // Try error.context
         if (err?.context) {
           let body = err.context;
           if (typeof body === 'string') {
-            try { body = JSON.parse(body); } catch { return body ? { message: body, code: null } : null; }
+            try { 
+              body = JSON.parse(body); 
+            } catch (e) { 
+              console.error('[Provider Signup] Failed to parse error context:', e);
+              return body ? { message: body, code: null } : null; 
+            }
           }
           const result = fromPayload(body);
           if (result) return result;
         }
+        
+        // Try error.error
         if (err?.error && typeof err.error === 'object') {
           const result = fromPayload(err.error);
           if (result) return result;
         }
+        
         return null;
       };
 
       const edgeError = getEdgeFunctionError();
+      console.log('[Provider Signup] Final extracted error:', edgeError);
 
       if (data?.error !== undefined && data?.error !== null || error || !data || data.success !== true) {
-        const msg = edgeError?.message ?? 'Try again.';
-        await this.showToast(msg, 'danger');
+        // Build detailed error message
+        let errorMessage = 'An error occurred. Please try again.';
+        
+        if (edgeError) {
+          errorMessage = edgeError.message;
+          
+          // Add missing fields details if available
+          if (edgeError.missingFields && edgeError.missingFields.length > 0) {
+            const fieldLabels = edgeError.missingFields.map(field => {
+              const labels: { [key: string]: string } = {
+                'firstName': 'First Name',
+                'lastName': 'Last Name',
+                'email': 'Email',
+                'mobileNumber': 'Mobile Number',
+                'dateOfBirth': 'Date of Birth',
+                'selectedCategories': 'Specialization',
+                'userId': 'User ID'
+              };
+              return labels[field] || field;
+            });
+            errorMessage = `Missing required fields: ${fieldLabels.join(', ')}`;
+          }
+          
+          // Log full details for debugging
+          console.error('[Provider Signup] Edge Function Error Details:', {
+            message: edgeError.message,
+            code: edgeError.code,
+            missingFields: edgeError.missingFields,
+            fullResponse: { data, error },
+            sentData: {
+              userId: signUpResult.user.id,
+              firstName: this.applicationForm.value.firstName,
+              lastName: this.applicationForm.value.lastName,
+              email: email,
+              mobileNumber: mobileNumber,
+              dateOfBirth: dateOfBirth,
+              selectedCategories: selectedCategories
+            }
+          });
+        } else {
+          // If we couldn't extract error, show raw response
+          console.error('[Provider Signup] Could not extract error. Raw response:', { data, error });
+          if (data?.error) {
+            errorMessage = typeof data.error === 'string' ? data.error : JSON.stringify(data.error);
+          } else if (error) {
+            errorMessage = typeof error === 'string' ? error : JSON.stringify(error);
+          }
+        }
+        
+        await this.showToast(errorMessage, 'danger');
+        
         if (edgeError?.code === 'EMAIL_EXISTS') {
           this.applicationForm.get('email')?.setErrors({ serverError: edgeError.message });
           this.applicationForm.get('email')?.markAsTouched();
         } else if (edgeError?.code === 'PHONE_EXISTS') {
           this.applicationForm.get('mobileNumber')?.setErrors({ serverError: edgeError.message });
           this.applicationForm.get('mobileNumber')?.markAsTouched();
+        } else if (edgeError?.missingFields) {
+          // Mark missing fields as invalid
+          edgeError.missingFields.forEach(field => {
+            const formControl = this.applicationForm.get(field);
+            if (formControl) {
+              formControl.setErrors({ serverError: `${this.getFieldLabel(field)} is required` });
+              formControl.markAsTouched();
+            }
+          });
         }
         return;
       }
