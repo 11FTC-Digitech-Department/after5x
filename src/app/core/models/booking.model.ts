@@ -233,6 +233,7 @@ export interface CustomerBooking {
   grand_total: number | null;
   platform_fee: number | null;
   provider_earnings: number | null;
+  body_camera_fee: number | null;
   provider_assigned_at: string | null;
   started_travel_at: string | null;
   arrived_at: string | null;
