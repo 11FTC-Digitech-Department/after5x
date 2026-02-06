@@ -42,6 +42,7 @@ export interface BookingSubmissionData {
   specialInstructions?: string;
   serviceVariantId?: string; // For pre-selected services
   preSelectedProviderId?: string; // Provider selected from service details page
+  bodyCameraRequested?: boolean; // Include variant body_camera_fee when true
 }
 
 export interface BookingResponse {

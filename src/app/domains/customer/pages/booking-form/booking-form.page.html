@@ -120,6 +120,18 @@
                     </div>
                   </div>
 
+                @if (selectedService()) {
+                  <div class="body-camera-section">
+                    <ion-item lines="none">
+                      <ion-label>
+                        <ion-text class="section-subtitle">Would you like to include body camera for this service?</ion-text>
+                        <ion-note class="body-cam-note">This is optional. A small additional fee will apply if you choose this.</ion-note>
+                      </ion-label>
+                      <ion-toggle formControlName="bodyCameraRequested" slot="end"></ion-toggle>
+                    </ion-item>
+                  </div>
+                }
+
                 <ion-list>
                   <ion-item lines="none">
                     <ion-label position="stacked">Description *</ion-label>
@@ -408,7 +420,7 @@
                     ></ion-input>
                   </ion-item>
                   <ion-item>
-                    <ion-label position="stacked">Contact Number</ion-label>
+                    <ion-label position="stacked">Contact Number *</ion-label>
                     <ion-input
                       formControlName="contactNumber"
                       type="tel"
@@ -610,41 +622,14 @@
         </ion-row>
       }
 
-      <!-- Price Breakdown -->
+      <!-- Total Amount -->
       <ion-row>
         <ion-col size="12">
           <ion-card class="price-section">
-            <ion-card-header>
-              <ion-card-title class="section-title">
-                <ion-icon name="cash" class="section-icon"></ion-icon>
-                Price Breakdown
-              </ion-card-title>
-            </ion-card-header>
             <ion-card-content>
-              <div class="price-item">
-                <ion-text class="price-label">Base Service Fee</ion-text>
-                <ion-text class="price-value">₱{{ priceBreakdown().baseService }}</ion-text>
-              </div>
-
-              @if (priceBreakdown().urgencyFee > 0) {
-                <div class="price-item">
-                  <ion-text class="price-label">Urgency Fee</ion-text>
-                  <ion-text class="price-value">₱{{ priceBreakdown().urgencyFee }}</ion-text>
-                </div>
-              }
-
-              @if (priceBreakdown().mediaProcessing > 0) {
-                <div class="price-item">
-                  <ion-text class="price-label">Media Processing ({{ mediaFiles().length }} files)</ion-text>
-                  <ion-text class="price-value">₱{{ priceBreakdown().mediaProcessing }}</ion-text>
-                </div>
-              }
-
-              <div class="price-divider"></div>
-
               <div class="price-item total-price">
                 <ion-text class="price-label total-label">Total Amount</ion-text>
-                <ion-text class="price-value total-value">₱{{ priceBreakdown().total }}</ion-text>
+                <ion-text class="price-value total-value">{{ formatPrice(priceBreakdown().total) }}</ion-text>
               </div>
             </ion-card-content>
           </ion-card>

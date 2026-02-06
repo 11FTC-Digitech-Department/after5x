@@ -58,8 +58,15 @@ export interface ServiceVariant {
   price_after5_min: number;
   price_after5_max: number;
   vat_rate: number;
-  transportation_fee: number;
+  transportation_fee: number | null;
+  transportation_fee_after5?: number | null;
+  urgent_charge?: number | null;
+  body_camera_fee?: number | null;
   commission_rate: number;
+  commission_amount_min_8to5?: number | null;
+  commission_amount_min_5to8?: number | null;
+  commission_amount_max_8to5?: number | null;
+  commission_amount_max_5to8?: number | null;
   duration_minutes: number;
   properties?: VariantProperties;
   is_active: boolean;

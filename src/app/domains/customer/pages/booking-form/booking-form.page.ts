@@ -29,7 +29,7 @@ import {
   IonList,
   IonChip,
   IonAvatar,
-  IonSpinner, IonBackButton, IonFooter, IonBadge, IonNote, IonSegment, IonSegmentButton } from '@ionic/angular/standalone';
+  IonSpinner, IonBackButton, IonFooter, IonBadge, IonNote, IonSegment, IonSegmentButton, IonToggle } from '@ionic/angular/standalone';
 import { Camera, CameraResultType, CameraSource, CameraPermissionType } from '@capacitor/camera';
 import { ServiceService, ServiceWithProvider } from '@core/services/service.service';
 import { SessionService } from '@core/auth/session';
@@ -68,6 +68,8 @@ interface PriceBreakdown {
   urgencyFee: number;
   mediaProcessing: number;
   transportationFee: number;
+  bodyCameraFee: number;
+  commissionFee: number;
   total: number;
 }
 
@@ -107,6 +109,7 @@ interface PriceBreakdown {
     IonNote,
     IonSegment,
     IonSegmentButton,
+    IonToggle,
     CommonModule,
     ReactiveFormsModule,
     FormsModule]
@@ -140,6 +143,10 @@ export class BookingFormPage implements OnInit {
   // Reactive urgency signal for computed properties
   currentUrgency = signal<string>('low');
 
+  // Reactive signals for pricing (so priceBreakdown computed re-runs when form changes)
+  currentTimeslot = signal<string>('');
+  bodyCameraRequestedSignal = signal<boolean>(false);
+
   // Reactive date signal for timeslot availability
   selectedDate = signal<string>('');
 
@@ -155,34 +162,64 @@ export class BookingFormPage implements OnInit {
   mediaFiles = signal<MediaFile[]>([]);
   isUploading = signal(false);
 
-  // Price calculations - consistent with booking service
+  // Price calculations - consistent with booking service (variant-based when selected)
+  // Uses signals so computed re-runs when user changes urgency, timeslot, or body camera
   priceBreakdown = computed((): PriceBreakdown => {
     const selectedService = this.selectedService();
-    const timeslot = this.bookingForm?.get('preferredTimeslot')?.value;
+    const timeslot = this.currentTimeslot();
+    const urgency = this.currentUrgency();
+    const bodyCameraRequested = this.bodyCameraRequestedSignal();
 
-    // Determine if this is an "after 5" timeslot for pricing tier
     const isAfter5 = this.timeslots.find(t => t.value === timeslot)?.after5 || false;
 
-    // Use service_variants pricing based on time tier (same logic as booking service)
     let baseService: number;
     if (selectedService) {
       baseService = isAfter5
-        ? (selectedService.price_after5_min || selectedService.price_min)
+        ? (selectedService.price_after5_min ?? selectedService.price_min)
         : selectedService.price_min;
     } else {
-      baseService = 1200; // Fallback
+      baseService = 1200;
     }
 
-    const urgencyFee = this.calculateUrgencyFee();
-    const mediaProcessing = this.mediaFiles().length * 100; // ₱100 per media file
-    const transportationFee = selectedService?.transportation_fee || 0;
-    const total = baseService + urgencyFee + mediaProcessing + transportationFee;
+    // Urgent: only "emergency" adds variant's urgent_charge when we have a variant
+    const urgencyFee = selectedService && urgency === 'emergency'
+      ? (selectedService.urgent_charge ?? 0)
+      : this.calculateUrgencyFee();
+
+    const transportationFee = selectedService
+      ? (isAfter5
+          ? (selectedService.transportation_fee_after5 ?? selectedService.transportation_fee ?? 0)
+          : (selectedService.transportation_fee ?? 0))
+      : 0;
+    const bodyCameraFee = (bodyCameraRequested && selectedService)
+      ? (selectedService.body_camera_fee ?? 0)
+      : 0;
+    
+    // Commission depends on time tier (regular 8to5 vs after5 5to8)
+    // Use minimum commission amount for the tier (or calculate from rate if amounts not available)
+    let commissionFee = 0;
+    if (selectedService) {
+      if (isAfter5) {
+        // After 5 (5PM-8AM): use commission_amount_min_5to8 or calculate from rate
+        commissionFee = selectedService.commission_amount_min_5to8 ?? 
+          (selectedService.commission_rate ? (baseService * selectedService.commission_rate / 100) : 0);
+      } else {
+        // Regular (8AM-5PM): use commission_amount_min_8to5 or calculate from rate
+        commissionFee = selectedService.commission_amount_min_8to5 ?? 
+          (selectedService.commission_rate ? (baseService * selectedService.commission_rate / 100) : 0);
+      }
+    }
+    
+    // Total does NOT include platform fee (commission) - it's shown separately
+    const total = baseService + urgencyFee + transportationFee + bodyCameraFee;
 
     return {
       baseService,
       urgencyFee,
-      mediaProcessing,
+      mediaProcessing: 0, // Removed - media cost is body camera
       transportationFee,
+      bodyCameraFee,
+      commissionFee,
       total
     };
   });
@@ -194,32 +231,32 @@ export class BookingFormPage implements OnInit {
   });
 
   selectedUrgencyLabel = computed(() => {
-    const urgency = this.bookingForm?.get('urgency')?.value;
+    const urgency = this.currentUrgency();
     return this.urgencyLevels.find(u => u.value === urgency)?.label || '';
   });
 
   selectedUrgencyColor = computed(() => {
-    const urgency = this.bookingForm?.get('urgency')?.value;
+    const urgency = this.currentUrgency();
     return this.urgencyLevels.find(u => u.value === urgency)?.color || 'primary';
   });
 
   selectedTimeslotLabel = computed(() => {
-    const timeslot = this.bookingForm?.get('preferredTimeslot')?.value;
+    const timeslot = this.currentTimeslot();
     return this.timeslots.find(t => t.value === timeslot)?.label || '';
   });
 
   selectedTimeslotRange = computed(() => {
-    const timeslot = this.bookingForm?.get('preferredTimeslot')?.value;
+    const timeslot = this.currentTimeslot();
     return this.timeslots.find(t => t.value === timeslot)?.range || '';
   });
 
   selectedTimeslotIcon = computed(() => {
-    const timeslot = this.bookingForm?.get('preferredTimeslot')?.value;
+    const timeslot = this.currentTimeslot();
     return this.timeslots.find(t => t.value === timeslot)?.icon || 'time-outline';
   });
 
   selectedTimeslotAfter5 = computed(() => {
-    const timeslot = this.bookingForm?.get('preferredTimeslot')?.value;
+    const timeslot = this.currentTimeslot();
     return this.timeslots.find(t => t.value === timeslot)?.after5 || false;
   });
 
@@ -401,9 +438,9 @@ export class BookingFormPage implements OnInit {
     const maxPrice = service.price_max;
 
     if (minPrice === maxPrice) {
-      return `₱${minPrice}`;
+      return this.formatPrice(minPrice);
     }
-    return `₱${minPrice} - ₱${maxPrice}`;
+    return `${this.formatPrice(minPrice)} - ${this.formatPrice(maxPrice)}`;
   });
 
   // Step state computations
@@ -575,12 +612,16 @@ export class BookingFormPage implements OnInit {
     const profile = this.sessionService.profile();
     if (profile) {
       // Pre-populate contact person with user's full name
-      this.bookingForm.patchValue({
+      const formValues: any = {
         contactPerson: profile.full_name
-      });
+      };
 
-      // Note: phone number is not available in the current UserProfile interface
-      // We can add it later if needed
+      // Pre-populate contact number if available
+      if (profile.phone_number) {
+        formValues.contactNumber = profile.phone_number;
+      }
+
+      this.bookingForm.patchValue(formValues);
     }
   }
 
@@ -645,11 +686,12 @@ export class BookingFormPage implements OnInit {
       preferredDate: [today, Validators.required], // Default to today
       preferredTimeslot: ['', Validators.required],
       address: ['', Validators.required],
-      contactNumber: ['', [Validators.pattern(/^(\+63|0)[9]\d{9}$/)]],
+      contactNumber: ['', [Validators.required, Validators.pattern(/^(\+63|0)[9]\d{9}$/)]],
       contactPerson: ['', Validators.required],
       latitude: [null],
       longitude: [null],
-      specialInstructions: ['']
+      specialInstructions: [''],
+      bodyCameraRequested: [false]
     });
 
     // Initialize signals
@@ -665,6 +707,14 @@ export class BookingFormPage implements OnInit {
     // Listen to urgency changes to update currentUrgency signal
     this.bookingForm.get('urgency')?.valueChanges.subscribe(value => {
       this.currentUrgency.set(value || 'low');
+    });
+
+    // Listen to timeslot and body camera so priceBreakdown computed re-runs
+    this.bookingForm.get('preferredTimeslot')?.valueChanges.subscribe(value => {
+      this.currentTimeslot.set(value ?? '');
+    });
+    this.bookingForm.get('bodyCameraRequested')?.valueChanges.subscribe(value => {
+      this.bodyCameraRequestedSignal.set(value === true);
     });
 
     // Listen to date changes to update selectedDate signal and adjust timeslot if needed
@@ -685,6 +735,7 @@ export class BookingFormPage implements OnInit {
     // Set initial timeslot based on current availability
     const initialTimeslot = this.getFirstAvailableTimeslot(today);
     this.bookingForm.get('preferredTimeslot')?.setValue(initialTimeslot);
+    this.currentTimeslot.set(initialTimeslot ?? '');
 
     // Add custom validation for location (either coordinates or manually entered address)
     this.bookingForm.get('address')?.setValidators([
@@ -722,6 +773,7 @@ export class BookingFormPage implements OnInit {
     });
   }
 
+  /** Used only when no variant is selected; variant flow uses urgent_charge for emergency only. */
   private calculateUrgencyFee(): number {
     const urgency = this.bookingForm?.get('urgency')?.value;
     switch (urgency) {
@@ -837,12 +889,62 @@ export class BookingFormPage implements OnInit {
 
   // Submit booking (arrow function to preserve 'this' context)
   submitBooking = async () => {
-    if (!this.bookingForm.valid) return;
+    console.log('submitBooking called');
+    
+    if (!this.bookingForm.valid) {
+      console.warn('Form is not valid');
+      return;
+    }
+
+    // Check authentication - try to refresh profile if missing
+    const isAuthenticated = this.sessionService.isAuthenticated();
+    let profile = this.sessionService.profile();
+    
+    console.log('Auth check:', { 
+      isAuthenticated, 
+      hasProfile: !!profile, 
+      isLoading: this.sessionService.isLoading(),
+      profileId: profile?.id 
+    });
+    
+    if (!isAuthenticated) {
+      console.error('User not authenticated - no session');
+      this.errorMessage.set('Please log in to submit a booking.');
+      setTimeout(() => {
+        this.router.navigate(['/auth/welcome'], {
+          queryParams: { returnUrl: this.router.url }
+        });
+      }, 2000);
+      return;
+    }
+    
+    // If authenticated but profile not loaded, try to refresh it
+    if (!profile) {
+      console.warn('Profile missing but session exists - attempting to refresh profile');
+      try {
+        const session = this.sessionService.session();
+        if (session?.user?.id) {
+          // Try to manually trigger profile fetch via session service
+          // Use the session user ID directly as fallback
+          console.log('Using session user ID as fallback:', session.user.id);
+          // We'll pass the user ID to booking service to handle
+        } else {
+          throw new Error('No user ID in session');
+        }
+      } catch (error) {
+        console.error('Failed to get user ID from session:', error);
+        this.errorMessage.set('Unable to load your profile. Please refresh the page and try again.');
+        return;
+      }
+    }
+    
+    console.log('Authentication confirmed:', { profileId: profile?.id || 'using session', role: profile?.role });
 
     // Validate location coordinates - prevent (0,0) which breaks provider matching
     const lat = this.selectedLocation()?.lat;
     const lng = this.selectedLocation()?.lng;
     if (!lat || !lng || (lat === 0 && lng === 0)) {
+      console.warn('Invalid location coordinates');
       this.errorMessage.set('Please select your location on the map for accurate service delivery.');
       return;
     }
@@ -851,6 +953,7 @@ export class BookingFormPage implements OnInit {
     this.errorMessage.set(null);
 
     try {
+      console.log('Starting booking submission...');
       const formValue = this.bookingForm.value;
       const preferredDateTime = this.combineDateAndTimeslot(
         formValue.preferredDate,
@@ -876,10 +979,20 @@ export class BookingFormPage implements OnInit {
         mediaFiles: this.mediaFiles(),
         specialInstructions: formValue.specialInstructions,
         serviceVariantId: this.selectedService()?.id,
-        preSelectedProviderId: this.preSelectedProviderId() || undefined
+        preSelectedProviderId: this.preSelectedProviderId() || undefined,
+        bodyCameraRequested: formValue.bodyCameraRequested === true
       };
 
+      console.log('Calling bookingService.createBooking with data:', {
+        serviceType: bookingData.serviceType,
+        urgency: bookingData.urgency,
+        hasVariant: !!bookingData.serviceVariantId,
+        bodyCameraRequested: bookingData.bodyCameraRequested
+      });
+
       const response: BookingResponse = await this.bookingService.createBooking(bookingData);
+
+      console.log('Booking created successfully:', response.bookingId);
 
       // Store assigned provider for review display
       this.assignedProvider.set(response.assignedProvider);
@@ -891,6 +1004,11 @@ export class BookingFormPage implements OnInit {
 
     } catch (error) {
       console.error('Error submitting booking:', error);
+      console.error('Error details:', {
+        message: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
+        error: error
+      });
       this.errorMessage.set(this.handleBookingError(error));
     } finally {
       this.isLoading.set(false);
@@ -1051,5 +1169,15 @@ export class BookingFormPage implements OnInit {
 
     const startTime = timeslotStartTimes[timeslot] || '09:00';
     return `${date}T${startTime}:00`;
+  }
+
+  formatPrice(amount: number | null | undefined): string {
+    if (amount === null || amount === undefined) return '---';
+    return new Intl.NumberFormat('en-PH', {
+      style: 'currency',
+      currency: 'PHP',
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    }).format(amount);
   }
 }
