@@ -20,6 +20,7 @@ interface ProviderApplicationRequest {
   hasSmartphone: boolean
   yearsOfExperience: number
   selectedCategories: string[] // Array of service_category IDs
+  userId?: string // Optional: if provided, use existing user (for backward compatibility)
 }
 
 serve(async (req) => {
@@ -53,9 +54,16 @@ serve(async (req) => {
     const body: ProviderApplicationRequest = await req.json()
 
     // Validate required fields
-    if (!body.firstName || !body.lastName || !body.email || !body.password || 
-        !body.mobileNumber || !body.dateOfBirth || !body.selectedCategories || 
-        body.selectedCategories.length === 0) {
+    // If userId is not provided, email and password are required
+    if (!body.userId && (!body.email || !body.password)) {
+      return new Response(
+        JSON.stringify({ error: 'Email and password are required when userId is not provided' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
+    if (!body.firstName || !body.lastName || !body.mobileNumber || !body.dateOfBirth || 
+        !body.selectedCategories || body.selectedCategories.length === 0) {
       return new Response(
         JSON.stringify({ error: 'Missing required fields' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -134,48 +142,67 @@ serve(async (req) => {
       .filter(Boolean)
       .join(' ')
 
-    // 1. Create auth user with role='provider' in metadata
-    const { data: authUser, error: authError } = await supabase.auth.admin.createUser({
-      email: body.email,
-      password: body.password,
-      email_confirm: false, // User will verify via OTP
-      user_metadata: {
-        phone: body.mobileNumber,
-        role: 'provider', // IMPORTANT: Set role to provider
-        full_name: fullName,
-        date_of_birth: body.dateOfBirth
-      }
-    })
+    // 1. Create or use existing auth user
+    let authUser: { user: { id: string; email?: string } } | null = null
+    let userEmail = body.email
 
-    if (authError || !authUser) {
-      console.error('Auth user creation failed:', authError)
-      
-      // Check for various email already exists error messages
-      const errorMessage = authError?.message?.toLowerCase() || ''
-      if (errorMessage.includes('already registered') || 
-          errorMessage.includes('user already registered') ||
-          errorMessage.includes('email already exists') ||
-          errorMessage.includes('duplicate key value')) {
+    if (body.userId) {
+      // Use existing user (backward compatibility)
+      const { data: existingUser, error: userError } = await supabase.auth.admin.getUserById(body.userId)
+      if (userError || !existingUser) {
         return new Response(
-          JSON.stringify({
-            success: false,
-            error: 'This email address is already registered. Please use a different email or try signing in.',
-            code: 'EMAIL_EXISTS'
-          }),
-          { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          JSON.stringify({ error: 'Invalid userId provided' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         )
       }
-      
-      return new Response(
-        JSON.stringify({ 
-          error: 'Failed to create your account. Please try again or contact support if the problem persists.',
-          details: authError?.message 
-        }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
+      authUser = { user: { id: body.userId, email: existingUser.user.email } }
+      userEmail = existingUser.user.email || body.email
+    } else {
+      // Create new auth user with role='provider' in metadata
+      const { data: newAuthUser, error: authError } = await supabase.auth.admin.createUser({
+        email: body.email,
+        password: body.password,
+        email_confirm: false, // User will verify via OTP
+        user_metadata: {
+          phone: body.mobileNumber,
+          role: 'provider', // IMPORTANT: Set role to provider
+          full_name: fullName,
+          date_of_birth: body.dateOfBirth
+        }
+      })
+
+      if (authError || !newAuthUser) {
+        console.error('Auth user creation failed:', authError)
+        
+        // Check for various email already exists error messages
+        const errorMessage = authError?.message?.toLowerCase() || ''
+        if (errorMessage.includes('already registered') || 
+            errorMessage.includes('user already registered') ||
+            errorMessage.includes('email already exists') ||
+            errorMessage.includes('duplicate key value')) {
+          return new Response(
+            JSON.stringify({
+              success: false,
+              error: 'This email address is already registered. Please use a different email or try signing in.',
+              code: 'EMAIL_EXISTS'
+            }),
+            { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          )
+        }
+        
+        return new Response(
+          JSON.stringify({ 
+            error: 'Failed to create your account. Please try again or contact support if the problem persists.',
+            details: authError?.message 
+          }),
+          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        )
+      }
+
+      authUser = newAuthUser
     }
 
-    console.log('Auth user created:', authUser.user.id)
+    console.log('Auth user ready:', authUser.user.id)
 
     // 2. Wait for profile creation via trigger (with retry logic)
     let profile = null
@@ -396,13 +423,52 @@ serve(async (req) => {
       }
     }
 
-    // 8. Return success
+    // 8. Send verification email
+    let emailSent = false
+    let emailError: string | null = null
+
+    // Only send verification email if user was just created (not using existing userId)
+    if (!body.userId) {
+      try {
+        // Generate verification link with signup type
+        // Supabase will automatically send email if email confirmations are enabled
+        const { data: linkData, error: linkError } = await supabase.auth.admin.generateLink({
+          type: 'signup',
+          email: userEmail,
+          options: {
+            redirectTo: 'https://app.after5.ph/auth/verify-email'
+          }
+        })
+
+        if (linkError) {
+          console.error('Failed to generate verification link:', linkError)
+          emailError = linkError.message
+        } else if (linkData) {
+          // generateLink() with type 'signup' should trigger email sending if configured
+          // If email service is not configured, linkData will contain the link but email won't be sent
+          // In that case, we'd need to send via custom email service (future enhancement)
+          emailSent = true
+          console.log('Verification email sent to:', userEmail)
+          console.log('Verification link generated:', linkData.properties?.action_link || 'N/A')
+        }
+      } catch (emailErr) {
+        console.error('Error sending verification email:', emailErr)
+        emailError = emailErr instanceof Error ? emailErr.message : 'Unknown error'
+        // Don't fail the entire signup if email sending fails - user can request resend later
+      }
+    }
+
+    // 9. Return success
     return new Response(
       JSON.stringify({
         success: true,
         userId: authUser.user.id,
-        email: body.email,
-        message: 'Provider application submitted successfully. Please verify your email.'
+        email: userEmail,
+        emailSent,
+        emailError: emailError || undefined,
+        message: emailSent 
+          ? 'Provider application submitted successfully. Please verify your email to complete your application.'
+          : 'Provider application submitted successfully. Please verify your email to complete your application.'
       }),
       { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )

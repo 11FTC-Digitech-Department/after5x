@@ -342,48 +342,20 @@ export class ProviderApplicationFormPage implements OnInit {
         return;
       }
 
-      // Step 1: Create user using signUp() - automatically sends verification email (same as customer signup)
-      const fullName = [
-        this.applicationForm.value.firstName,
-        this.applicationForm.value.middleName,
-        this.applicationForm.value.lastName
-      ].filter(Boolean).join(' ');
-
-      console.log('[Provider Signup] Creating user with signUp()...');
-      const signUpResult = await this.supabaseService.signUpWithEmail(
-        email,
-        this.applicationForm.value.password,
-        {
-          phone: mobileNumber,
-          role: 'provider',
-          full_name: fullName
-        }
-      );
-
-      if (!signUpResult.success || !signUpResult.user) {
-        await this.showToast(signUpResult.error || 'Failed to create account', 'danger');
-        this.isSubmitting.set(false);
-        return;
-      }
-
-      console.log('[Provider Signup] User created:', signUpResult.user.id);
-      console.log('[Provider Signup] Verification email automatically sent by Supabase');
-
-      // Step 2: Create provider records via Edge Function (user already created)
-      console.log('[Provider Signup] Calling Edge Function with:', {
-        userId: signUpResult.user.id,
-        dateOfBirth: dateOfBirth,
-        selectedCategories: selectedCategories.length
-      });
+      // Call Edge Function to create user and provider records
+      // Edge Function will handle user creation, profile creation, provider setup, and email verification
+      console.log('[Provider Signup] Calling Edge Function to create provider application...');
 
       const response = await this.supabaseService.client.functions.invoke(
         'create-provider-application',
         {
           body: {
-            userId: signUpResult.user.id, // User already created
+            email: email,
+            password: this.applicationForm.value.password,
             firstName: this.applicationForm.value.firstName.trim(),
             middleName: this.applicationForm.value.middleName?.trim() || null,
             lastName: this.applicationForm.value.lastName.trim(),
+            mobileNumber: mobileNumber,
             dateOfBirth: dateOfBirth,
             hasSmartphone: this.applicationForm.value.hasSmartphone === 'yes',
             yearsOfExperience: parseInt(this.applicationForm.value.yearsOfExperience, 10),
@@ -519,10 +491,9 @@ export class ProviderApplicationFormPage implements OnInit {
             missingFields: edgeError.missingFields,
             fullResponse: { data, error },
             sentData: {
-              userId: signUpResult.user.id,
+              email: email,
               firstName: this.applicationForm.value.firstName,
               lastName: this.applicationForm.value.lastName,
-              email: email,
               mobileNumber: mobileNumber,
               dateOfBirth: dateOfBirth,
               selectedCategories: selectedCategories
