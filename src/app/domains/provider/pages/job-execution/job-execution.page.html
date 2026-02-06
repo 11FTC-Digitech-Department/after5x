@@ -203,47 +203,13 @@
       </ion-card>
     }
 
-    <!-- Price Breakdown Card -->
+    <!-- Price Card (total only) -->
     <ion-card class="price-card">
-      <ion-card-header>
-        <ion-card-title>
-          <ion-icon name="receipt-outline"></ion-icon>
-          Price Breakdown
-        </ion-card-title>
-      </ion-card-header>
       <ion-card-content>
-        <div class="price-row">
-          <span class="price-label">Service Fee</span>
-          <span class="price-value">{{ formatPrice(booking()?.total_labor_base || 0) }}</span>
-        </div>
-        @if (booking()?.total_transport_fees) {
-          <div class="price-row">
-            <span class="price-label">Transportation</span>
-            <span class="price-value">{{ formatPrice(booking()?.total_transport_fees || 0) }}</span>
-          </div>
-        }
-        @if (booking()?.total_materials_amount) {
-          <div class="price-row">
-            <span class="price-label">Materials</span>
-            <span class="price-value">{{ formatPrice(booking()?.total_materials_amount || 0) }}</span>
-          </div>
-        }
-        @if (booking()?.total_vat_amount) {
-          <div class="price-row">
-            <span class="price-label">VAT (12%)</span>
-            <span class="price-value">{{ formatPrice(booking()?.total_vat_amount || 0) }}</span>
-          </div>
-        }
         <div class="price-row total">
           <span class="price-label">Total</span>
           <span class="price-value">{{ formatPrice(booking()?.grand_total || 0) }}</span>
         </div>
-        @if (booking()?.provider_earnings) {
-          <div class="price-row earnings">
-            <span class="price-label">Your Earnings</span>
-            <span class="price-value">{{ formatPrice(booking()?.provider_earnings || 0) }}</span>
-          </div>
-        }
       </ion-card-content>
     </ion-card>
 
