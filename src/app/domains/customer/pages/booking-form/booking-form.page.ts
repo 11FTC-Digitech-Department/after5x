@@ -157,6 +157,7 @@ export class BookingFormPage implements OnInit {
 
   // Form
   bookingForm!: FormGroup;
+  private formValid = signal(false);
 
   // Media files
   mediaFiles = signal<MediaFile[]>([]);
@@ -311,7 +312,7 @@ export class BookingFormPage implements OnInit {
 
   /** True when form is valid and a valid location is selected (required for step 2). */
   canProceedToReview = computed(() => {
-    if (!this.bookingForm.valid) return false;
+    if (!this.formValid()) return false;
     const loc = this.selectedLocation();
     if (!loc?.lat || !loc?.lng) return false;
     if (loc.lat === 0 && loc.lng === 0) return false;
@@ -701,6 +702,11 @@ export class BookingFormPage implements OnInit {
       longitude: [null],
       specialInstructions: [''],
       bodyCameraRequested: [false]
+    });
+
+    // Track form validity as a signal so canProceedToReview reacts to form changes
+    this.bookingForm.statusChanges.subscribe(() => {
+      this.formValid.set(this.bookingForm.valid);
     });
 
     // Initialize signals
