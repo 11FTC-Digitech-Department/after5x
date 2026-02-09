@@ -49,7 +49,7 @@
           }
 
           <!-- Social Login Buttons (Login tab only) -->
-          @if (selectedSegment() === 'login') {
+          @if (selectedSegment() === 'login' && !isExpertsApp()) {
           <div class="social-login-container">
             <ion-button
               expand="block"
@@ -89,6 +89,7 @@
           @if (selectedSegment() === 'login') {
           <app-login-form
             [isLoading]="isLoginLoading()"
+            [isExpertsApp]="isExpertsApp()"
             (login)="onLogin($event)"
             (forgotPassword)="navigateToForgotPassword()"
           ></app-login-form>

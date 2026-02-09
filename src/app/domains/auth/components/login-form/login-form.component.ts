@@ -40,6 +40,7 @@ export class LoginFormComponent {
   forgotPassword = output<void>();
 
   isLoading = input<boolean>(false);
+  isExpertsApp = input<boolean>(false);
 
   loginForm: LoginFormData = {
     email: '',
