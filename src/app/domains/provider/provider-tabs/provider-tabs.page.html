@@ -13,6 +13,14 @@
       <ion-label>Schedule</ion-label>
     </ion-tab-button>
 
+    <ion-tab-button tab="messages" href="/p/messages">
+      <ion-icon name="chatbubbles"></ion-icon>
+      <ion-label>Messages</ion-label>
+      @if (unreadChatCount() > 0) {
+        <ion-badge color="danger">{{ unreadChatCount() > 9 ? '9+' : unreadChatCount() }}</ion-badge>
+      }
+    </ion-tab-button>
+
     <ion-tab-button tab="wallet" href="/p/wallet">
       <ion-icon name="wallet"></ion-icon>
       <ion-label>Wallet</ion-label>

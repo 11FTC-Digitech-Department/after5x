@@ -77,6 +77,8 @@ const notificationTypeToPreference: Record<string, string> = {
   // Common
   'promotions': 'promotions',
   'news_updates': 'news_updates',
+  // Chat
+  'chat_message': 'chat_messages',
 }
 
 // FCM credentials cache for each app type

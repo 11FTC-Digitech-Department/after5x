@@ -16,12 +16,12 @@ import {
   calendarOutline,
   gridOutline,
   chatbubblesOutline,
-  personOutline
+  personOutline,
+  notificationsOutline
 } from 'ionicons/icons';
 
 import { SessionService } from '@core/auth/session';
 import { NotificationService } from '@core/services/notification.service';
-import { RealTimeService } from '@core/services/real-time.service';
 
 @Component({
   selector: 'app-customer-tabs',
@@ -42,32 +42,51 @@ import { RealTimeService } from '@core/services/real-time.service';
 export class CustomerTabsPage implements OnInit, OnDestroy {
   private sessionService = inject(SessionService);
   private notificationService = inject(NotificationService);
-  private realTimeService = inject(RealTimeService);
   private toastController = inject(ToastController);
 
-  unreadNotificationCount = signal(0);
+  /** Unread count from NotificationService (single source of truth). */
+  unreadCount = this.notificationService.unreadCount;
 
   private unsubscribeRealTime: (() => void) | null = null;
   private userId: string | null = null;
 
   constructor() {
+    // #region agent log
+    fetch('http://127.0.0.1:7243/ingest/96ca3573-048f-467b-aaa5-45d0f071a967',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'customer-tabs.page.ts:constructor',message:'CustomerTabsPage constructed',data:{},timestamp:Date.now(),hypothesisId:'E'})}).catch(()=>{});
+    // #endregion
     addIcons({
       homeOutline,
       calendarOutline,
       gridOutline,
       chatbubblesOutline,
-      personOutline
+      personOutline,
+      notificationsOutline
     });
 
-    // Reactive effect to load notifications when profile becomes available
+    // Reactive effect to load and subscribe when profile becomes available
     effect(() => {
       const profile = this.sessionService.profile();
       const isLoading = this.sessionService.isLoading();
-
+      // #region agent log
+      fetch('http://127.0.0.1:7243/ingest/96ca3573-048f-467b-aaa5-45d0f071a967',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'customer-tabs.page.ts:effect',message:'effect run',data:{hasProfile:!!profile,profileId:profile?.id,isLoading,userId:this.userId},timestamp:Date.now(),hypothesisId:'B'})}).catch(()=>{});
+      // #endregion
       if (profile?.id && !isLoading && !this.userId) {
         this.userId = profile.id;
-        this.loadUnreadCount();
-        this.setupRealTimeSubscription();
+        try {
+          // #region agent log
+          fetch('http://127.0.0.1:7243/ingest/96ca3573-048f-467b-aaa5-45d0f071a967',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'customer-tabs.page.ts:beforeRefresh',message:'before refreshUnreadCount',data:{},timestamp:Date.now(),hypothesisId:'B'})}).catch(()=>{});
+          // #endregion
+          this.notificationService.refreshUnreadCount();
+          // #region agent log
+          fetch('http://127.0.0.1:7243/ingest/96ca3573-048f-467b-aaa5-45d0f071a967',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'customer-tabs.page.ts:afterRefresh',message:'after refreshUnreadCount',data:{},timestamp:Date.now(),hypothesisId:'B'})}).catch(()=>{});
+          // #endregion
+          this.setupRealTimeSubscription();
+        } catch (e) {
+          // #region agent log
+          fetch('http://127.0.0.1:7243/ingest/96ca3573-048f-467b-aaa5-45d0f071a967',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'customer-tabs.page.ts:effectCatch',message:'effect threw',data:{err:String(e)},timestamp:Date.now(),hypothesisId:'B'})}).catch(()=>{});
+          // #endregion
+          throw e;
+        }
       }
     });
   }
@@ -76,7 +95,7 @@ export class CustomerTabsPage implements OnInit, OnDestroy {
     const profile = this.sessionService.profile();
     if (profile?.id && !this.userId) {
       this.userId = profile.id;
-      await this.loadUnreadCount();
+      await this.notificationService.refreshUnreadCount();
       this.setupRealTimeSubscription();
     }
   }
@@ -87,26 +106,12 @@ export class CustomerTabsPage implements OnInit, OnDestroy {
     }
   }
 
-  async loadUnreadCount() {
-    try {
-      const notifications = await this.notificationService.getUserNotifications(50);
-      const unreadCount = notifications.filter((n: any) => !n.read).length;
-      this.unreadNotificationCount.set(unreadCount);
-    } catch (error) {
-      console.error('Failed to load notification count:', error);
-    }
-  }
-
   private setupRealTimeSubscription() {
     if (!this.userId) return;
 
-    this.unsubscribeRealTime = this.realTimeService.subscribeToNotifications(
+    this.unsubscribeRealTime = this.notificationService.subscribeToUnreadUpdates(
       this.userId,
-      async (notification: any) => {
-        // Increment badge count
-        this.unreadNotificationCount.update(count => count + 1);
-
-        // Show toast with deduplication check
+      async (notification) => {
         if (notification.id && this.notificationService.shouldShowToast(notification.id)) {
           await this.showToast(notification.title || 'New notification', notification.type);
         }

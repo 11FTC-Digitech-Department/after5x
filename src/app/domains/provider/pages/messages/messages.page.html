@@ -1,0 +1,54 @@
+<ion-header [translucent]="true">
+  <ion-toolbar>
+    <ion-title>Messages</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content [fullscreen]="true">
+  <ion-header collapse="condense">
+    <ion-toolbar>
+      <ion-title size="large">Messages</ion-title>
+    </ion-toolbar>
+  </ion-header>
+
+  <!-- Pull to refresh -->
+  <ion-refresher slot="fixed" (ionRefresh)="handleRefresh($event)">
+    <ion-refresher-content></ion-refresher-content>
+  </ion-refresher>
+
+  <!-- Loading state -->
+  @if (loading()) {
+    <div class="loading-container">
+      <ion-spinner name="crescent"></ion-spinner>
+      <ion-text color="medium">Loading conversations...</ion-text>
+    </div>
+  }
+
+  <!-- Error state -->
+  @if (error()) {
+    <div class="error-container">
+      <ion-text color="danger">{{ error() }}</ion-text>
+    </div>
+  }
+
+  <!-- Empty state -->
+  @if (isEmpty) {
+    <div class="empty-container">
+      <div class="empty-icon">💬</div>
+      <h3>No conversations yet</h3>
+      <p>When you have an active job, you can chat with your customer here.</p>
+    </div>
+  }
+
+  <!-- Conversation list -->
+  @if (!loading() && conversations().length > 0) {
+    <ion-list lines="full">
+      @for (conversation of conversations(); track conversation.booking_id) {
+        <app-conversation-item
+          [conversation]="conversation"
+          (conversationClick)="onConversationClick($event)"
+        ></app-conversation-item>
+      }
+    </ion-list>
+  }
+</ion-content>

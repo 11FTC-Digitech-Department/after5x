@@ -36,7 +36,8 @@ import {
   refreshOutline,
   openOutline,
   shieldCheckmarkOutline,
-  arrowBack
+  arrowBack,
+  arrowBackOutline
 } from 'ionicons/icons';
 import { Browser, BrowserOpenOptions } from '@capacitor/browser';
 import { App } from '@capacitor/app';
@@ -119,6 +120,9 @@ export class PaymentPage implements OnInit, OnDestroy {
   private toastController = inject(ToastController);
   private alertController = inject(AlertController);
 
+  /** Booking ID from route - safe to use for back href and retry (never undefined) */
+  bookingIdParam: string | null = null;
+
   // State
   booking = signal<CustomerBooking | null>(null);
   paymentStatus = signal<PaymentStatus | null>(null);
@@ -182,12 +186,28 @@ export class PaymentPage implements OnInit, OnDestroy {
       refreshOutline,
       openOutline,
       shieldCheckmarkOutline,
-      arrowBack
+      arrowBack,
+      arrowBackOutline
     });
   }
 
+  navigateToBookings(): void {
+    this.router.navigate(['/c/bookings']);
+  }
+
+  /** Safe default back URL (never uses booking() so no /undefined) */
+  get defaultBackHref(): string {
+    return this.bookingIdParam ? `/c/bookings/${this.bookingIdParam}` : '/c/bookings';
+  }
+
+  /** True when error is due to missing/invalid booking ID (no retry possible) */
+  get isInvalidBookingIdError(): boolean {
+    return this.error() === 'Invalid booking ID' || !this.bookingIdParam;
+  }
+
   async ngOnInit() {
-    const bookingId = this.route.snapshot.paramMap.get('bookingId');
+    this.bookingIdParam = this.route.snapshot.paramMap.get('bookingId');
+    const bookingId = this.bookingIdParam;
 
     // Check for return status from Xendit deeplink
     const queryStatus = this.route.snapshot.queryParamMap.get('status');
@@ -402,7 +422,7 @@ export class PaymentPage implements OnInit, OnDestroy {
   }
 
   async handleRefresh(event: RefresherCustomEvent) {
-    const bookingId = this.booking()?.id;
+    const bookingId = this.bookingIdParam ?? this.booking()?.id;
     if (bookingId) {
       await this.loadData(bookingId);
     }

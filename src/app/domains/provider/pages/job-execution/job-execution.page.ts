@@ -46,13 +46,15 @@ import {
   stopCircle,
   checkmarkDone,
   cardOutline,
-  walletOutline
+  walletOutline,
+  chatbubbleOutline
 } from 'ionicons/icons';
 import { Geolocation, Position, WatchPositionCallback } from '@capacitor/geolocation';
 
 import { SessionService } from '@core/auth/session';
 import { ProviderBookingService, ProviderBooking } from '@core/services/provider-booking.service';
 import { RealTimeService } from '@core/services/real-time.service';
+import { ChatService } from '@core/services/chat.service';
 import { BookingStatus, BookingTimelineRow } from '@core/models/booking.model';
 
 // Status display configuration
@@ -119,6 +121,15 @@ const STATUS_CONFIG: Record<string, { label: string; color: string; icon: string
   }
 };
 
+// Statuses that allow chat
+const CHAT_ALLOWED_STATUSES = [
+  BookingStatus.CONFIRMED,
+  BookingStatus.ON_THE_WAY,
+  BookingStatus.ARRIVED,
+  BookingStatus.IN_PROGRESS,
+  BookingStatus.PAYMENT_PENDING
+];
+
 // Action configuration based on status
 interface ActionConfig {
   label: string;
@@ -163,6 +174,7 @@ export class JobExecutionPage implements OnInit, OnDestroy {
   private sessionService = inject(SessionService);
   private providerBookingService = inject(ProviderBookingService);
   private realTimeService = inject(RealTimeService);
+  private chatService = inject(ChatService);
   private toastController = inject(ToastController);
   private alertController = inject(AlertController);
 
@@ -171,6 +183,7 @@ export class JobExecutionPage implements OnInit, OnDestroy {
   isLoading = signal(true);
   isExecutingAction = signal(false);
   isTrackingLocation = signal(false);
+  unreadChatCount = signal(0);
 
   // GPS tracking
   private locationWatchId: string | null = null;
@@ -261,6 +274,12 @@ export class JobExecutionPage implements OnInit, OnDestroy {
     return status === BookingStatus.PAID || status === BookingStatus.COMPLETED;
   });
 
+  // Check if chat is available
+  canChat = computed(() => {
+    const status = this.booking()?.status as BookingStatus;
+    return CHAT_ALLOWED_STATUSES.includes(status) && !!this.booking()?.customer_id;
+  });
+
   constructor() {
     addIcons({
       calendarOutline,
@@ -282,7 +301,8 @@ export class JobExecutionPage implements OnInit, OnDestroy {
       stopCircle,
       checkmarkDone,
       cardOutline,
-      walletOutline
+      walletOutline,
+      chatbubbleOutline
     });
   }
 
@@ -291,7 +311,13 @@ export class JobExecutionPage implements OnInit, OnDestroy {
     if (bookingId) {
       await this.loadBooking(bookingId);
       this.setupRealTimeSubscription(bookingId);
+      this.loadUnreadChatCount();
     }
+  }
+
+  ionViewWillEnter() {
+    // Refresh unread count when returning to page
+    this.loadUnreadChatCount();
   }
 
   ngOnDestroy() {
@@ -592,9 +618,28 @@ export class JobExecutionPage implements OnInit, OnDestroy {
 
   // Contact methods
   callCustomer() {
-    const phone = (this.booking() as any)?.customers?.profiles?.phone_number;
+    const phone = this.getCustomerPhone();
     if (phone) {
       window.location.href = `tel:${phone}`;
+    }
+  }
+
+  goToChat() {
+    const bookingId = this.booking()?.id;
+    if (bookingId) {
+      this.router.navigate(['/p/chat', bookingId]);
+    }
+  }
+
+  async loadUnreadChatCount() {
+    const bookingId = this.booking()?.id;
+    if (!bookingId) return;
+
+    try {
+      const count = await this.chatService.getUnreadCount(bookingId);
+      this.unreadChatCount.set(count);
+    } catch (error) {
+      console.error('[JobExecution] Failed to load unread chat count:', error);
     }
   }
 
@@ -648,7 +693,9 @@ export class JobExecutionPage implements OnInit, OnDestroy {
   }
 
   getCustomerName(): string {
-    return (this.booking() as any)?.customers?.profiles?.full_name || 'Customer';
+    const profile = (this.booking() as any)?.customers?.profiles;
+    const snapshot = this.booking()?.address_snapshot;
+    return profile?.full_name || snapshot?.contact_person || 'Customer';
   }
 
   getCustomerAvatar(): string | null {
@@ -656,7 +703,8 @@ export class JobExecutionPage implements OnInit, OnDestroy {
   }
 
   getCustomerPhone(): string | null {
-    return (this.booking() as any)?.customers?.profiles?.phone_number || null;
+    const profile = (this.booking() as any)?.customers?.profiles;
+    return profile?.phone_number || this.booking()?.address_snapshot?.contact_phone || null;
   }
 
   getShortBookingId(): string {

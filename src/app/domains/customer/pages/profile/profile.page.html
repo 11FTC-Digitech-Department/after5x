@@ -60,7 +60,12 @@
   <!-- Version Info -->
   <div class="version-info">
     <ion-text color="medium">
-      <small>After5 v1.0.0</small>
+      <small>
+        After5 v{{ appVersion() || '0.0.1' }}
+        @if (buildNumber()) {
+          <span>(build {{ buildNumber() }})</span>
+        }
+      </small>
     </ion-text>
   </div>
 </ion-content>

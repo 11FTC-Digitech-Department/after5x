@@ -117,12 +117,23 @@
               }
             </div>
           </div>
-          @if (getProviderPhone()) {
-            <ion-button expand="block" fill="outline" (click)="callProvider()" class="contact-btn">
-              <ion-icon name="call-outline" slot="start"></ion-icon>
-              Contact Provider
-            </ion-button>
-          }
+          <div class="provider-actions">
+            @if (canChat()) {
+              <ion-button expand="block" fill="solid" color="primary" (click)="goToChat()" class="chat-btn">
+                <ion-icon name="chatbubble-outline" slot="start"></ion-icon>
+                Chat
+                @if (unreadChatCount() > 0) {
+                  <ion-badge color="danger" slot="end">{{ unreadChatCount() }}</ion-badge>
+                }
+              </ion-button>
+            }
+            @if (getProviderPhone()) {
+              <ion-button expand="block" fill="outline" (click)="callProvider()" class="contact-btn">
+                <ion-icon name="call-outline" slot="start"></ion-icon>
+                Call
+              </ion-button>
+            }
+          </div>
         </ion-card-content>
       </ion-card>
     }
@@ -217,6 +228,25 @@
     @if (canCancel()) {
       <div class="footer-spacer"></div>
     }
+  }
+
+  <!-- Error / not found state -->
+  @else {
+    <div class="error-container">
+      <ion-icon name="alert-circle-outline" color="danger"></ion-icon>
+      <h3>Couldn't load this booking</h3>
+      <p>Something went wrong. You can go back or try again.</p>
+      <div class="error-actions">
+        <ion-button expand="block" (click)="navigateToBookings()">
+          <ion-icon name="arrow-back-outline" slot="start"></ion-icon>
+          Back to bookings
+        </ion-button>
+        <ion-button expand="block" fill="outline" (click)="retryLoadBooking()">
+          <ion-icon name="refresh-outline" slot="start"></ion-icon>
+          Try again
+        </ion-button>
+      </div>
+    </div>
   }
 </ion-content>
 

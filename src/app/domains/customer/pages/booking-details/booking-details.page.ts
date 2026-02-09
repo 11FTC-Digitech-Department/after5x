@@ -40,18 +40,22 @@ import {
   car,
   hammer,
   alertCircle,
+  alertCircleOutline,
   imageOutline,
   chatbubbleOutline,
   arrowBack,
+  arrowBackOutline,
   chevronForward,
   cardOutline,
-  walletOutline
+  walletOutline,
+  refreshOutline
 } from 'ionicons/icons';
 
 import { SessionService } from '@core/auth/session';
 import { BookingService } from '@core/services/booking.service';
 import { BookingStatusService } from '@core/services/booking-status.service';
 import { RealtimeManagerService, ConnectionMode } from '@core/services/realtime-manager.service';
+import { ChatService } from '@core/services/chat.service';
 import { CustomerBooking, BookingStatus, BookingTimelineRow } from '@core/models/booking.model';
 
 // Status display configuration
@@ -138,6 +142,15 @@ const CANCELLABLE_STATUSES = [
   BookingStatus.ON_THE_WAY
 ];
 
+// Statuses that allow chat
+const CHAT_ALLOWED_STATUSES = [
+  BookingStatus.CONFIRMED,
+  BookingStatus.ON_THE_WAY,
+  BookingStatus.ARRIVED,
+  BookingStatus.IN_PROGRESS,
+  BookingStatus.PAYMENT_PENDING
+];
+
 @Component({
   selector: 'app-booking-details',
   templateUrl: './booking-details.page.html',
@@ -173,6 +186,7 @@ export class BookingDetailsPage implements OnInit, OnDestroy {
   private bookingService = inject(BookingService);
   private bookingStatusService = inject(BookingStatusService);
   private realtimeManager = inject(RealtimeManagerService);
+  private chatService = inject(ChatService);
   private toastController = inject(ToastController);
   private alertController = inject(AlertController);
 
@@ -180,6 +194,7 @@ export class BookingDetailsPage implements OnInit, OnDestroy {
   booking = signal<CustomerBooking | null>(null);
   isLoading = signal(true);
   isCancelling = signal(false);
+  unreadChatCount = signal(0);
 
   // Real-time connection state (for UI feedback)
   connectionMode = this.realtimeManager.mode;
@@ -197,6 +212,11 @@ export class BookingDetailsPage implements OnInit, OnDestroy {
   canCancel = computed(() => {
     const status = this.booking()?.status as BookingStatus;
     return CANCELLABLE_STATUSES.includes(status);
+  });
+
+  canChat = computed(() => {
+    const status = this.booking()?.status as BookingStatus;
+    return CHAT_ALLOWED_STATUSES.includes(status) && !!this.booking()?.provider_id;
   });
 
   timeline = computed(() => {
@@ -227,13 +247,27 @@ export class BookingDetailsPage implements OnInit, OnDestroy {
       car,
       hammer,
       alertCircle,
+      alertCircleOutline,
       imageOutline,
       chatbubbleOutline,
       arrowBack,
+      arrowBackOutline,
       chevronForward,
       cardOutline,
-      walletOutline
+      walletOutline,
+      refreshOutline
     });
+  }
+
+  navigateToBookings(): void {
+    this.router.navigate(['/c/bookings']);
+  }
+
+  retryLoadBooking(): void {
+    const bookingId = this.route.snapshot.paramMap.get('bookingId');
+    if (bookingId) {
+      this.loadBooking(bookingId);
+    }
   }
 
   async ngOnInit() {
@@ -241,6 +275,7 @@ export class BookingDetailsPage implements OnInit, OnDestroy {
     if (bookingId) {
       await this.loadBooking(bookingId);
       this.setupRealTimeSubscription(bookingId);
+      this.loadUnreadChatCount();
     }
   }
 
@@ -250,9 +285,10 @@ export class BookingDetailsPage implements OnInit, OnDestroy {
    */
   ionViewWillEnter() {
     const bookingId = this.route.snapshot.paramMap.get('bookingId');
-    // Refresh booking data if already loaded (handles navigation back from payment)
+    // Refresh booking data if already loaded (handles navigation back from payment/chat)
     if (bookingId && this.booking()) {
       this.refreshBookingSilently(bookingId);
+      this.loadUnreadChatCount();
     }
   }
 
@@ -311,7 +347,7 @@ export class BookingDetailsPage implements OnInit, OnDestroy {
             }
           }
         },
-        onStatusChange: (newStatus, booking) => {
+        onStatusChange: (newStatus) => {
           // Show status-specific toast notification
           this.showStatusToast(newStatus);
         },
@@ -421,6 +457,25 @@ export class BookingDetailsPage implements OnInit, OnDestroy {
     const bookingId = this.booking()?.id;
     if (bookingId) {
       this.router.navigate(['/c/payment', bookingId]);
+    }
+  }
+
+  goToChat() {
+    const bookingId = this.booking()?.id;
+    if (bookingId) {
+      this.router.navigate(['/c/chat', bookingId]);
+    }
+  }
+
+  async loadUnreadChatCount() {
+    const bookingId = this.booking()?.id;
+    if (!bookingId) return;
+
+    try {
+      const count = await this.chatService.getUnreadCount(bookingId);
+      this.unreadChatCount.set(count);
+    } catch (error) {
+      console.error('[BookingDetails] Failed to load unread chat count:', error);
     }
   }
 

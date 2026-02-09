@@ -25,12 +25,19 @@ function checkRoleAndProceed(
 }
 
 export const authGuard: CanActivateFn = async (route, state) => {
+  // #region agent log
+  fetch('http://127.0.0.1:7243/ingest/96ca3573-048f-467b-aaa5-45d0f071a967',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'auth-guard.ts:entry',message:'authGuard entered',data:{path:state.url},timestamp:Date.now(),hypothesisId:'A'})}).catch(()=>{});
+  // #endregion
   const sessionService = inject(SessionService);
   const router = inject(Router);
 
   // Quick exit if already fully authenticated
   if (sessionService.isFullyAuthenticated()) {
-    return checkRoleAndProceed(sessionService, router, route);
+    // #region agent log
+    const result = checkRoleAndProceed(sessionService, router, route);
+    fetch('http://127.0.0.1:7243/ingest/96ca3573-048f-467b-aaa5-45d0f071a967',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'auth-guard.ts:fullAuth',message:'checkRoleAndProceed result',data:{result:result===true?'true':String(result)},timestamp:Date.now(),hypothesisId:'A'})}).catch(()=>{});
+    // #endregion
+    return result;
   }
 
   const maxWaitMs = 5000;  // Reduced from 8000ms
@@ -56,6 +63,9 @@ export const authGuard: CanActivateFn = async (route, state) => {
   // Fallback: allow session-only auth if profile load failed
   // This prevents blocking the user if only the profile fetch timed out
   if (sessionService.isAuthenticated()) {
+    // #region agent log
+    fetch('http://127.0.0.1:7243/ingest/96ca3573-048f-467b-aaa5-45d0f071a967',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'auth-guard.ts:sessionOnly',message:'session-only auth',data:{userRole:sessionService.userRole()},timestamp:Date.now(),hypothesisId:'A'})}).catch(()=>{});
+    // #endregion
     console.warn('authGuard: Proceeding with session-only auth (profile not loaded)');
     return checkRoleAndProceed(sessionService, router, route);
   }

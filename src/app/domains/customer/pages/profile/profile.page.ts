@@ -24,6 +24,7 @@ import { SessionService } from '../../../../core/auth/session';
 import { ProfileService, ExtendedProfile } from '../../../../core/services/profile.service';
 import { ProfileCardComponent } from '../../../../shared/components/profile-card/profile-card.component';
 import { CameraSource } from '@capacitor/camera';
+import { App } from '@capacitor/app';
 
 interface MenuItem {
   icon: string;
@@ -76,6 +77,10 @@ export class ProfilePage implements OnInit {
   isUploadingAvatar = signal(false);
   profile = signal<ExtendedProfile | null>(null);
 
+  // App info signals (from Capacitor App.getInfo)
+  appVersion = signal<string | null>(null);
+  buildNumber = signal<string | null>(null);
+
   // Menu sections for customer
   menuSections: MenuSection[] = [
     {
@@ -120,7 +125,21 @@ export class ProfilePage implements OnInit {
   }
 
   ngOnInit() {
-    // Initial load handled by effect
+    // Initial profile load handled by effect
+    this.loadAppInfo();
+  }
+
+  private async loadAppInfo(): Promise<void> {
+    try {
+      const info = await App.getInfo();
+      this.appVersion.set(info.version ?? null);
+      this.buildNumber.set(info.build ?? null);
+    } catch (error) {
+      console.warn('ProfilePage: Could not get app info:', error);
+      // Fallback values if Capacitor App info is unavailable
+      this.appVersion.set('0.0.1');
+      this.buildNumber.set('1');
+    }
   }
 
   async loadProfileData() {

@@ -1,0 +1,102 @@
+.chat-input-container {
+  background: var(--ion-background-color);
+  border-top: 1px solid var(--ion-color-light-shade);
+  padding: 8px 8px 8px;
+  padding-bottom: calc(8px + var(--ion-safe-area-bottom, 0px));
+}
+
+.image-preview {
+  position: relative;
+  display: inline-block;
+  margin-bottom: 8px;
+  margin-left: 8px;
+
+  img {
+    max-width: 120px;
+    max-height: 120px;
+    border-radius: 12px;
+    object-fit: cover;
+  }
+
+  .remove-btn {
+    position: absolute;
+    top: -8px;
+    right: -8px;
+    --padding-start: 4px;
+    --padding-end: 4px;
+    --background: var(--ion-color-danger);
+    --color: white;
+    --border-radius: 50%;
+    min-height: 24px;
+    width: 24px;
+    height: 24px;
+
+    ion-icon {
+      font-size: 14px;
+    }
+  }
+}
+
+.input-row {
+  display: flex;
+  align-items: flex-end;
+  gap: 4px;
+}
+
+.media-buttons {
+  display: flex;
+  flex-shrink: 0;
+
+  ion-button {
+    --padding-start: 8px;
+    --padding-end: 8px;
+    --color: var(--ion-color-medium);
+    margin: 0;
+
+    &:hover {
+      --color: var(--ion-color-primary);
+    }
+  }
+}
+
+.text-input-wrapper {
+  flex: 1;
+  background: var(--ion-color-light);
+  border-radius: 20px;
+  padding: 4px 16px;
+  min-height: 40px;
+  display: flex;
+  align-items: center;
+}
+
+.message-input {
+  --padding-start: 0;
+  --padding-end: 0;
+  --padding-top: 8px;
+  --padding-bottom: 8px;
+  --background: transparent;
+  font-size: 15px;
+  max-height: 120px;
+
+  &::part(native) {
+    padding: 0;
+  }
+}
+
+.send-btn {
+  --padding-start: 12px;
+  --padding-end: 12px;
+  --border-radius: 50%;
+  height: 40px;
+  width: 40px;
+  margin: 0;
+
+  ion-icon {
+    font-size: 20px;
+  }
+
+  ion-spinner {
+    width: 20px;
+    height: 20px;
+  }
+}

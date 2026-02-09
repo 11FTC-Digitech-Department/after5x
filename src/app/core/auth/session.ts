@@ -55,6 +55,9 @@ export class SessionService {
   }
 
   private async initSession() {
+    // #region agent log
+    fetch('http://127.0.0.1:7243/ingest/96ca3573-048f-467b-aaa5-45d0f071a967',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'session.ts:initSession:start',message:'initSession started',data:{},timestamp:Date.now(),hypothesisId:'A'})}).catch(()=>{});
+    // #endregion
     this._loading.set(true);
 
     try {
@@ -84,6 +87,9 @@ export class SessionService {
       // Only set loading false AFTER profile is resolved (or no session)
       this._loading.set(false);
       this._initialized.set(true);
+      // #region agent log
+      fetch('http://127.0.0.1:7243/ingest/96ca3573-048f-467b-aaa5-45d0f071a967',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'session.ts:initSession:end',message:'initSession ended',data:{hasSession:!!this._session(),hasProfile:!!this._profile()},timestamp:Date.now(),hypothesisId:'A'})}).catch(()=>{});
+      // #endregion
     }
 
     // Setup listener AFTER initialization is complete

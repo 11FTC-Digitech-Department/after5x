@@ -1,6 +1,7 @@
-import { Injectable, inject } from '@angular/core';
+import { Injectable, inject, signal } from '@angular/core';
 import { SupabaseService } from '../supabase/supabase';
 import { SessionService } from '../auth/session';
+import { RealTimeService } from './real-time.service';
 import { NotificationChannel, NotificationType, NotificationPayload } from '../models/booking.model';
 
 @Injectable({
@@ -9,6 +10,11 @@ import { NotificationChannel, NotificationType, NotificationPayload } from '../m
 export class NotificationService {
   private supabaseService = inject(SupabaseService);
   private sessionService = inject(SessionService);
+  private realTimeService = inject(RealTimeService);
+
+  /** Single source of truth for unread notification count (used by tabs and home header). */
+  private _unreadCount = signal(0);
+  readonly unreadCount = this._unreadCount.asReadonly();
 
   // Toast deduplication - track recent toasts to prevent duplicates
   private recentToasts = new Map<string, number>();
@@ -409,5 +415,49 @@ export class NotificationService {
     }
 
     return data || [];
+  }
+
+  /**
+   * Refresh unread count from API. Call on init and when notifications list is viewed.
+   */
+  async refreshUnreadCount(): Promise<void> {
+    // #region agent log
+    fetch('http://127.0.0.1:7243/ingest/96ca3573-048f-467b-aaa5-45d0f071a967',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'notification.service.ts:refreshUnreadCount:entry',message:'refreshUnreadCount entered',data:{},timestamp:Date.now(),hypothesisId:'B'})}).catch(()=>{});
+    // #endregion
+    try {
+      const notifications = await this.getUserNotifications(50);
+      const count = notifications.filter((n: { read?: boolean }) => !n.read).length;
+      this._unreadCount.set(count);
+      // #region agent log
+      fetch('http://127.0.0.1:7243/ingest/96ca3573-048f-467b-aaa5-45d0f071a967',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'notification.service.ts:refreshUnreadCount:done',message:'refreshUnreadCount done',data:{count},timestamp:Date.now(),hypothesisId:'B'})}).catch(()=>{});
+      // #endregion
+    } catch (e) {
+      // #region agent log
+      fetch('http://127.0.0.1:7243/ingest/96ca3573-048f-467b-aaa5-45d0f071a967',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'notification.service.ts:refreshUnreadCount:err',message:'refreshUnreadCount error',data:{err:String(e)},timestamp:Date.now(),hypothesisId:'B'})}).catch(()=>{});
+      // #endregion
+      throw e;
+    }
+  }
+
+  /**
+   * Subscribe to real-time notification inserts and refresh unread count.
+   * Optional callback is called for each new notification (e.g. to show toast).
+   * Returns unsubscribe function.
+   */
+  subscribeToUnreadUpdates(userId: string, onNotification?: (notification: { id?: string; title?: string; type?: string }) => void): () => void {
+    return this.realTimeService.subscribeToNotifications(userId, (notification) => {
+      // #region agent log
+      fetch('http://127.0.0.1:7243/ingest/96ca3573-048f-467b-aaa5-45d0f071a967',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'notification.service.ts:realtimeCallback',message:'realtime notification callback',data:{id:notification?.id},timestamp:Date.now(),hypothesisId:'C'})}).catch(()=>{});
+      // #endregion
+      this.refreshUnreadCount();
+      try {
+        onNotification?.(notification);
+      } catch (e) {
+        // #region agent log
+        fetch('http://127.0.0.1:7243/ingest/96ca3573-048f-467b-aaa5-45d0f071a967',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'notification.service.ts:realtimeCallbackCatch',message:'onNotification threw',data:{err:String(e)},timestamp:Date.now(),hypothesisId:'C'})}).catch(()=>{});
+        // #endregion
+        throw e;
+      }
+    });
   }
 }
