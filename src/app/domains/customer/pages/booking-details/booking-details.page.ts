@@ -528,6 +528,11 @@ export class BookingDetailsPage implements OnInit, OnDestroy {
     return this.booking()?.providers?.profiles?.phone_number || null;
   }
 
+  hasBodyCamera(): boolean {
+    const fee = this.booking()?.body_camera_fee;
+    return fee !== null && fee !== undefined && fee > 0;
+  }
+
   getShortBookingId(): string {
     const id = this.booking()?.id;
     return id ? `#${id.slice(-6).toUpperCase()}` : '';

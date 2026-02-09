@@ -677,6 +677,11 @@ export class JobExecutionPage implements OnInit, OnDestroy {
     return 'construct-outline';
   }
 
+  hasBodyCamera(): boolean {
+    const fee = this.booking()?.body_camera_fee;
+    return fee !== null && fee !== undefined && fee > 0;
+  }
+
   getDescription(): string {
     const booking = this.booking();
     return booking?.address_snapshot?.description || 'No description provided';

@@ -212,7 +212,7 @@ export class SignupSuccessModalComponent implements OnInit, OnDestroy {
   getMessage(): string {
     return this.type() === 'customer'
       ? 'Please verify your email to start using After5.'
-      : 'Thanks for applying. We\'re reviewing your application and will notify you once approved.';
+      : 'Thanks for applying! Please verify your email to complete your application. We\'re reviewing your application and will notify you once approved.';
   }
 
   onDismiss() {

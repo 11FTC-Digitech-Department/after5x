@@ -538,6 +538,13 @@
               </div>
 
               <div class="summary-item">
+                <ion-text class="summary-label">Body Camera:</ion-text>
+                <ion-badge [color]="bookingForm.get('bodyCameraRequested')?.value ? 'success' : 'medium'">
+                  {{ bookingForm.get('bodyCameraRequested')?.value ? 'Enabled' : 'Disabled' }}
+                </ion-badge>
+              </div>
+
+              <div class="summary-item">
                 <ion-text class="summary-label">Location:</ion-text>
                 <ion-text class="summary-value">{{ bookingForm.get('address')?.value }}</ion-text>
               </div>

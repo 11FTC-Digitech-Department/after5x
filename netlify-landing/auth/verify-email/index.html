@@ -134,6 +134,16 @@
       0% { transform: rotate(0deg); }
       100% { transform: rotate(360deg); }
     }
+
+    .mobile-only {
+      display: inline-block;
+    }
+
+    @media (min-width: 769px) {
+      .mobile-only {
+        display: none !important;
+      }
+    }
   </style>
 </head>
 <body>
@@ -155,8 +165,9 @@
       </div>
       <h1>Email Verified!</h1>
       <p>Your email has been successfully verified. You can now sign in to your After5 account.</p>
-      <button class="btn" onclick="openApp()">Open After5 App</button>
-      <p class="secondary-text">If the app doesn't open, return to the app manually and sign in.</p>
+      <p class="secondary-text"><strong>You can go back to the app now.</strong></p>
+      <button class="btn mobile-only" onclick="openApp()">Open After5 App</button>
+      <p id="countdown" class="secondary-text">This tab may close automatically in <span id="countdown-num">5</span> seconds.</p>
     </div>
 
     <!-- Error State -->
@@ -168,7 +179,7 @@
       </div>
       <h1>Verification Issue</h1>
       <p id="error-message">There was an issue verifying your email. The link may have expired or already been used.</p>
-      <button class="btn" onclick="openApp()">Open After5 App</button>
+      <button class="btn mobile-only" onclick="openApp()">Open After5 App</button>
       <p class="secondary-text">Try signing up again or contact support if the issue persists.</p>
     </div>
   </div>
@@ -188,57 +199,84 @@
       };
     }
 
-    // Show appropriate state based on verification result
-    function handleVerification() {
+    let verificationResolved = false;
+    const AUTO_CLOSE_SECONDS = 3;
+
+    function showResult() {
+      if (verificationResolved) return;
+      verificationResolved = true;
+
       const params = parseHashParams();
       const loading = document.getElementById('loading');
       const success = document.getElementById('success');
       const error = document.getElementById('error');
       const errorMessage = document.getElementById('error-message');
 
-      // Small delay for UX
-      setTimeout(() => {
-        loading.classList.add('hidden');
+      // Atomic: hide loading first, then show exactly one result state (same sync block)
+      loading.classList.add('hidden');
 
-        if (params.error) {
-          // Verification failed
-          error.classList.remove('hidden');
-          if (params.errorDescription) {
-            errorMessage.textContent = decodeURIComponent(params.errorDescription.replace(/\+/g, ' '));
-          }
-        } else if (params.accessToken || params.type === 'signup') {
-          // Verification successful
-          success.classList.remove('hidden');
-        } else {
-          // No parameters - assume success (Supabase verifies on redirect)
-          success.classList.remove('hidden');
+      if (params.error) {
+        error.classList.remove('hidden');
+        if (params.errorDescription) {
+          errorMessage.textContent = decodeURIComponent(params.errorDescription.replace(/\+/g, ' '));
         }
-      }, 800);
+      } else if (params.accessToken || params.type === 'signup') {
+        success.classList.remove('hidden');
+        startAutoCloseCountdown();
+      } else {
+        success.classList.remove('hidden');
+        startAutoCloseCountdown();
+      }
     }
+
+    function startAutoCloseCountdown() {
+      const countdownEl = document.getElementById('countdown-num');
+      let remaining = AUTO_CLOSE_SECONDS;
+
+      function tick() {
+        if (countdownEl) countdownEl.textContent = String(remaining);
+        if (remaining <= 0) {
+          window.close();
+          return;
+        }
+        remaining -= 1;
+        setTimeout(tick, 1000);
+      }
+
+      if (countdownEl) countdownEl.textContent = String(remaining);
+      setTimeout(tick, 1000);
+    }
+
+    function handleVerification() {
+      // Short delay for "verifying" UX, then show result atomically
+      setTimeout(showResult, 800);
+    }
+
+    // If hash arrives after load (e.g. redirect timing), show result once
+    window.addEventListener('hashchange', function onHashChange() {
+      if (!verificationResolved) {
+        showResult();
+      }
+    });
 
     // Attempt to open the app via deep link
     function openApp() {
-      // Try custom URL scheme first
       const deepLink = 'after5://auth/login';
 
-      // Create hidden iframe to attempt deep link
       const iframe = document.createElement('iframe');
       iframe.style.display = 'none';
       iframe.src = deepLink;
       document.body.appendChild(iframe);
 
-      // Fallback: try direct navigation
       setTimeout(() => {
         window.location.href = deepLink;
       }, 100);
 
-      // Clean up iframe
       setTimeout(() => {
-        document.body.removeChild(iframe);
+        if (iframe.parentNode) document.body.removeChild(iframe);
       }, 2000);
     }
 
-    // Run on page load
     document.addEventListener('DOMContentLoaded', handleVerification);
   </script>
 </body>
