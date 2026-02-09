@@ -79,6 +79,14 @@
           <span class="info-label">Location</span>
           <span class="info-value address">{{ getAddress() }}</span>
         </div>
+        <div class="info-row">
+          <span class="info-label">Body Camera</span>
+          <span class="info-value">
+            <ion-badge [color]="hasBodyCamera() ? 'success' : 'medium'">
+              {{ hasBodyCamera() ? 'Enabled' : 'Disabled' }}
+            </ion-badge>
+          </span>
+        </div>
       </ion-card-content>
     </ion-card>
 
