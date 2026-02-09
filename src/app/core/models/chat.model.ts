@@ -88,10 +88,45 @@ export interface ChatNotificationPreferences {
 }
 
 /**
+ * System event displayed inline in the chat flow (e.g., status changes)
+ */
+export interface ChatSystemEvent {
+  id: string;
+  type: 'status_change';
+  status: string;
+  label: string;
+  icon: string;
+  color: string;
+  created_at: string;
+}
+
+/**
+ * Union type for items displayed in the chat timeline
+ */
+export type ChatItem = ChatMessage | ChatSystemEvent;
+
+/**
+ * Type guard to check if a chat item is a system event
+ */
+export function isSystemEvent(item: ChatItem): item is ChatSystemEvent {
+  return 'type' in item && (item as ChatSystemEvent).type === 'status_change';
+}
+
+/**
+ * Presence state for online indicator
+ */
+export interface ChatPresenceState {
+  userId: string;
+  userName: string;
+  onlineAt: string;
+}
+
+/**
  * Real-time chat subscription callbacks
  */
 export interface ChatSubscriptionCallbacks {
   onMessage: (message: ChatMessage) => void;
   onTyping?: (event: TypingEvent) => void;
+  onPresence?: (onlineUsers: ChatPresenceState[]) => void;
   onError?: (error: Error) => void;
 }

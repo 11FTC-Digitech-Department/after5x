@@ -298,12 +298,39 @@ export class ChatService {
           is_typing: typingData.is_typing ?? typingData.isTyping ?? false
         };
         this.handleTypingEvent(bookingId, normalizedData, callbacks.onTyping!);
+      } : undefined,
+      callbacks.onPresence ? (presenceState: Record<string, any[]>) => {
+        const onlineUsers: { userId: string; userName: string; onlineAt: string }[] = [];
+        for (const users of Object.values(presenceState)) {
+          for (const p of users) {
+            onlineUsers.push({
+              userId: p.user_id,
+              userName: p.user_name,
+              onlineAt: p.online_at
+            });
+          }
+        }
+        callbacks.onPresence!(onlineUsers);
       } : undefined
     );
 
     this.chatSubscriptions.set(bookingId, unsubscribe);
 
     return () => this.unsubscribeFromChat(bookingId);
+  }
+
+  /**
+   * Track current user's presence on a chat channel
+   */
+  async trackPresence(bookingId: string): Promise<void> {
+    const profile = this.sessionService.profile();
+    if (!profile) return;
+
+    await this.realTimeService.trackPresence(
+      bookingId,
+      profile.id,
+      profile.full_name || 'User'
+    );
   }
 
   /**
@@ -353,6 +380,24 @@ export class ChatService {
       clearTimeout(timeout);
     }
     this.typingTimeouts.clear();
+  }
+
+  /**
+   * Subscribe to real-time updates for the messages list page.
+   * Fires when any new message arrives in any booking the user participates in.
+   */
+  subscribeToConversationUpdates(
+    onUpdate: (bookingId: string, message: any) => void
+  ): () => void {
+    const userId = this.sessionService.profile()?.id;
+    if (!userId) return () => {};
+
+    return this.realTimeService.subscribeToUserMessages(
+      userId,
+      (message: any) => {
+        onUpdate(message.booking_id, message);
+      }
+    );
   }
 
   /**

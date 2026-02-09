@@ -64,6 +64,11 @@ export class ConversationItemComponent {
     return (this.conversation?.unread_count || 0) > 0;
   }
 
+  get shortBookingId(): string {
+    const id = this.conversation?.booking_id;
+    return id ? `#${id.slice(-6).toUpperCase()}` : '';
+  }
+
   get statusColor(): string {
     const status = this.conversation?.booking_status;
     switch (status) {

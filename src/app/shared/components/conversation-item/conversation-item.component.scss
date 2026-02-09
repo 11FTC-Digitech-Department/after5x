@@ -4,7 +4,7 @@
   --inner-padding-end: 0;
 
   &.unread {
-    --background: var(--ion-color-primary-tint);
+    --background: rgba(var(--ion-color-primary-rgb), 0.06);
 
     .participant-name {
       font-weight: 700;
@@ -13,6 +13,11 @@
     .last-message {
       color: var(--ion-color-dark);
       font-weight: 500;
+    }
+
+    .timestamp {
+      color: var(--ion-color-primary);
+      font-weight: 600;
     }
   }
 
@@ -72,7 +77,17 @@ ion-label {
 }
 
 .service-name {
+  display: flex;
+  align-items: center;
+  gap: 6px;
   margin-bottom: 4px;
+}
+
+.booking-ref {
+  font-size: 11px;
+  color: var(--ion-color-medium);
+  font-weight: 500;
+  letter-spacing: 0.3px;
 }
 
 .status-badge {

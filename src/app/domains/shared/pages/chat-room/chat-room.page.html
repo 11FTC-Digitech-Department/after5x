@@ -7,7 +7,12 @@
     @if (otherParticipant()) {
       <ion-title>
         <div class="header-content">
-          <span class="participant-name">{{ otherParticipant()?.full_name }}</span>
+          <span class="participant-name">
+            {{ otherParticipant()?.full_name }}
+            @if (isOtherOnline()) {
+              <span class="online-dot"></span>
+            }
+          </span>
           @if (serviceName()) {
             <ion-badge [color]="statusColor" class="status-badge">{{ serviceName() }}</ion-badge>
           }
@@ -16,6 +21,12 @@
     } @else {
       <ion-title>Chat</ion-title>
     }
+
+    <ion-buttons slot="end">
+      <ion-button (click)="goToBookingDetails()" title="View Booking Details">
+        <ion-icon slot="icon-only" name="document-text-outline"></ion-icon>
+      </ion-button>
+    </ion-buttons>
   </ion-toolbar>
 </ion-header>
 
@@ -47,7 +58,7 @@
   }
 
   <!-- Empty state -->
-  @if (!loading() && canChat() && messages().length === 0) {
+  @if (!loading() && canChat() && chatItems().length === 0) {
     <div class="empty-container">
       <div class="empty-icon">💬</div>
       <h3>Start the conversation</h3>
@@ -56,14 +67,32 @@
   }
 
   <!-- Messages list -->
-  @if (!loading() && messages().length > 0) {
+  @if (!loading() && chatItems().length > 0) {
     <div class="messages-container" #messageList>
-      @for (message of messages(); track message.id; let i = $index) {
-        <app-chat-bubble
-          [message]="message"
-          [isOwn]="isOwnMessage(message)"
-          [showAvatar]="shouldShowAvatar(message, i)"
-        ></app-chat-bubble>
+      @for (item of chatItems(); track item.id; let i = $index) {
+        <!-- Date separator -->
+        @if (shouldShowDateSeparator(item, i)) {
+          <div class="date-separator">
+            <span class="date-label">{{ getDateLabel(item) }}</span>
+          </div>
+        }
+
+        @if (isSystemEvent(item)) {
+          <!-- Status change banner -->
+          <div class="status-banner" [attr.data-color]="item.color">
+            <div class="status-banner-content" [class]="'status-color-' + item.color">
+              <ion-icon [name]="item.icon"></ion-icon>
+              <span>{{ item.label }}</span>
+            </div>
+          </div>
+        } @else {
+          <app-chat-bubble
+            [message]="$any(item)"
+            [isOwn]="isOwnMessage($any(item))"
+            [showAvatar]="shouldShowAvatar($any(item), i)"
+            [showTimestamp]="shouldShowTimestamp(item, i)"
+          ></app-chat-bubble>
+        }
       }
     </div>
   }

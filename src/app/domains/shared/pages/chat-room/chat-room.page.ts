@@ -21,13 +21,52 @@ import {
   IonText,
   IonBadge,
   IonIcon,
+  IonButton,
   NavController
 } from '@ionic/angular/standalone';
 import { addIcons } from 'ionicons';
-import { lockClosedOutline } from 'ionicons/icons';
+import {
+  lockClosedOutline,
+  documentTextOutline,
+  hourglass,
+  checkmarkCircle,
+  car,
+  locationOutline,
+  hammer,
+  alertCircle,
+  closeCircle
+} from 'ionicons/icons';
 import { ChatService } from '../../../../core/services/chat.service';
+import { ChatNotificationService } from '../../../../core/services/chat-notification.service';
+import { SupabaseService } from '../../../../core/supabase/supabase';
 import { SessionService } from '../../../../core/auth/session';
-import { ChatMessage, ChatParticipant, TypingEvent } from '../../../../core/models/chat.model';
+import {
+  ChatMessage,
+  ChatParticipant,
+  ChatItem,
+  ChatSystemEvent,
+  ChatPresenceState,
+  TypingEvent,
+  isSystemEvent
+} from '../../../../core/models/chat.model';
+import { isToday, isYesterday, format } from 'date-fns';
+
+// Status display configuration for inline banners
+const STATUS_BANNER_CONFIG: Record<string, { label: string; icon: string; color: string }> = {
+  finding_provider: { label: 'Finding a provider...', icon: 'hourglass', color: 'warning' },
+  pending_acceptance: { label: 'Waiting for provider to accept', icon: 'hourglass', color: 'warning' },
+  confirmed: { label: 'Booking confirmed', icon: 'checkmark-circle', color: 'primary' },
+  on_the_way: { label: 'Provider is on the way', icon: 'car', color: 'tertiary' },
+  arrived: { label: 'Provider has arrived', icon: 'location-outline', color: 'tertiary' },
+  in_progress: { label: 'Service in progress', icon: 'hammer', color: 'secondary' },
+  payment_pending: { label: 'Payment required', icon: 'alert-circle', color: 'warning' },
+  paid: { label: 'Payment received', icon: 'checkmark-circle', color: 'success' },
+  completed: { label: 'Service completed', icon: 'checkmark-circle', color: 'success' },
+  cancelled: { label: 'Booking cancelled', icon: 'close-circle', color: 'danger' },
+  rejected: { label: 'Booking rejected', icon: 'close-circle', color: 'danger' },
+  expired: { label: 'Booking expired', icon: 'close-circle', color: 'medium' },
+};
+
 import { ChatBubbleComponent } from '../../../../shared/components/chat-bubble/chat-bubble.component';
 import { ChatInputComponent, ChatInputEvent } from '../../../../shared/components/chat-input/chat-input.component';
 import { TypingIndicatorComponent } from '../../../../shared/components/typing-indicator/typing-indicator.component';
@@ -49,6 +88,7 @@ import { TypingIndicatorComponent } from '../../../../shared/components/typing-i
     IonText,
     IonBadge,
     IonIcon,
+    IonButton,
     ChatBubbleComponent,
     ChatInputComponent,
     TypingIndicatorComponent
@@ -62,6 +102,8 @@ export class ChatRoomPage implements OnInit, OnDestroy {
   private router = inject(Router);
   private navController = inject(NavController);
   private chatService = inject(ChatService);
+  private chatNotificationService = inject(ChatNotificationService);
+  private supabaseService = inject(SupabaseService);
   private sessionService = inject(SessionService);
 
   /** Back goes to messages list for the current app context (customer or provider). */
@@ -70,7 +112,7 @@ export class ChatRoomPage implements OnInit, OnDestroy {
   }
 
   bookingId: string = '';
-  messages = signal<ChatMessage[]>([]);
+  chatItems = signal<ChatItem[]>([]);
   loading = signal<boolean>(true);
   sending = signal<boolean>(false);
   error = signal<string | null>(null);
@@ -85,11 +127,26 @@ export class ChatRoomPage implements OnInit, OnDestroy {
   isOtherTyping = signal<boolean>(false);
   typingUserName = signal<string>('');
 
+  // Online presence
+  isOtherOnline = signal<boolean>(false);
+
   private currentUserId: string | null = null;
   private unsubscribeChat: (() => void) | null = null;
+  private unsubscribeBooking: (() => void) | null = null;
+  private previousBookingStatus: string | null = null;
 
   constructor() {
-    addIcons({ lockClosedOutline });
+    addIcons({
+      lockClosedOutline,
+      documentTextOutline,
+      hourglass,
+      checkmarkCircle,
+      car,
+      locationOutline,
+      hammer,
+      alertCircle,
+      closeCircle
+    });
     // React to profile changes
     effect(() => {
       const profile = this.sessionService.profile();
@@ -118,9 +175,8 @@ export class ChatRoomPage implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
-    if (this.unsubscribeChat) {
-      this.unsubscribeChat();
-    }
+    this.unsubscribeChat?.();
+    this.unsubscribeBooking?.();
   }
 
   ionViewWillEnter(): void {
@@ -149,13 +205,17 @@ export class ChatRoomPage implements OnInit, OnDestroy {
 
       // Load messages
       const messages = await this.chatService.getMessages(this.bookingId);
-      this.messages.set(messages);
+      this.chatItems.set(messages);
+
+      // Track initial status for change detection
+      this.previousBookingStatus = context?.bookingStatus || null;
 
       // Mark messages as read
       await this.chatService.markAsRead(this.bookingId);
 
-      // Setup real-time subscription
+      // Setup real-time subscriptions
       this.setupRealTimeSubscription();
+      this.setupBookingStatusSubscription();
 
       // Scroll to bottom after messages load
       setTimeout(() => this.scrollToBottom(), 100);
@@ -171,13 +231,14 @@ export class ChatRoomPage implements OnInit, OnDestroy {
     this.unsubscribeChat = this.chatService.subscribeToChat(this.bookingId, {
       onMessage: (message: ChatMessage) => {
         // Add message to list if not already present
-        const currentMessages = this.messages();
-        if (!currentMessages.find(m => m.id === message.id)) {
-          this.messages.set([...currentMessages, message]);
+        const currentItems = this.chatItems();
+        if (!currentItems.find(m => m.id === message.id)) {
+          this.chatItems.set([...currentItems, message]);
 
-          // Mark as read if from other user
+          // Mark as read and notify if from other user
           if (message.sender_id !== this.currentUserId) {
             this.chatService.markAsRead(this.bookingId);
+            this.chatNotificationService.notify();
           }
 
           // Scroll to bottom
@@ -194,8 +255,70 @@ export class ChatRoomPage implements OnInit, OnDestroy {
             this.isOtherTyping.set(false);
           }, 3000);
         }
+      },
+      onPresence: (onlineUsers: ChatPresenceState[]) => {
+        const otherOnline = onlineUsers.some(u => u.userId !== this.currentUserId);
+        this.isOtherOnline.set(otherOnline);
       }
     });
+
+    // Track own presence on this chat channel
+    this.chatService.trackPresence(this.bookingId);
+  }
+
+  private setupBookingStatusSubscription(): void {
+    const client = this.supabaseService.client;
+    const channelName = `chat-booking-status-${this.bookingId}`;
+
+    const channel = client
+      .channel(channelName)
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'bookings',
+          filter: `id=eq.${this.bookingId}`
+        },
+        (payload: any) => {
+          const newStatus = payload.new?.status;
+          if (newStatus && newStatus !== this.previousBookingStatus) {
+            this.onBookingStatusChange(newStatus);
+            this.previousBookingStatus = newStatus;
+          }
+        }
+      )
+      .subscribe();
+
+    this.unsubscribeBooking = () => {
+      client.removeChannel(channel);
+    };
+  }
+
+  private onBookingStatusChange(newStatus: string): void {
+    const config = STATUS_BANNER_CONFIG[newStatus];
+    if (!config) return;
+
+    // Update header status
+    this.bookingStatus.set(newStatus);
+
+    // Insert system event into chat timeline
+    const systemEvent: ChatSystemEvent = {
+      id: `status-${newStatus}-${Date.now()}`,
+      type: 'status_change',
+      status: newStatus,
+      label: config.label,
+      icon: config.icon,
+      color: config.color,
+      created_at: new Date().toISOString()
+    };
+
+    this.chatItems.set([...this.chatItems(), systemEvent]);
+    setTimeout(() => this.scrollToBottom(), 50);
+
+    // Update canChat based on new status
+    const chatAllowedStatuses = ['confirmed', 'on_the_way', 'arrived', 'in_progress', 'payment_pending'];
+    this.canChat.set(chatAllowedStatuses.includes(newStatus));
   }
 
   async onSendMessage(event: ChatInputEvent): Promise<void> {
@@ -218,9 +341,9 @@ export class ChatRoomPage implements OnInit, OnDestroy {
       if (sentMessage) {
         // Message will be added via real-time subscription
         // But add optimistically for better UX
-        const currentMessages = this.messages();
-        if (!currentMessages.find(m => m.id === sentMessage!.id)) {
-          this.messages.set([...currentMessages, sentMessage]);
+        const currentItems = this.chatItems();
+        if (!currentItems.find(m => m.id === sentMessage!.id)) {
+          this.chatItems.set([...currentItems, sentMessage]);
         }
         setTimeout(() => this.scrollToBottom(), 50);
       }
@@ -248,12 +371,71 @@ export class ChatRoomPage implements OnInit, OnDestroy {
   shouldShowAvatar(message: ChatMessage, index: number): boolean {
     // Show avatar for first message or if previous message is from different sender
     if (index === 0) return true;
-    const previousMessage = this.messages()[index - 1];
-    return previousMessage?.sender_id !== message.sender_id;
+    const items = this.chatItems();
+    const previousItem = items[index - 1];
+    if (isSystemEvent(previousItem)) return true;
+    return previousItem?.sender_id !== message.sender_id;
+  }
+
+  /** Type guard exposed for the template */
+  isSystemEvent = isSystemEvent;
+
+  // Date separator logic
+  shouldShowDateSeparator(item: ChatItem, index: number): boolean {
+    if (isSystemEvent(item)) return false;
+    if (index === 0) return true;
+
+    const currentDate = new Date(item.created_at).toDateString();
+    // Look back for the previous non-system-event item
+    const items = this.chatItems();
+    for (let i = index - 1; i >= 0; i--) {
+      const prevItem = items[i];
+      const prevDate = new Date(prevItem.created_at).toDateString();
+      return currentDate !== prevDate;
+    }
+    return true;
+  }
+
+  getDateLabel(item: ChatItem): string {
+    const date = new Date(item.created_at);
+    if (isToday(date)) return 'Today';
+    if (isYesterday(date)) return 'Yesterday';
+    return format(date, 'MMMM d, yyyy');
+  }
+
+  // Smart timestamp logic — only show on last message of a sender group or after a time gap
+  shouldShowTimestamp(item: ChatItem, index: number): boolean {
+    if (isSystemEvent(item)) return false;
+    const items = this.chatItems();
+
+    // Always show on last item
+    if (index === items.length - 1) return true;
+
+    const nextItem = items[index + 1];
+
+    // Show if next item is a system event
+    if (isSystemEvent(nextItem)) return true;
+
+    // Show if next message is from a different sender
+    if ((nextItem as ChatMessage).sender_id !== (item as ChatMessage).sender_id) return true;
+
+    // Show if time gap > 5 minutes
+    const currentTime = new Date(item.created_at).getTime();
+    const nextTime = new Date(nextItem.created_at).getTime();
+    if (nextTime - currentTime > 5 * 60 * 1000) return true;
+
+    return false;
   }
 
   goBack(): void {
     this.navController.back();
+  }
+
+  goToBookingDetails(): void {
+    if (!this.bookingId) return;
+    const isCustomer = this.router.url.startsWith('/c/');
+    const route = isCustomer ? `/c/bookings/${this.bookingId}` : `/p/job/${this.bookingId}`;
+    this.router.navigateByUrl(route);
   }
 
   get participantInitial(): string {

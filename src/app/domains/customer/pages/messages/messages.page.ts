@@ -18,7 +18,7 @@ import { addIcons } from 'ionicons';
 import { alertCircleOutline, refreshOutline, chatbubblesOutline } from 'ionicons/icons';
 import { ChatService } from '../../../../core/services/chat.service';
 import { SessionService } from '../../../../core/auth/session';
-import { Conversation } from '../../../../core/models/chat.model';
+import { Conversation, ChatMessage, ChatMessageType } from '../../../../core/models/chat.model';
 import { ConversationItemComponent } from '../../../../shared/components/conversation-item/conversation-item.component';
 
 @Component({
@@ -52,6 +52,7 @@ export class MessagesPage implements OnInit, OnDestroy {
   error = signal<string | null>(null);
 
   private dataLoaded = signal<boolean>(false);
+  private unsubscribeRealtime: (() => void) | null = null;
 
   constructor() {
     addIcons({ alertCircleOutline, refreshOutline, chatbubblesOutline });
@@ -75,7 +76,7 @@ export class MessagesPage implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
-    // Cleanup if needed
+    this.unsubscribeRealtime?.();
   }
 
   ionViewWillEnter(): void {
@@ -94,7 +95,10 @@ export class MessagesPage implements OnInit, OnDestroy {
 
       const conversations = await this.chatService.getConversations();
       this.conversations.set(conversations);
-      this.dataLoaded.set(true);
+      if (!this.dataLoaded()) {
+        this.dataLoaded.set(true);
+        this.setupRealtimeSubscription();
+      }
     } catch (err) {
       console.error('[MessagesPage] Error loading conversations:', err);
       this.error.set('Failed to load conversations');
@@ -119,5 +123,51 @@ export class MessagesPage implements OnInit, OnDestroy {
 
   get isEmpty(): boolean {
     return !this.loading() && this.conversations().length === 0;
+  }
+
+  private setupRealtimeSubscription(): void {
+    this.unsubscribeRealtime = this.chatService.subscribeToConversationUpdates(
+      (bookingId: string, message: any) => {
+        this.handleNewMessage(bookingId, message);
+      }
+    );
+  }
+
+  private handleNewMessage(bookingId: string, message: any): void {
+    const currentConversations = this.conversations();
+    const index = currentConversations.findIndex(c => c.booking_id === bookingId);
+
+    if (index >= 0) {
+      // Update existing conversation optimistically
+      const updated = [...currentConversations];
+      const conv = { ...updated[index] };
+      const userId = this.sessionService.profile()?.id;
+
+      conv.last_message = {
+        id: message.id,
+        booking_id: message.booking_id,
+        sender_id: message.sender_id,
+        message_type: (message.message_type || 'TEXT') as ChatMessageType,
+        content: message.content,
+        read_at: null,
+        is_archived: false,
+        created_at: message.created_at || new Date().toISOString()
+      };
+      conv.updated_at = message.created_at || new Date().toISOString();
+
+      if (message.sender_id !== userId) {
+        conv.unread_count = (conv.unread_count || 0) + 1;
+      }
+
+      updated.splice(index, 1);
+      updated.unshift(conv); // Move to top
+      this.conversations.set(updated);
+
+      // Update total unread count
+      this.chatService.refreshTotalUnreadCount();
+    } else {
+      // New conversation — full reload needed
+      this.loadConversations(true);
+    }
   }
 }

@@ -16,6 +16,7 @@
     </div>
     <div class="service-name">
       <ion-badge [color]="statusColor" class="status-badge">{{ conversation.service_name }}</ion-badge>
+      <span class="booking-ref">{{ shortBookingId }}</span>
     </div>
     <p class="last-message" [class.has-image]="conversation.last_message?.message_type === 'IMAGE'">
       @if (conversation.last_message?.message_type === 'IMAGE') {

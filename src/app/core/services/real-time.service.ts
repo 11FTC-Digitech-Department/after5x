@@ -619,17 +619,25 @@ export class RealTimeService {
       });
   }
 
-  // Subscribe to chat messages
+  // Subscribe to chat messages with optional presence tracking
   subscribeToChat(
     bookingId: string,
     onMessage: (message: any) => void,
-    onTyping?: (typingData: { userId: string; isTyping: boolean }) => void
+    onTyping?: (typingData: { userId: string; isTyping: boolean }) => void,
+    onPresenceSync?: (presenceState: Record<string, any[]>) => void
   ): () => void {
     const client = this.supabaseService.client;
     const channelName = `booking-chat-${bookingId}`;
 
+    // Remove existing channel if any
+    const existingChannel = this.channels.get(channelName);
+    if (existingChannel) {
+      client.removeChannel(existingChannel);
+      this.channels.delete(channelName);
+    }
+
     const channel = client
-      .channel(channelName)
+      .channel(channelName, { config: { presence: { key: '' } } })
       .on(
         'postgres_changes',
         {
@@ -648,11 +656,86 @@ export class RealTimeService {
         (payload: any) => {
           onTyping?.(payload.payload);
         }
+      );
+
+    if (onPresenceSync) {
+      channel.on('presence', { event: 'sync' }, () => {
+        const state = channel.presenceState();
+        onPresenceSync(state);
+      });
+    }
+
+    channel.subscribe();
+
+    this.channels.set(channelName, channel);
+
+    return () => {
+      const ch = this.channels.get(channelName);
+      if (ch) {
+        client.removeChannel(ch);
+        this.channels.delete(channelName);
+      }
+    };
+  }
+
+  /**
+   * Track user presence on a chat channel.
+   * Must be called AFTER subscribeToChat for the same bookingId.
+   */
+  async trackPresence(bookingId: string, userId: string, userName: string): Promise<void> {
+    const channelName = `booking-chat-${bookingId}`;
+    const channel = this.channels.get(channelName);
+    if (!channel) {
+      this.logError(`Cannot track presence: channel ${channelName} not found`);
+      return;
+    }
+
+    await channel.track({
+      user_id: userId,
+      user_name: userName,
+      online_at: new Date().toISOString()
+    });
+  }
+
+  // Subscribe to all chat messages for the current user (for messages list page)
+  // RLS ensures only authorized messages are delivered
+  subscribeToUserMessages(
+    userId: string,
+    onNewMessage: (message: any) => void
+  ): () => void {
+    const client = this.supabaseService.client;
+    const channelName = `user-messages-${userId}`;
+
+    // Remove existing subscription if any
+    const existingChannel = this.channels.get(channelName);
+    if (existingChannel) {
+      client.removeChannel(existingChannel);
+      this.channels.delete(channelName);
+    }
+
+    const channel = client
+      .channel(channelName)
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'booking_chats'
+        },
+        (payload: RealtimePostgresChangesPayload<any>) => {
+          onNewMessage(payload.new);
+        }
       )
       .subscribe();
 
+    this.channels.set(channelName, channel);
+
     return () => {
-      client.removeChannel(channel);
+      const ch = this.channels.get(channelName);
+      if (ch) {
+        client.removeChannel(ch);
+        this.channels.delete(channelName);
+      }
     };
   }
 
