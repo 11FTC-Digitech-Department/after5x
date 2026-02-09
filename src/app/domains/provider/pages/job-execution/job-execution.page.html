@@ -61,7 +61,7 @@
       <ion-card-header>
         <ion-card-title>
           <ion-icon name="person-outline"></ion-icon>
-          Customer
+          {{ getCustomerName() }}
         </ion-card-title>
       </ion-card-header>
       <ion-card-content>
@@ -92,12 +92,10 @@
               }
             </ion-button>
           }
-          @if (getCustomerPhone()) {
-            <ion-button expand="block" fill="outline" (click)="callCustomer()" class="contact-btn">
-              <ion-icon name="call-outline" slot="start"></ion-icon>
-              Call
-            </ion-button>
-          }
+          <ion-button expand="block" fill="outline" (click)="callCustomer()" [disabled]="!getCustomerPhone()" class="contact-btn">
+            <ion-icon name="call-outline" slot="start"></ion-icon>
+            Call
+          </ion-button>
         </div>
       </ion-card-content>
     </ion-card>

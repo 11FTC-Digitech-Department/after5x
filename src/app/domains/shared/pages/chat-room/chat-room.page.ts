@@ -34,7 +34,8 @@ import {
   locationOutline,
   hammer,
   alertCircle,
-  closeCircle
+  closeCircle,
+  callOutline
 } from 'ionicons/icons';
 import { ChatService } from '../../../../core/services/chat.service';
 import { ChatNotificationService } from '../../../../core/services/chat-notification.service';
@@ -145,7 +146,8 @@ export class ChatRoomPage implements OnInit, OnDestroy {
       locationOutline,
       hammer,
       alertCircle,
-      closeCircle
+      closeCircle,
+      callOutline
     });
     // React to profile changes
     effect(() => {
@@ -429,6 +431,13 @@ export class ChatRoomPage implements OnInit, OnDestroy {
 
   goBack(): void {
     this.navController.back();
+  }
+
+  callOtherParticipant(): void {
+    const phone = this.otherParticipant()?.phone_number;
+    if (phone) {
+      window.location.href = `tel:${phone}`;
+    }
   }
 
   goToBookingDetails(): void {

@@ -421,9 +421,22 @@ export class NotificationService {
    * Refresh unread count from API. Call on init and when notifications list is viewed.
    */
   async refreshUnreadCount(): Promise<void> {
-    const notifications = await this.getUserNotifications(50);
-    const count = notifications.filter((n: { read?: boolean }) => !n.read).length;
-    this._unreadCount.set(count);
+    // #region agent log
+    fetch('http://127.0.0.1:7243/ingest/96ca3573-048f-467b-aaa5-45d0f071a967',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'notification.service.ts:refreshUnreadCount:entry',message:'refreshUnreadCount entered',data:{},timestamp:Date.now(),hypothesisId:'B'})}).catch(()=>{});
+    // #endregion
+    try {
+      const notifications = await this.getUserNotifications(50);
+      const count = notifications.filter((n: { read?: boolean }) => !n.read).length;
+      this._unreadCount.set(count);
+      // #region agent log
+      fetch('http://127.0.0.1:7243/ingest/96ca3573-048f-467b-aaa5-45d0f071a967',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'notification.service.ts:refreshUnreadCount:done',message:'refreshUnreadCount done',data:{count},timestamp:Date.now(),hypothesisId:'B'})}).catch(()=>{});
+      // #endregion
+    } catch (e) {
+      // #region agent log
+      fetch('http://127.0.0.1:7243/ingest/96ca3573-048f-467b-aaa5-45d0f071a967',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'notification.service.ts:refreshUnreadCount:err',message:'refreshUnreadCount error',data:{err:String(e)},timestamp:Date.now(),hypothesisId:'B'})}).catch(()=>{});
+      // #endregion
+      throw e;
+    }
   }
 
   /**
@@ -433,8 +446,18 @@ export class NotificationService {
    */
   subscribeToUnreadUpdates(userId: string, onNotification?: (notification: { id?: string; title?: string; type?: string }) => void): () => void {
     return this.realTimeService.subscribeToNotifications(userId, (notification) => {
+      // #region agent log
+      fetch('http://127.0.0.1:7243/ingest/96ca3573-048f-467b-aaa5-45d0f071a967',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'notification.service.ts:realtimeCallback',message:'realtime notification callback',data:{id:notification?.id},timestamp:Date.now(),hypothesisId:'C'})}).catch(()=>{});
+      // #endregion
       this.refreshUnreadCount();
-      onNotification?.(notification);
+      try {
+        onNotification?.(notification);
+      } catch (e) {
+        // #region agent log
+        fetch('http://127.0.0.1:7243/ingest/96ca3573-048f-467b-aaa5-45d0f071a967',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'notification.service.ts:realtimeCallbackCatch',message:'onNotification threw',data:{err:String(e)},timestamp:Date.now(),hypothesisId:'C'})}).catch(()=>{});
+        // #endregion
+        throw e;
+      }
     });
   }
 }

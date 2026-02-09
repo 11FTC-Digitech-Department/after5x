@@ -51,6 +51,9 @@ export class CustomerTabsPage implements OnInit, OnDestroy {
   private userId: string | null = null;
 
   constructor() {
+    // #region agent log
+    fetch('http://127.0.0.1:7243/ingest/96ca3573-048f-467b-aaa5-45d0f071a967',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'customer-tabs.page.ts:constructor',message:'CustomerTabsPage constructed',data:{},timestamp:Date.now(),hypothesisId:'E'})}).catch(()=>{});
+    // #endregion
     addIcons({
       homeOutline,
       calendarOutline,
@@ -64,11 +67,26 @@ export class CustomerTabsPage implements OnInit, OnDestroy {
     effect(() => {
       const profile = this.sessionService.profile();
       const isLoading = this.sessionService.isLoading();
-
+      // #region agent log
+      fetch('http://127.0.0.1:7243/ingest/96ca3573-048f-467b-aaa5-45d0f071a967',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'customer-tabs.page.ts:effect',message:'effect run',data:{hasProfile:!!profile,profileId:profile?.id,isLoading,userId:this.userId},timestamp:Date.now(),hypothesisId:'B'})}).catch(()=>{});
+      // #endregion
       if (profile?.id && !isLoading && !this.userId) {
         this.userId = profile.id;
-        this.notificationService.refreshUnreadCount();
-        this.setupRealTimeSubscription();
+        try {
+          // #region agent log
+          fetch('http://127.0.0.1:7243/ingest/96ca3573-048f-467b-aaa5-45d0f071a967',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'customer-tabs.page.ts:beforeRefresh',message:'before refreshUnreadCount',data:{},timestamp:Date.now(),hypothesisId:'B'})}).catch(()=>{});
+          // #endregion
+          this.notificationService.refreshUnreadCount();
+          // #region agent log
+          fetch('http://127.0.0.1:7243/ingest/96ca3573-048f-467b-aaa5-45d0f071a967',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'customer-tabs.page.ts:afterRefresh',message:'after refreshUnreadCount',data:{},timestamp:Date.now(),hypothesisId:'B'})}).catch(()=>{});
+          // #endregion
+          this.setupRealTimeSubscription();
+        } catch (e) {
+          // #region agent log
+          fetch('http://127.0.0.1:7243/ingest/96ca3573-048f-467b-aaa5-45d0f071a967',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'customer-tabs.page.ts:effectCatch',message:'effect threw',data:{err:String(e)},timestamp:Date.now(),hypothesisId:'B'})}).catch(()=>{});
+          // #endregion
+          throw e;
+        }
       }
     });
   }

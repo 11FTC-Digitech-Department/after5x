@@ -688,7 +688,8 @@ export class JobExecutionPage implements OnInit, OnDestroy {
   }
 
   getCustomerName(): string {
-    return (this.booking() as any)?.customers?.profiles?.full_name || 'Customer';
+    const profile = (this.booking() as any)?.customers?.profiles;
+    return profile?.full_name || profile?.email || 'Customer';
   }
 
   getCustomerAvatar(): string | null {

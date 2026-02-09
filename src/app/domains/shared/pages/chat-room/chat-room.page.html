@@ -23,6 +23,11 @@
     }
 
     <ion-buttons slot="end">
+      @if (otherParticipant()?.phone_number) {
+        <ion-button (click)="callOtherParticipant()" title="Call">
+          <ion-icon slot="icon-only" name="call-outline"></ion-icon>
+        </ion-button>
+      }
       <ion-button (click)="goToBookingDetails()" title="View Booking Details">
         <ion-icon slot="icon-only" name="document-text-outline"></ion-icon>
       </ion-button>

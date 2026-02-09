@@ -451,7 +451,8 @@ export class ChatService {
             profiles!inner (
               id,
               full_name,
-              avatar_url
+              avatar_url,
+              phone_number
             )
           ),
           provider:providers!provider_id (
@@ -459,7 +460,8 @@ export class ChatService {
             profiles!inner (
               id,
               full_name,
-              avatar_url
+              avatar_url,
+              phone_number
             )
           ),
           booking_items (
@@ -489,7 +491,8 @@ export class ChatService {
         otherParticipant: {
           id: otherProfile.id,
           full_name: otherProfile.full_name,
-          avatar_url: otherProfile.avatar_url
+          avatar_url: otherProfile.avatar_url,
+          phone_number: otherProfile.phone_number || null
         }
       };
     } catch (error) {

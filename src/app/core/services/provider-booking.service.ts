@@ -10,6 +10,7 @@ export interface ProviderBooking extends CustomerBooking {
       full_name: string;
       avatar_url: string | null;
       phone_number: string | null;
+      email: string | null;
     };
   };
 }
@@ -46,7 +47,7 @@ export class ProviderBookingService {
         ),
         customers!bookings_customer_id_fkey (
           id,
-          profiles (full_name, avatar_url, phone_number)
+          profiles (full_name, avatar_url, phone_number, email)
         ),
         booking_timeline (*)
       `)
@@ -218,7 +219,7 @@ export class ProviderBookingService {
         ),
         customers!bookings_customer_id_fkey (
           id,
-          profiles (full_name, avatar_url, phone_number)
+          profiles (full_name, avatar_url, phone_number, email)
         ),
         booking_timeline (*),
         booking_media (*)
