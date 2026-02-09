@@ -430,26 +430,21 @@ serve(async (req) => {
     // Only send verification email if user was just created (not using existing userId)
     if (!body.userId) {
       try {
-        // Generate verification link with signup type
-        // Supabase will automatically send email if email confirmations are enabled
-        const { data: linkData, error: linkError } = await supabase.auth.admin.generateLink({
+        // Trigger Supabase Auth email delivery (uses Mailpit locally, SMTP in production)
+        const { error: resendError } = await supabase.auth.resend({
           type: 'signup',
           email: userEmail,
           options: {
-            redirectTo: 'https://app.after5.ph/auth/verify-email'
+            emailRedirectTo: 'https://app.after5.ph/auth/verify-email'
           }
         })
 
-        if (linkError) {
-          console.error('Failed to generate verification link:', linkError)
-          emailError = linkError.message
-        } else if (linkData) {
-          // generateLink() with type 'signup' should trigger email sending if configured
-          // If email service is not configured, linkData will contain the link but email won't be sent
-          // In that case, we'd need to send via custom email service (future enhancement)
+        if (resendError) {
+          console.error('Failed to send verification email:', resendError)
+          emailError = resendError.message
+        } else {
           emailSent = true
           console.log('Verification email sent to:', userEmail)
-          console.log('Verification link generated:', linkData.properties?.action_link || 'N/A')
         }
       } catch (emailErr) {
         console.error('Error sending verification email:', emailErr)
