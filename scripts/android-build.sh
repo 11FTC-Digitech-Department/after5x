@@ -118,6 +118,13 @@ else
     BUILD_TYPE="Debug"
 fi
 
+# Map environment to APK label
+if [ "$ENVIRONMENT" == "prod" ]; then
+    APK_ENV_LABEL="live"
+else
+    APK_ENV_LABEL="dev"
+fi
+
 # Capitalize first letter for Gradle task
 FLAVOR_CAP="$(tr '[:lower:]' '[:upper:]' <<< ${FLAVOR:0:1})${FLAVOR:1}"
 
@@ -185,6 +192,28 @@ case $COMMAND in
         fi
         cd ..
         echo -e "${GREEN}✓ APK built: android/$APK_PATH${NC}"
+
+        # Rename APK, zip it, and move zip to Downloads
+        APK_ABS_PATH="$SCRIPT_DIR/../android/$APK_PATH"
+        if [ ! -f "$APK_ABS_PATH" ]; then
+            echo -e "${RED}Error: APK not found at $APK_ABS_PATH${NC}"
+            exit 1
+        fi
+
+        RENAMED_APK="after5-${FLAVOR}-${APK_ENV_LABEL}-v.${VERSION_NAME}.apk"
+        RENAMED_APK_PATH="$(dirname "$APK_ABS_PATH")/$RENAMED_APK"
+        mv "$APK_ABS_PATH" "$RENAMED_APK_PATH"
+
+        ZIP_NAME="${RENAMED_APK%.apk}.zip"
+        ZIP_PATH="$(dirname "$RENAMED_APK_PATH")/$ZIP_NAME"
+        (cd "$(dirname "$RENAMED_APK_PATH")" && zip -q -j "$ZIP_PATH" "$RENAMED_APK")
+
+        DOWNLOADS_DIR="$HOME/Downloads"
+        mkdir -p "$DOWNLOADS_DIR"
+        mv "$ZIP_PATH" "$DOWNLOADS_DIR/"
+
+        echo -e "${GREEN}✓ Renamed APK: $RENAMED_APK_PATH${NC}"
+        echo -e "${GREEN}✓ Zipped and moved to: $DOWNLOADS_DIR/$ZIP_NAME${NC}"
         ;;
     bundle)
         echo -e "${YELLOW}[3/3] Building AAB for Play Store (${FLAVOR_CAP}Release)...${NC}"
