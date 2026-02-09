@@ -618,7 +618,7 @@ export class JobExecutionPage implements OnInit, OnDestroy {
 
   // Contact methods
   callCustomer() {
-    const phone = (this.booking() as any)?.customers?.profiles?.phone_number;
+    const phone = this.getCustomerPhone();
     if (phone) {
       window.location.href = `tel:${phone}`;
     }
@@ -694,7 +694,8 @@ export class JobExecutionPage implements OnInit, OnDestroy {
 
   getCustomerName(): string {
     const profile = (this.booking() as any)?.customers?.profiles;
-    return profile?.full_name || profile?.email || 'Customer';
+    const snapshot = this.booking()?.address_snapshot;
+    return profile?.full_name || snapshot?.contact_person || 'Customer';
   }
 
   getCustomerAvatar(): string | null {
@@ -702,7 +703,8 @@ export class JobExecutionPage implements OnInit, OnDestroy {
   }
 
   getCustomerPhone(): string | null {
-    return (this.booking() as any)?.customers?.profiles?.phone_number || null;
+    const profile = (this.booking() as any)?.customers?.profiles;
+    return profile?.phone_number || this.booking()?.address_snapshot?.contact_phone || null;
   }
 
   getShortBookingId(): string {
