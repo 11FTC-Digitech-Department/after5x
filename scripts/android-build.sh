@@ -222,9 +222,24 @@ case $COMMAND in
         cd ..
         BUNDLE_PATH="android/app/build/outputs/bundle/${FLAVOR}Release/app-${FLAVOR}-release.aab"
         MAPPING_PATH="android/app/build/outputs/mapping/${FLAVOR}Release/mapping.txt"
+
+        BUNDLE_ABS_PATH="$SCRIPT_DIR/../$BUNDLE_PATH"
+        if [ ! -f "$BUNDLE_ABS_PATH" ]; then
+            echo -e "${RED}Error: Bundle not found at $BUNDLE_ABS_PATH${NC}"
+            exit 1
+        fi
+
+        RENAMED_BUNDLE="after5-${FLAVOR}-${APK_ENV_LABEL}-v.${VERSION_NAME}.aab"
+        RENAMED_BUNDLE_PATH="$(dirname "$BUNDLE_ABS_PATH")/$RENAMED_BUNDLE"
+        mv "$BUNDLE_ABS_PATH" "$RENAMED_BUNDLE_PATH"
+
+        DOWNLOADS_DIR="$HOME/Downloads"
+        mkdir -p "$DOWNLOADS_DIR"
+        mv "$RENAMED_BUNDLE_PATH" "$DOWNLOADS_DIR/"
+
         echo ""
         echo -e "${GREEN}✓ Bundle built successfully!${NC}"
-        echo -e "${BLUE}Bundle:  ${NC}$BUNDLE_PATH"
+        echo -e "${BLUE}Bundle:  ${NC}$DOWNLOADS_DIR/$RENAMED_BUNDLE"
         echo -e "${BLUE}Mapping: ${NC}$MAPPING_PATH"
         ;;
     sync)
