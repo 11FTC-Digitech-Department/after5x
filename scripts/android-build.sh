@@ -18,8 +18,13 @@
 #
 # Environments:
 #   dev      - Development environment (default, remote Supabase)
-#   local    - Local Supabase via ngrok (for Android/device testing)
+#   local    - Local Supabase via adb reverse (recommended for Android/device testing)
+#   local-ngrok - Local Supabase via ngrok tunnel (fallback)
 #   prod     - Production environment
+#
+# Note:
+#   local/local-ngrok environments are Android/device-targeted only.
+#   For browser local DB development, use: ng serve --configuration=local
 #
 # Examples:
 #   ./scripts/android-build.sh run customer dev
@@ -57,7 +62,8 @@ show_help() {
     echo ""
     echo "Environments:"
     echo "  dev      Development build (default, remote Supabase)"
-    echo "  local    Local Supabase via ngrok (for Android/device)"
+    echo "  local    Local Supabase via adb reverse (recommended)"
+    echo "  local-ngrok Local Supabase via ngrok tunnel (fallback)"
     echo "  prod     Production build"
     echo ""
     echo "Examples:"
@@ -100,9 +106,9 @@ if [[ ! "$FLAVOR" =~ ^(customer|experts)$ ]]; then
 fi
 
 # Validate environment
-if [[ ! "$ENVIRONMENT" =~ ^(dev|prod|local)$ ]]; then
+if [[ ! "$ENVIRONMENT" =~ ^(dev|prod|local|local-ngrok)$ ]]; then
     echo -e "${RED}Error: Invalid environment '$ENVIRONMENT'${NC}"
-    echo "Valid environments: dev, prod, local"
+    echo "Valid environments: dev, prod, local, local-ngrok"
     exit 1
 fi
 
@@ -110,8 +116,11 @@ fi
 if [ "$ENVIRONMENT" == "prod" ]; then
     NG_CONFIG="production"
     BUILD_TYPE="Release"
-elif [ "$ENVIRONMENT" == "local" ]; then
+elif [ "$ENVIRONMENT" == "local-ngrok" ]; then
     NG_CONFIG="local-ngrok"
+    BUILD_TYPE="Debug"
+elif [ "$ENVIRONMENT" == "local" ]; then
+    NG_CONFIG="local"
     BUILD_TYPE="Debug"
 else
     NG_CONFIG="development"
@@ -152,6 +161,23 @@ echo ""
 # Step 1: Build Angular app (skip for sync-only)
 if [ "$COMMAND" != "sync" ]; then
     if [ "$ENVIRONMENT" == "local" ]; then
+        echo -e "${BLUE}Info: local build uses direct local Supabase via adb reverse (tcp:54321).${NC}"
+        echo -e "${BLUE}Info: Browser local DB workflow uses ng serve --configuration=local (127.0.0.1:54321).${NC}"
+        echo ""
+        echo -e "${YELLOW}[0/3] Configuring adb reverse for local Supabase...${NC}"
+        adb start-server >/dev/null 2>&1 || true
+        if adb reverse tcp:54321 tcp:54321 >/dev/null 2>&1; then
+            echo -e "${GREEN}✓ adb reverse tcp:54321 -> tcp:54321 configured${NC}"
+        else
+            echo -e "${RED}Failed to configure adb reverse tcp:54321.${NC}"
+            echo "  Connect a device/emulator and run: adb reverse tcp:54321 tcp:54321"
+            exit 1
+        fi
+        echo ""
+    elif [ "$ENVIRONMENT" == "local-ngrok" ]; then
+        echo -e "${BLUE}Info: local-ngrok build is fallback mode for Android/device testing.${NC}"
+        echo -e "${BLUE}Info: Browser local DB workflow uses ng serve --configuration=local (127.0.0.1:54321).${NC}"
+        echo ""
         echo -e "${YELLOW}[0/3] Ensuring ngrok tunnel to local Supabase...${NC}"
         "$SCRIPT_DIR/ensure-ngrok-local.sh"
         echo ""
@@ -160,6 +186,8 @@ if [ "$COMMAND" != "sync" ]; then
     if [ "$ENVIRONMENT" == "prod" ]; then
         npm run build -- --configuration=production
     elif [ "$ENVIRONMENT" == "local" ]; then
+        npm run build -- --configuration=local
+    elif [ "$ENVIRONMENT" == "local-ngrok" ]; then
         npm run build -- --configuration=local-ngrok
     else
         npm run build

@@ -1,7 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { createClient, SupabaseClient, AuthError, User, Session } from '@supabase/supabase-js';
-import { Platform } from '@ionic/angular';
-import { ConfigService } from '../config/config.service';
+import { Capacitor, CapacitorHttp } from '@capacitor/core';
+import { ConfigService, SupabaseConfig } from '../config/config.service';
 import { Database } from './database.types';
 import { CapacitorStorageAdapter } from '../storage/capacitor-storage.adapter';
 
@@ -18,23 +18,45 @@ export interface SignUpMetadata {
   role?: 'customer' | 'provider' | 'admin';
 }
 
+interface NgrokPasswordSignInResponse {
+  access_token: string;
+  refresh_token: string;
+  user?: User;
+  [key: string]: unknown;
+}
+
 @Injectable({
   providedIn: 'root',
 })
 export class SupabaseService {
   private _client: SupabaseClient<Database>;
   private configService = inject(ConfigService);
-  private platform = inject(Platform);
   private storage = inject(CapacitorStorageAdapter);
+  private supabaseConfig: SupabaseConfig;
+  private useNativeNgrokAuth: boolean;
 
   constructor() {
     const config = this.configService.supabase;
+    this.supabaseConfig = config;
+    const isNgrokUrl = config.url.includes('ngrok');
+    const capacitorPlatform = Capacitor.getPlatform();
+    const isNativeCapacitorRuntime = Capacitor.isNativePlatform() || capacitorPlatform === 'android' || capacitorPlatform === 'ios';
+    this.useNativeNgrokAuth = isNgrokUrl && isNativeCapacitorRuntime;
 
-    // Bypass ngrok free-tier interstitial (ERR_NGROK_6024) when using local-ngrok URL
-    const isNgrok = config.url.includes('ngrok');
-    const globalOptions = isNgrok
-      ? { headers: { 'ngrok-skip-browser-warning': 'true' } as Record<string, string> }
+    // Avoid WebView/browser CORS preflight on ngrok free tunnels by routing
+    // Supabase HTTP requests through Capacitor's native HTTP bridge.
+    const globalOptions = this.useNativeNgrokAuth
+      ? { fetch: this.nativeNgrokFetch.bind(this) as typeof fetch }
       : undefined;
+
+    if (isNgrokUrl) {
+      console.log('SupabaseService: ngrok mode', {
+        url: config.url,
+        capacitorPlatform,
+        nativeFetchOverride: !!globalOptions,
+        useNativeNgrokAuth: this.useNativeNgrokAuth,
+      });
+    }
 
     this._client = createClient(config.url, config.key, {
       ...(globalOptions && { global: globalOptions }),
@@ -58,6 +80,64 @@ export class SupabaseService {
     });
   }
 
+  private async nativeNgrokFetch(input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
+    const request = new Request(input, init);
+    const method = request.method || 'GET';
+    const headers: Record<string, string> = {};
+    request.headers.forEach((value, key) => {
+      headers[key] = value;
+    });
+    headers['ngrok-skip-browser-warning'] = '69420';
+
+    let data: unknown;
+    if (method !== 'GET' && method !== 'HEAD') {
+      const bodyText = await request.text();
+      if (bodyText.length > 0) {
+        const contentType = request.headers.get('content-type') ?? '';
+        if (contentType.includes('application/json')) {
+          try {
+            data = JSON.parse(bodyText);
+          } catch {
+            data = bodyText;
+          }
+        } else if (contentType.includes('application/x-www-form-urlencoded')) {
+          const formData: Record<string, string> = {};
+          new URLSearchParams(bodyText).forEach((value, key) => {
+            formData[key] = value;
+          });
+          data = formData;
+        } else {
+          data = bodyText;
+        }
+      }
+    }
+
+    const response = await CapacitorHttp.request({
+      url: request.url,
+      method,
+      headers,
+      ...(data !== undefined && { data }),
+      responseType: 'text',
+      connectTimeout: 30000,
+      readTimeout: 30000,
+    });
+
+    const responseHeaders = new Headers();
+    const nativeHeaders = (response.headers ?? {}) as Record<string, string | string[]>;
+    for (const [key, value] of Object.entries(nativeHeaders)) {
+      responseHeaders.set(key, Array.isArray(value) ? value.join(', ') : String(value));
+    }
+
+    const responseBody = typeof response.data === 'string'
+      ? response.data
+      : JSON.stringify(response.data ?? null);
+
+    return new Response(responseBody, {
+      status: response.status,
+      headers: responseHeaders,
+    });
+  }
+
   get client(): SupabaseClient<Database> {
     return this._client;
   }
@@ -65,6 +145,10 @@ export class SupabaseService {
   // Email and Password Authentication
   async signInWithEmail(email: string, password: string): Promise<AuthResult> {
     try {
+      if (this.useNativeNgrokAuth) {
+        return await this.signInWithEmailViaNativeNgrok(email, password);
+      }
+
       const { data, error } = await this._client.auth.signInWithPassword({
         email,
         password,
@@ -82,6 +166,76 @@ export class SupabaseService {
     } catch (error) {
       return this.handleAuthError(error as AuthError);
     }
+  }
+
+  private async signInWithEmailViaNativeNgrok(email: string, password: string): Promise<AuthResult> {
+    const authUrl = `${this.supabaseConfig.url}/auth/v1/token?grant_type=password`;
+    const response = await CapacitorHttp.request({
+      url: authUrl,
+      method: 'POST',
+      headers: {
+        apikey: this.supabaseConfig.key,
+        Authorization: `Bearer ${this.supabaseConfig.key}`,
+        'Content-Type': 'application/json',
+        Accept: 'application/json',
+        'ngrok-skip-browser-warning': '69420',
+      },
+      data: { email, password },
+      responseType: 'text',
+      connectTimeout: 30000,
+      readTimeout: 30000,
+    });
+
+    const rawData = typeof response.data === 'string'
+      ? response.data
+      : JSON.stringify(response.data ?? null);
+
+    let parsed: NgrokPasswordSignInResponse | null = null;
+    try {
+      parsed = JSON.parse(rawData) as NgrokPasswordSignInResponse;
+    } catch {
+      if (rawData.startsWith('This ngrok')) {
+        return {
+          success: false,
+          error: 'Ngrok tunnel returned browser warning content instead of Supabase auth JSON.',
+        };
+      }
+      return {
+        success: false,
+        error: 'Invalid response from authentication server.',
+      };
+    }
+
+    if (response.status >= 400) {
+      const authMessage = typeof parsed?.['msg'] === 'string'
+        ? parsed['msg']
+        : typeof parsed?.['message'] === 'string'
+          ? parsed['message']
+          : 'Authentication failed';
+      return this.handleAuthError({ message: authMessage });
+    }
+
+    if (!parsed?.access_token || !parsed?.refresh_token) {
+      return {
+        success: false,
+        error: 'Authentication response missing session tokens.',
+      };
+    }
+
+    const { data, error } = await this._client.auth.setSession({
+      access_token: parsed.access_token,
+      refresh_token: parsed.refresh_token,
+    });
+
+    if (error) {
+      return this.handleAuthError(error);
+    }
+
+    return {
+      success: true,
+      user: data.user ?? parsed.user ?? undefined,
+      session: data.session ?? undefined,
+    };
   }
 
   async signUpWithEmail(email: string, password: string, metadata?: SignUpMetadata): Promise<AuthResult> {

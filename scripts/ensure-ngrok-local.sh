@@ -4,6 +4,11 @@
 # =============================================================================
 # Usage: ./scripts/ensure-ngrok-local.sh
 #
+# Scope:
+# - Android/device local development using ngrok tunnel
+# - Not for browser ng serve startup
+# - Browser local DB workflow: ng serve --configuration=local (http://127.0.0.1:54321)
+#
 # 1. Uses NGROK_SUPABASE_URL if set
 # 2. Else reads ngrok API (http://127.0.0.1:4040) for existing tunnel to 54321
 # 3. Else starts ngrok http 54321 in background and waits for URL
@@ -48,6 +53,7 @@ get_url_from_ngrok_api() {
 
 echo ""
 echo -e "${BLUE}Ensuring ngrok tunnel to local Supabase (port $SUPABASE_LOCAL_PORT)...${NC}"
+echo -e "${BLUE}Android/device local workflow only. Browser local DB should use --configuration=local.${NC}"
 
 # 1. Use env var if set
 if [ -n "$NGROK_SUPABASE_URL" ]; then
