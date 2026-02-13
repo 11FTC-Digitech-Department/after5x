@@ -188,8 +188,9 @@ export class JobExecutionPage implements OnInit, OnDestroy {
   // GPS tracking
   private locationWatchId: string | null = null;
 
-  // Real-time subscription
+  // Real-time subscriptions
   private unsubscribeRealTime: (() => void) | null = null;
+  private unsubscribeChatUpdates: (() => void) | null = null;
 
   // Computed
   statusConfig = computed(() => {
@@ -311,6 +312,7 @@ export class JobExecutionPage implements OnInit, OnDestroy {
     if (bookingId) {
       await this.loadBooking(bookingId);
       this.setupRealTimeSubscription(bookingId);
+      this.setupChatSubscription(bookingId);
       this.loadUnreadChatCount();
     }
   }
@@ -323,6 +325,9 @@ export class JobExecutionPage implements OnInit, OnDestroy {
   ngOnDestroy() {
     if (this.unsubscribeRealTime) {
       this.unsubscribeRealTime();
+    }
+    if (this.unsubscribeChatUpdates) {
+      this.unsubscribeChatUpdates();
     }
     // Stop location tracking when leaving page
     this.stopLocationTracking();
@@ -382,6 +387,19 @@ export class JobExecutionPage implements OnInit, OnDestroy {
               }]
             });
           }
+        }
+      }
+    );
+  }
+
+  private setupChatSubscription(bookingId: string) {
+    const userId = this.sessionService.profile()?.id;
+    if (!userId) return;
+
+    this.unsubscribeChatUpdates = this.chatService.subscribeToConversationUpdates(
+      (msgBookingId, message) => {
+        if (msgBookingId === bookingId && message.sender_id !== userId) {
+          this.unreadChatCount.update(count => count + 1);
         }
       }
     );

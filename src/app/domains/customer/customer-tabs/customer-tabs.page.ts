@@ -22,6 +22,7 @@ import {
 
 import { SessionService } from '@core/auth/session';
 import { NotificationService } from '@core/services/notification.service';
+import { ChatService } from '@core/services/chat.service';
 
 @Component({
   selector: 'app-customer-tabs',
@@ -42,12 +43,15 @@ import { NotificationService } from '@core/services/notification.service';
 export class CustomerTabsPage implements OnInit, OnDestroy {
   private sessionService = inject(SessionService);
   private notificationService = inject(NotificationService);
+  private chatService = inject(ChatService);
   private toastController = inject(ToastController);
 
   /** Unread count from NotificationService (single source of truth). */
   unreadCount = this.notificationService.unreadCount;
+  unreadChatCount = signal(0);
 
   private unsubscribeRealTime: (() => void) | null = null;
+  private unsubscribeChatUpdates: (() => void) | null = null;
   private userId: string | null = null;
 
   constructor() {
@@ -68,6 +72,7 @@ export class CustomerTabsPage implements OnInit, OnDestroy {
       if (profile?.id && !isLoading && !this.userId) {
         this.userId = profile.id;
         this.notificationService.refreshUnreadCount();
+        this.loadUnreadChatCount();
         this.setupRealTimeSubscription();
       }
     });
@@ -78,6 +83,7 @@ export class CustomerTabsPage implements OnInit, OnDestroy {
     if (profile?.id && !this.userId) {
       this.userId = profile.id;
       await this.notificationService.refreshUnreadCount();
+      await this.loadUnreadChatCount();
       this.setupRealTimeSubscription();
     }
   }
@@ -85,6 +91,9 @@ export class CustomerTabsPage implements OnInit, OnDestroy {
   ngOnDestroy() {
     if (this.unsubscribeRealTime) {
       this.unsubscribeRealTime();
+    }
+    if (this.unsubscribeChatUpdates) {
+      this.unsubscribeChatUpdates();
     }
   }
 
@@ -99,6 +108,25 @@ export class CustomerTabsPage implements OnInit, OnDestroy {
         }
       }
     );
+
+    // Subscribe to real-time chat updates for badge
+    this.unsubscribeChatUpdates = this.chatService.subscribeToConversationUpdates(
+      (_bookingId, message) => {
+        // Only increment for messages from other users
+        if (message.sender_id !== this.userId) {
+          this.unreadChatCount.update(count => count + 1);
+        }
+      }
+    );
+  }
+
+  private async loadUnreadChatCount() {
+    try {
+      const count = await this.chatService.refreshTotalUnreadCount();
+      this.unreadChatCount.set(count);
+    } catch (error) {
+      console.error('Failed to load chat count:', error);
+    }
   }
 
   private async showToast(message: string, type?: string) {
