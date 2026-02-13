@@ -1,5 +1,5 @@
 import { Injectable, inject, signal, computed } from '@angular/core';
-import { Platform } from '@ionic/angular';
+import { Platform, ToastController } from '@ionic/angular';
 import {
   PushNotifications,
   Token,
@@ -10,6 +10,7 @@ import {
 import { Capacitor } from '@capacitor/core';
 import { SupabaseService } from '../supabase/supabase';
 import { Router } from '@angular/router';
+import { ChatNotificationService } from './chat-notification.service';
 
 /**
  * Notification preferences interface matching database schema
@@ -83,6 +84,8 @@ export class PushNotificationService {
   private supabaseService = inject(SupabaseService);
   private platform = inject(Platform);
   private router = inject(Router);
+  private toastController = inject(ToastController);
+  private chatNotificationService = inject(ChatNotificationService);
 
   // User context is set externally to avoid circular dependency with SessionService
   private _userContext: PushNotificationUserContext | null = null;
@@ -282,10 +285,41 @@ export class PushNotificationService {
   }
 
   /**
-   * Handle foreground notification - emit event for in-app display
+   * Handle foreground notification - show toast for chat, emit event for others
    */
-  private handleForegroundNotification(notification: PushNotificationSchema): void {
-    // Emit custom event for components to listen to
+  private async handleForegroundNotification(notification: PushNotificationSchema): Promise<void> {
+    const data = notification.data;
+
+    if (data?.type === 'chat_message' && data?.booking_id) {
+      // Skip if user is already viewing this chat room
+      if (this.router.url.includes(`/chat/${data.booking_id}`)) {
+        return;
+      }
+
+      // Play sound + haptics
+      this.chatNotificationService.notify();
+
+      // Show toast with "View" action
+      const toast = await this.toastController.create({
+        message: `${notification.title}: ${notification.body}`,
+        duration: 4000,
+        position: 'top',
+        color: 'primary',
+        buttons: [
+          {
+            text: 'View',
+            handler: () => {
+              this.navigateToChatRoom(data.booking_id);
+            },
+          },
+          { icon: 'close', role: 'cancel' },
+        ],
+      });
+      await toast.present();
+      return;
+    }
+
+    // Non-chat notifications: emit custom event for components to listen to
     const customEvent = new CustomEvent('pushNotificationReceived', {
       detail: {
         title: notification.title,
@@ -302,7 +336,9 @@ export class PushNotificationService {
   private handleNotificationAction(action: ActionPerformed): void {
     const data = action.notification.data;
 
-    if (data?.booking_id) {
+    if (data?.type === 'chat_message' && data?.booking_id) {
+      this.navigateToChatRoom(data.booking_id);
+    } else if (data?.booking_id) {
       // Navigate to booking details based on user role
       const role = this._userContext?.role;
       if (role === 'provider') {
@@ -313,6 +349,18 @@ export class PushNotificationService {
     } else if (data?.route) {
       // Custom route specified in notification
       this.router.navigateByUrl(data.route);
+    }
+  }
+
+  /**
+   * Navigate to chat room based on user role
+   */
+  private navigateToChatRoom(bookingId: string): void {
+    const role = this._userContext?.role;
+    if (role === 'provider') {
+      this.router.navigate(['/p/chat', bookingId]);
+    } else {
+      this.router.navigate(['/c/chat', bookingId]);
     }
   }
 

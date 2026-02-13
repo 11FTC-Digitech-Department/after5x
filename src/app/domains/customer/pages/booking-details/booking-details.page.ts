@@ -200,8 +200,9 @@ export class BookingDetailsPage implements OnInit, OnDestroy {
   connectionMode = this.realtimeManager.mode;
   isConnected = this.realtimeManager.isConnected;
 
-  // Real-time subscription
+  // Real-time subscriptions
   private unsubscribeRealTime: (() => void) | null = null;
+  private unsubscribeChatUpdates: (() => void) | null = null;
 
   // Computed
   statusConfig = computed(() => {
@@ -275,6 +276,7 @@ export class BookingDetailsPage implements OnInit, OnDestroy {
     if (bookingId) {
       await this.loadBooking(bookingId);
       this.setupRealTimeSubscription(bookingId);
+      this.setupChatSubscription(bookingId);
       this.loadUnreadChatCount();
     }
   }
@@ -310,6 +312,9 @@ export class BookingDetailsPage implements OnInit, OnDestroy {
   ngOnDestroy() {
     if (this.unsubscribeRealTime) {
       this.unsubscribeRealTime();
+    }
+    if (this.unsubscribeChatUpdates) {
+      this.unsubscribeChatUpdates();
     }
   }
 
@@ -367,6 +372,19 @@ export class BookingDetailsPage implements OnInit, OnDestroy {
               }]
             });
           }
+        }
+      }
+    );
+  }
+
+  private setupChatSubscription(bookingId: string) {
+    const userId = this.sessionService.profile()?.id;
+    if (!userId) return;
+
+    this.unsubscribeChatUpdates = this.chatService.subscribeToConversationUpdates(
+      (msgBookingId, message) => {
+        if (msgBookingId === bookingId && message.sender_id !== userId) {
+          this.unreadChatCount.update(count => count + 1);
         }
       }
     );

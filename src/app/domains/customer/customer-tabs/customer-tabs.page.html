@@ -22,6 +22,9 @@
       <ion-tab-button tab="messages">
         <ion-icon name="chatbubbles-outline"></ion-icon>
         <ion-label>Messages</ion-label>
+        @if (unreadChatCount() > 0) {
+          <ion-badge color="danger">{{ unreadChatCount() > 9 ? '9+' : unreadChatCount() }}</ion-badge>
+        }
       </ion-tab-button>
 
       <ion-tab-button tab="profile">

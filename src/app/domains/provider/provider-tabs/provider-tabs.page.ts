@@ -47,6 +47,7 @@ export class ProviderTabsPage implements OnInit, OnDestroy {
   unreadChatCount = signal(0);
 
   private unsubscribeRealTime: (() => void) | null = null;
+  private unsubscribeChatUpdates: (() => void) | null = null;
   private userId: string | null = null;
 
   constructor() {
@@ -86,6 +87,9 @@ export class ProviderTabsPage implements OnInit, OnDestroy {
     if (this.unsubscribeRealTime) {
       this.unsubscribeRealTime();
     }
+    if (this.unsubscribeChatUpdates) {
+      this.unsubscribeChatUpdates();
+    }
   }
 
   async loadUnreadCount() {
@@ -114,6 +118,15 @@ export class ProviderTabsPage implements OnInit, OnDestroy {
       this.userId,
       () => {
         this.unreadNotificationCount.update(count => count + 1);
+      }
+    );
+
+    // Subscribe to real-time chat updates for badge
+    this.unsubscribeChatUpdates = this.chatService.subscribeToConversationUpdates(
+      (_bookingId, message) => {
+        if (message.sender_id !== this.userId) {
+          this.unreadChatCount.update(count => count + 1);
+        }
       }
     );
   }
