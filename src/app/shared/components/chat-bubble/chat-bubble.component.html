@@ -1,38 +1,50 @@
-<div class="chat-bubble" [class.own]="isOwn" [class.other]="!isOwn">
-  <!-- Avatar for other user's messages -->
-  @if (!isOwn && showAvatar) {
-    <ion-avatar class="avatar">
-      @if (message.sender?.avatar_url) {
-        <img [src]="message.sender?.avatar_url" [alt]="message.sender?.full_name" />
-      } @else {
-        <div class="avatar-placeholder">{{ senderInitial }}</div>
-      }
-    </ion-avatar>
-  }
-
-  <div class="bubble-content" [class.image-bubble]="isImage">
-    <!-- Image message -->
-    @if (isImage) {
-      <div class="image-container">
-        <img [src]="message.content" alt="Shared image" class="chat-image" />
-      </div>
-    } @else {
-      <!-- Text message -->
-      <p class="message-text">{{ message.content }}</p>
-    }
-
-    <!-- Timestamp and read status -->
-    <div class="message-meta">
+@if (isSystem) {
+  <!-- System message -->
+  <div class="system-bubble">
+    <div class="system-content">
+      <p class="system-text">{{ message.content }}</p>
       @if (showTimestamp) {
-        <span class="timestamp">{{ formattedTime }}</span>
-      }
-      @if (isOwn) {
-        <ion-icon
-          [name]="isRead ? 'checkmark-done' : 'checkmark'"
-          class="read-status"
-          [class.read]="isRead"
-        ></ion-icon>
+        <span class="system-timestamp">{{ formattedTime }}</span>
       }
     </div>
   </div>
-</div>
+} @else {
+  <div class="chat-bubble" [class.own]="isOwn" [class.other]="!isOwn">
+    <!-- Avatar for other user's messages -->
+    @if (!isOwn && showAvatar) {
+      <ion-avatar class="avatar">
+        @if (message.sender?.avatar_url) {
+          <img [src]="message.sender?.avatar_url" [alt]="message.sender?.full_name" />
+        } @else {
+          <div class="avatar-placeholder">{{ senderInitial }}</div>
+        }
+      </ion-avatar>
+    }
+
+    <div class="bubble-content" [class.image-bubble]="isImage">
+      <!-- Image message -->
+      @if (isImage) {
+        <div class="image-container">
+          <img [src]="message.content" alt="Shared image" class="chat-image" />
+        </div>
+      } @else {
+        <!-- Text message -->
+        <p class="message-text">{{ message.content }}</p>
+      }
+
+      <!-- Timestamp and read status -->
+      <div class="message-meta">
+        @if (showTimestamp) {
+          <span class="timestamp">{{ formattedTime }}</span>
+        }
+        @if (isOwn) {
+          <ion-icon
+            [name]="isRead ? 'checkmark-done' : 'checkmark'"
+            class="read-status"
+            [class.read]="isRead"
+          ></ion-icon>
+        }
+      </div>
+    </div>
+  </div>
+}

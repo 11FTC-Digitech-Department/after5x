@@ -3404,7 +3404,7 @@ export type Database = {
         | "rejected"
         | "expired"
         | "completed"
-      chat_message_type: "TEXT" | "IMAGE" | "LOCATION"
+      chat_message_type: "TEXT" | "IMAGE" | "LOCATION" | "SYSTEM"
       invoice_status: "PENDING" | "PAID" | "EXPIRED" | "FAILED"
       media_context:
         | "PROBLEM_REPORT"
@@ -3580,7 +3580,7 @@ export const Constants = {
         "expired",
         "completed",
       ],
-      chat_message_type: ["TEXT", "IMAGE", "LOCATION"],
+      chat_message_type: ["TEXT", "IMAGE", "LOCATION", "SYSTEM"],
       invoice_status: ["PENDING", "PAID", "EXPIRED", "FAILED"],
       media_context: [
         "PROBLEM_REPORT",

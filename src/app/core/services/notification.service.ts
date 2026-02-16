@@ -134,7 +134,9 @@ export class NotificationService {
           type,
           bookingId,
           title: 'Booking Confirmed',
-          message: 'Your booking has been confirmed by the provider.',
+          message: data?.providerName
+            ? `${data.providerName} has confirmed your ${data.serviceName || 'service'} booking.`
+            : 'Your booking has been confirmed by the provider.',
           data,
           channels: [NotificationChannel.PUSH, NotificationChannel.SMS, NotificationChannel.IN_APP]
         });
@@ -145,7 +147,9 @@ export class NotificationService {
           type,
           bookingId,
           title: 'Provider En Route',
-          message: 'Your service provider is on the way to your location.',
+          message: data?.providerName
+            ? `${data.providerName} is on the way to your location.`
+            : 'Your service provider is on the way to your location.',
           data,
           channels: [NotificationChannel.PUSH, NotificationChannel.SMS]
         });
@@ -156,7 +160,9 @@ export class NotificationService {
           type,
           bookingId,
           title: 'Provider Arrived',
-          message: 'Your service provider has arrived at your location.',
+          message: data?.providerName
+            ? `${data.providerName} has arrived at your location.`
+            : 'Your service provider has arrived at your location.',
           data,
           channels: [NotificationChannel.PUSH, NotificationChannel.SMS]
         });
@@ -167,7 +173,9 @@ export class NotificationService {
           type,
           bookingId,
           title: 'Service Completed',
-          message: 'Your service has been completed successfully.',
+          message: data?.serviceName
+            ? `Your ${data.serviceName} service has been completed successfully.`
+            : 'Your service has been completed successfully.',
           data,
           channels: [NotificationChannel.PUSH, NotificationChannel.EMAIL, NotificationChannel.IN_APP]
         });
@@ -178,7 +186,9 @@ export class NotificationService {
           type,
           bookingId,
           title: 'Booking Cancelled',
-          message: 'Your booking has been cancelled.',
+          message: data?.serviceName
+            ? `Your ${data.serviceName} booking has been cancelled.`
+            : 'Your booking has been cancelled.',
           data,
           channels: [NotificationChannel.PUSH, NotificationChannel.SMS, NotificationChannel.IN_APP]
         });
@@ -189,7 +199,9 @@ export class NotificationService {
           type,
           bookingId,
           title: 'Booking Rejected',
-          message: 'Your booking has been rejected by the provider.',
+          message: data?.providerName
+            ? `${data.providerName} was unable to accept your ${data.serviceName || 'service'} booking.`
+            : 'Your booking has been rejected by the provider.',
           data,
           channels: [NotificationChannel.PUSH, NotificationChannel.SMS, NotificationChannel.IN_APP]
         });

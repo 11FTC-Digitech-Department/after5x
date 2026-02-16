@@ -237,8 +237,8 @@ export class ChatRoomPage implements OnInit, OnDestroy {
         if (!currentItems.find(m => m.id === message.id)) {
           this.chatItems.set([...currentItems, message]);
 
-          // Mark as read and notify if from other user
-          if (message.sender_id !== this.currentUserId) {
+          // Mark as read and notify if from other user (skip SYSTEM messages)
+          if (message.sender_id !== this.currentUserId && message.message_type !== 'SYSTEM') {
             this.chatService.markAsRead(this.bookingId);
             this.chatNotificationService.notify();
           }
@@ -371,11 +371,15 @@ export class ChatRoomPage implements OnInit, OnDestroy {
   }
 
   shouldShowAvatar(message: ChatMessage, index: number): boolean {
+    // No avatar for SYSTEM messages
+    if (message.message_type === 'SYSTEM') return false;
     // Show avatar for first message or if previous message is from different sender
     if (index === 0) return true;
     const items = this.chatItems();
     const previousItem = items[index - 1];
     if (isSystemEvent(previousItem)) return true;
+    // Treat SYSTEM chat messages like system events for avatar grouping
+    if ('message_type' in previousItem && (previousItem as ChatMessage).message_type === 'SYSTEM') return true;
     return previousItem?.sender_id !== message.sender_id;
   }
 

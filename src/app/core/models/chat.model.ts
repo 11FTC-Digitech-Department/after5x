@@ -3,7 +3,7 @@
  * Supports real-time chat between customers and providers within active bookings
  */
 
-export type ChatMessageType = 'TEXT' | 'IMAGE';
+export type ChatMessageType = 'TEXT' | 'IMAGE' | 'SYSTEM';
 
 /**
  * Profile summary for chat participants

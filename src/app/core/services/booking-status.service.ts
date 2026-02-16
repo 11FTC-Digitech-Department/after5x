@@ -219,8 +219,39 @@ export class BookingStatusService {
     metadata?: any
   ): Promise<void> {
     try {
+      // Fetch booking details for richer notifications
+      const client = this.supabaseService.client;
+      let providerName: string | undefined;
+      let serviceName: string | undefined;
+      let grandTotal: number | undefined;
+
+      if (providerId) {
+        const { data: profile } = await client
+          .from('profiles')
+          .select('full_name')
+          .eq('id', providerId)
+          .single();
+        providerName = profile?.full_name ?? undefined;
+      }
+
+      const { data: bookingInfo } = await client
+        .from('bookings')
+        .select('grand_total, booking_items(service_variants(name))')
+        .eq('id', bookingId)
+        .single();
+
+      if (bookingInfo) {
+        grandTotal = bookingInfo.grand_total ?? undefined;
+        const items = bookingInfo.booking_items as any[];
+        if (items?.length > 0) {
+          serviceName = items[0].service_variants?.name ?? undefined;
+        }
+      }
+
+      const enrichedData = { ...metadata, providerName, serviceName, grandTotal };
+
       // Notify customer
-      await this.notificationService.notifyCustomerStatusUpdate(bookingId, customerId, status, metadata);
+      await this.notificationService.notifyCustomerStatusUpdate(bookingId, customerId, status, enrichedData);
 
       // Notify provider if applicable
       if (providerId && this.shouldNotifyProvider(status)) {

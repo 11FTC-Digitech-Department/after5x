@@ -32,6 +32,10 @@ export class ChatBubbleComponent {
     return this.message?.message_type === 'IMAGE';
   }
 
+  get isSystem(): boolean {
+    return this.message?.message_type === 'SYSTEM';
+  }
+
   get isRead(): boolean {
     return !!this.message?.read_at;
   }

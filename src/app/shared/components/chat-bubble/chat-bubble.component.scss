@@ -120,3 +120,33 @@
 .read-status {
   font-size: 14px;
 }
+
+// System message styles
+.system-bubble {
+  display: flex;
+  justify-content: center;
+  padding: 8px 16px;
+  margin-bottom: 8px;
+}
+
+.system-content {
+  max-width: 85%;
+  background: var(--ion-color-light-shade, #e0e0e0);
+  border-radius: 12px;
+  padding: 8px 14px;
+  text-align: center;
+}
+
+.system-text {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.4;
+  color: var(--ion-color-medium-shade, #555);
+}
+
+.system-timestamp {
+  display: block;
+  font-size: 10px;
+  color: var(--ion-color-medium, #999);
+  margin-top: 4px;
+}
