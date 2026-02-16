@@ -35,7 +35,13 @@ import {
   IonRefresherContent,
   RefresherCustomEvent
 } from '@ionic/angular/standalone';
-import { ServiceService, ServiceWithProviders, ProviderOffering, ProviderService } from '@core/services/service.service';
+import {
+  ServiceService,
+  ServiceWithProviders,
+  ProviderOffering,
+  ProviderService,
+  Review
+} from '@core/services/service.service';
 import { RealTimeService } from '@core/services/real-time.service';
 
 @Component({
@@ -81,8 +87,10 @@ export class ServiceDetailsPage implements OnInit, OnDestroy {
   private serviceService = inject(ServiceService);
   private realTimeService = inject(RealTimeService);
 
-  // Real-time subscription cleanup
   private providerAvailabilityUnsubscribe: (() => void) | null = null;
+  private baseRequestToken = 0;
+  private providerServicesRequestToken = 0;
+  private reviewsRequestToken = 0;
 
   serviceVariantId = signal<string>('');
   serviceData = signal<ServiceWithProviders | null>(null);
@@ -90,11 +98,20 @@ export class ServiceDetailsPage implements OnInit, OnDestroy {
   availableProviders = signal<ProviderOffering[]>([]);
   selectedProvider = signal<ProviderOffering | null>(null);
   selectedSegment = signal<'services' | 'provider' | 'reviews'>('services');
-  isLoading = signal(true);
   isFavorite = signal(false);
-  providerReviews = signal<any[]>([]);
+  providerReviews = signal<Review[]>([]);
 
-  // Computed signals
+  isBaseLoading = signal(true);
+  isProviderServicesLoading = signal(false);
+  isReviewsLoading = signal(false);
+
+  baseLoadError = signal<string | null>(null);
+  providerServicesError = signal<string | null>(null);
+  reviewsError = signal<string | null>(null);
+
+  loadedProviderServicesForProviderId = signal<string | null>(null);
+  loadedReviewsForProviderId = signal<string | null>(null);
+
   serviceTitle = computed(() => this.serviceData()?.name || '');
   servicePrice = computed(() => {
     const data = this.serviceData();
@@ -108,12 +125,6 @@ export class ServiceDetailsPage implements OnInit, OnDestroy {
     return `${data.duration_minutes} minutes`;
   });
 
-  providerRating = computed(() => {
-    const provider = this.selectedProvider();
-    if (!provider) return 0;
-    return provider.rating || 0;
-  });
-
   providerName = computed(() => {
     const provider = this.selectedProvider();
     if (!provider) return '';
@@ -125,16 +136,12 @@ export class ServiceDetailsPage implements OnInit, OnDestroy {
   }
 
   ngOnDestroy() {
-    // Clean up real-time subscription
     if (this.providerAvailabilityUnsubscribe) {
       this.providerAvailabilityUnsubscribe();
       this.providerAvailabilityUnsubscribe = null;
     }
   }
 
-  /**
-   * Get human-readable duration for how long provider has been online
-   */
   getOnlineDuration(provider: ProviderOffering): string {
     if (!provider.onlineSince) return '';
     return formatDistanceToNow(provider.onlineSince, { addSuffix: false });
@@ -142,47 +149,191 @@ export class ServiceDetailsPage implements OnInit, OnDestroy {
 
   async ngOnInit() {
     const serviceVariantId = this.route.snapshot.paramMap.get('serviceVariantId');
-    if (serviceVariantId) {
-      this.serviceVariantId.set(serviceVariantId);
-      await this.loadServiceData(serviceVariantId);
+    if (!serviceVariantId) return;
+
+    this.serviceVariantId.set(serviceVariantId);
+    this.setupProviderAvailabilitySubscription(serviceVariantId);
+    await this.loadServiceData(serviceVariantId);
+  }
+
+  private applyServiceData(serviceData: ServiceWithProviders): void {
+    this.serviceData.set(serviceData);
+    this.availableProviders.set(serviceData.providers);
+
+    const currentSelectedId = this.selectedProvider()?.providerId;
+    const selectedFromList = currentSelectedId
+      ? serviceData.providers.find(p => p.providerId === currentSelectedId) || null
+      : null;
+
+    const nextSelected = selectedFromList || serviceData.selectedProvider || serviceData.providers[0] || null;
+    this.selectedProvider.set(nextSelected);
+
+    if (!nextSelected) {
+      this.providerServices.set([]);
+      this.providerReviews.set([]);
+      this.loadedProviderServicesForProviderId.set(null);
+      this.loadedReviewsForProviderId.set(null);
+      this.isProviderServicesLoading.set(false);
+      this.isReviewsLoading.set(false);
+      this.providerServicesError.set(null);
+      this.reviewsError.set(null);
     }
   }
 
-  async loadServiceData(serviceVariantId: string) {
-    this.isLoading.set(true);
+  async loadServiceData(serviceVariantId: string, options?: { forceRefresh?: boolean }) {
+    const forceRefresh = Boolean(options?.forceRefresh);
+    const requestToken = ++this.baseRequestToken;
+
+    this.isBaseLoading.set(true);
+    this.baseLoadError.set(null);
+
+    if (forceRefresh) {
+      this.serviceService.invalidateServiceWithProvidersCache(serviceVariantId);
+    }
+
+    if (!forceRefresh) {
+      const cached = this.serviceService.getCachedServiceWithAllProviders(serviceVariantId);
+      if (cached) {
+        this.applyServiceData(cached);
+        this.isBaseLoading.set(false);
+
+        const cachedSelectedProvider = this.selectedProvider();
+        if (cachedSelectedProvider) {
+          this.loadProviderServices(cachedSelectedProvider.providerId, serviceVariantId);
+          if (this.selectedSegment() === 'reviews') {
+            this.loadReviews(cachedSelectedProvider.providerId);
+          }
+        }
+      }
+    }
+
     try {
       const serviceData = await this.serviceService.getServiceWithAllProviders(serviceVariantId);
+      if (requestToken !== this.baseRequestToken) return;
 
-      if (serviceData) {
-        this.serviceData.set(serviceData);
-        this.availableProviders.set(serviceData.providers);
-        this.selectedProvider.set(serviceData.selectedProvider);
-
-        // Load other services and reviews for the default (selected) provider
-        if (serviceData.selectedProvider) {
-          await this.loadProviderData(serviceData.selectedProvider.providerId, serviceVariantId);
+      if (!serviceData) {
+        if (!this.serviceData()) {
+          this.baseLoadError.set('Unable to load service details.');
         }
+        return;
+      }
 
-        // Set up real-time subscription for provider availability changes
-        this.setupProviderAvailabilitySubscription(serviceVariantId);
+      this.applyServiceData(serviceData);
+
+      const selectedProvider = this.selectedProvider();
+      if (selectedProvider) {
+        this.loadProviderServices(selectedProvider.providerId, serviceVariantId);
+        if (this.selectedSegment() === 'reviews') {
+          this.loadReviews(selectedProvider.providerId);
+        }
       }
     } catch (error) {
       console.error('Error loading service data:', error);
+      if (requestToken === this.baseRequestToken && !this.serviceData()) {
+        this.baseLoadError.set('Unable to load service details.');
+      }
     } finally {
-      this.isLoading.set(false);
+      if (requestToken === this.baseRequestToken) {
+        this.isBaseLoading.set(false);
+      }
     }
   }
 
-  /**
-   * Set up real-time subscription for provider availability
-   */
+  private async loadProviderServices(
+    providerId: string,
+    excludeServiceVariantId: string,
+    options?: { forceRefresh?: boolean }
+  ): Promise<void> {
+    const forceRefresh = Boolean(options?.forceRefresh);
+
+    if (this.loadedProviderServicesForProviderId() === providerId && !forceRefresh) {
+      return;
+    }
+
+    if (forceRefresh) {
+      this.serviceService.invalidateProviderOtherServicesCache(providerId);
+    }
+
+    const cached = this.serviceService.getCachedProviderOtherServices(providerId, excludeServiceVariantId);
+    if (cached && !forceRefresh) {
+      this.providerServices.set(cached);
+      this.loadedProviderServicesForProviderId.set(providerId);
+      this.providerServicesError.set(null);
+      this.isProviderServicesLoading.set(false);
+    } else {
+      this.isProviderServicesLoading.set(true);
+    }
+
+    const requestToken = ++this.providerServicesRequestToken;
+    this.providerServicesError.set(null);
+
+    try {
+      const otherServices = await this.serviceService.getProviderOtherServices(providerId, excludeServiceVariantId);
+      if (requestToken !== this.providerServicesRequestToken) return;
+
+      this.providerServices.set(otherServices || []);
+      this.loadedProviderServicesForProviderId.set(providerId);
+    } catch (error) {
+      console.error('Error loading provider services:', error);
+      if (requestToken === this.providerServicesRequestToken) {
+        this.providerServices.set([]);
+        this.providerServicesError.set('Unable to load other services right now.');
+      }
+    } finally {
+      if (requestToken === this.providerServicesRequestToken) {
+        this.isProviderServicesLoading.set(false);
+      }
+    }
+  }
+
+  private async loadReviews(providerId: string, options?: { forceRefresh?: boolean }): Promise<void> {
+    const forceRefresh = Boolean(options?.forceRefresh);
+
+    if (this.loadedReviewsForProviderId() === providerId && !forceRefresh) {
+      return;
+    }
+
+    if (forceRefresh) {
+      this.serviceService.invalidateProviderReviewsCache(providerId);
+    }
+
+    const cached = this.serviceService.getCachedProviderReviews(providerId);
+    if (cached && !forceRefresh) {
+      this.providerReviews.set(cached);
+      this.loadedReviewsForProviderId.set(providerId);
+      this.reviewsError.set(null);
+      this.isReviewsLoading.set(false);
+    } else {
+      this.isReviewsLoading.set(true);
+    }
+
+    const requestToken = ++this.reviewsRequestToken;
+    this.reviewsError.set(null);
+
+    try {
+      const reviews = await this.serviceService.getProviderReviews(providerId);
+      if (requestToken !== this.reviewsRequestToken) return;
+
+      this.providerReviews.set(reviews || []);
+      this.loadedReviewsForProviderId.set(providerId);
+    } catch (error) {
+      console.error('Error loading provider reviews:', error);
+      if (requestToken === this.reviewsRequestToken) {
+        this.providerReviews.set([]);
+        this.reviewsError.set('Unable to load reviews right now.');
+      }
+    } finally {
+      if (requestToken === this.reviewsRequestToken) {
+        this.isReviewsLoading.set(false);
+      }
+    }
+  }
+
   private setupProviderAvailabilitySubscription(serviceVariantId: string) {
-    // Clean up existing subscription
     if (this.providerAvailabilityUnsubscribe) {
       this.providerAvailabilityUnsubscribe();
     }
 
-    // Subscribe to provider status changes
     this.providerAvailabilityUnsubscribe = this.realTimeService.subscribeToProviderAvailability(
       (providerId: string, status: string, onlineSince: Date | null) => {
         this.handleProviderStatusChange(providerId, status, onlineSince, serviceVariantId);
@@ -190,9 +341,6 @@ export class ServiceDetailsPage implements OnInit, OnDestroy {
     );
   }
 
-  /**
-   * Handle real-time provider status changes
-   */
   private async handleProviderStatusChange(
     providerId: string,
     status: string,
@@ -204,36 +352,48 @@ export class ServiceDetailsPage implements OnInit, OnDestroy {
     const providerInList = currentProviders.find(p => p.providerId === providerId);
 
     if (isAvailableStatus && !providerInList) {
-      // Provider came online - refresh the full list to include them
-      console.log('Provider came online, refreshing list:', providerId);
       const serviceData = await this.serviceService.getServiceWithAllProviders(serviceVariantId);
-      if (serviceData) {
-        this.availableProviders.set(serviceData.providers);
-        // If no provider was selected and now we have providers, select the first one
-        if (!this.selectedProvider() && serviceData.providers.length > 0) {
-          this.selectedProvider.set(serviceData.providers[0]);
-          await this.loadProviderData(serviceData.providers[0].providerId, serviceVariantId);
+      if (!serviceData) return;
+
+      this.applyServiceData(serviceData);
+      const selectedProvider = this.selectedProvider();
+      if (selectedProvider) {
+        this.loadProviderServices(selectedProvider.providerId, serviceVariantId);
+        if (this.selectedSegment() === 'reviews') {
+          this.loadReviews(selectedProvider.providerId);
         }
       }
-    } else if (!isAvailableStatus && providerInList) {
-      // Provider went offline - remove from list
-      console.log('Provider went offline, removing from list:', providerId);
+      return;
+    }
+
+    if (!isAvailableStatus && providerInList) {
       const filteredProviders = currentProviders.filter(p => p.providerId !== providerId);
       this.availableProviders.set(filteredProviders);
 
-      // If the selected provider went offline, select another one
       if (this.selectedProvider()?.providerId === providerId) {
-        if (filteredProviders.length > 0) {
-          this.selectedProvider.set(filteredProviders[0]);
-          await this.loadProviderData(filteredProviders[0].providerId, serviceVariantId);
-        } else {
-          this.selectedProvider.set(null);
+        const nextSelected = filteredProviders[0] || null;
+        this.selectedProvider.set(nextSelected);
+
+        if (nextSelected) {
           this.providerServices.set([]);
           this.providerReviews.set([]);
+          this.loadedProviderServicesForProviderId.set(null);
+          this.loadedReviewsForProviderId.set(null);
+          this.loadProviderServices(nextSelected.providerId, serviceVariantId);
+          if (this.selectedSegment() === 'reviews') {
+            this.loadReviews(nextSelected.providerId);
+          }
+        } else {
+          this.providerServices.set([]);
+          this.providerReviews.set([]);
+          this.loadedProviderServicesForProviderId.set(null);
+          this.loadedReviewsForProviderId.set(null);
         }
       }
-    } else if (isAvailableStatus && providerInList) {
-      // Provider status or onlineSince updated - update in place
+      return;
+    }
+
+    if (isAvailableStatus && providerInList) {
       const updatedProviders = currentProviders.map(p =>
         p.providerId === providerId
           ? { ...p, status, onlineSince: onlineSince || undefined }
@@ -241,36 +401,62 @@ export class ServiceDetailsPage implements OnInit, OnDestroy {
       );
       this.availableProviders.set(updatedProviders);
 
-      // Also update selectedProvider if it's the same one
       if (this.selectedProvider()?.providerId === providerId) {
         this.selectedProvider.set(updatedProviders.find(p => p.providerId === providerId) || null);
       }
     }
   }
 
-  private async loadProviderData(providerId: string, excludeServiceVariantId: string) {
-    try {
-      const [otherServices, reviews] = await Promise.all([
-        this.serviceService.getProviderOtherServices(providerId, excludeServiceVariantId),
-        this.serviceService.getProviderReviews(providerId)
-      ]);
-      this.providerServices.set(otherServices || []);
-      this.providerReviews.set(reviews || []);
-    } catch (error) {
-      console.error('Error loading provider data:', error);
-      this.providerServices.set([]);
+  selectProvider(provider: ProviderOffering) {
+    this.selectedProvider.set(provider);
+
+    const serviceVariantId = this.serviceVariantId();
+    if (!serviceVariantId) return;
+
+    this.providerServices.set([]);
+    this.loadedProviderServicesForProviderId.set(null);
+    this.loadProviderServices(provider.providerId, serviceVariantId);
+
+    if (this.selectedSegment() === 'reviews') {
       this.providerReviews.set([]);
+      this.loadedReviewsForProviderId.set(null);
+      this.loadReviews(provider.providerId);
     }
   }
 
-  selectProvider(provider: ProviderOffering) {
-    this.selectedProvider.set(provider);
-    // Reload other services and reviews for the newly selected provider
-    this.loadProviderData(provider.providerId, this.serviceVariantId());
+  onSegmentChange(event: any) {
+    const segment = event.detail.value as 'services' | 'provider' | 'reviews';
+    this.selectedSegment.set(segment);
+
+    if (segment === 'reviews') {
+      const provider = this.selectedProvider();
+      if (provider) {
+        this.loadReviews(provider.providerId);
+      }
+    }
   }
 
-  onSegmentChange(event: any) {
-    this.selectedSegment.set(event.detail.value);
+  retryBaseLoad() {
+    const serviceVariantId = this.serviceVariantId();
+    if (!serviceVariantId) return;
+    this.loadServiceData(serviceVariantId, { forceRefresh: true });
+  }
+
+  retryProviderServicesLoad() {
+    const provider = this.selectedProvider();
+    const serviceVariantId = this.serviceVariantId();
+    if (!provider || !serviceVariantId) return;
+
+    this.loadedProviderServicesForProviderId.set(null);
+    this.loadProviderServices(provider.providerId, serviceVariantId, { forceRefresh: true });
+  }
+
+  retryReviewsLoad() {
+    const provider = this.selectedProvider();
+    if (!provider) return;
+
+    this.loadedReviewsForProviderId.set(null);
+    this.loadReviews(provider.providerId, { forceRefresh: true });
   }
 
   toggleFavorite() {
@@ -292,47 +478,30 @@ export class ServiceDetailsPage implements OnInit, OnDestroy {
   }
 
   navigateToProvider() {
-    // Navigate to provider profile or services
-    // For now, just stay on the provider tab
     this.selectedSegment.set('provider');
   }
 
   async addReview(rating: number, comment: string) {
-    // This would typically be called from a review form
-    // For now, just log the action
     console.log('Adding review:', { rating, comment, providerId: this.selectedProvider()?.providerId });
-    // TODO: Implement review form and submission
   }
 
-  /**
-   * Handle pull-to-refresh to reload provider list
-   */
   async doRefresh(event: RefresherCustomEvent) {
     try {
       const serviceVariantId = this.serviceVariantId();
-      if (serviceVariantId) {
-        const serviceData = await this.serviceService.getServiceWithAllProviders(serviceVariantId);
-        if (serviceData) {
-          this.availableProviders.set(serviceData.providers);
+      const providerId = this.selectedProvider()?.providerId;
 
-          // Update selected provider if current one is no longer available
-          const currentSelected = this.selectedProvider();
-          if (currentSelected) {
-            const stillAvailable = serviceData.providers.find(p => p.providerId === currentSelected.providerId);
-            if (!stillAvailable && serviceData.providers.length > 0) {
-              this.selectedProvider.set(serviceData.providers[0]);
-              await this.loadProviderData(serviceData.providers[0].providerId, serviceVariantId);
-            } else if (stillAvailable) {
-              // Update with fresh data
-              this.selectedProvider.set(stillAvailable);
-            }
-          } else if (serviceData.providers.length > 0) {
-            // No provider selected, select the first one
-            this.selectedProvider.set(serviceData.providers[0]);
-            await this.loadProviderData(serviceData.providers[0].providerId, serviceVariantId);
-          }
-        }
+      if (!serviceVariantId) return;
+
+      this.serviceService.invalidateServiceWithProvidersCache(serviceVariantId);
+      if (providerId) {
+        this.serviceService.invalidateProviderOtherServicesCache(providerId);
+        this.serviceService.invalidateProviderReviewsCache(providerId);
       }
+
+      this.loadedProviderServicesForProviderId.set(null);
+      this.loadedReviewsForProviderId.set(null);
+
+      await this.loadServiceData(serviceVariantId, { forceRefresh: true });
     } catch (error) {
       console.error('Error refreshing provider list:', error);
     } finally {

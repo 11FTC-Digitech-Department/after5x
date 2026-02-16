@@ -87,7 +87,10 @@ export class SupabaseService {
     request.headers.forEach((value, key) => {
       headers[key] = value;
     });
-    headers['ngrok-skip-browser-warning'] = '69420';
+    headers['ngrok-skip-browser-warning'] = '1';
+    if (!headers['User-Agent'] && !headers['user-agent']) {
+      headers['User-Agent'] = 'After5Native/1.0';
+    }
 
     let data: unknown;
     if (method !== 'GET' && method !== 'HEAD') {
@@ -178,7 +181,8 @@ export class SupabaseService {
         Authorization: `Bearer ${this.supabaseConfig.key}`,
         'Content-Type': 'application/json',
         Accept: 'application/json',
-        'ngrok-skip-browser-warning': '69420',
+        'ngrok-skip-browser-warning': '1',
+        'User-Agent': 'After5Native/1.0',
       },
       data: { email, password },
       responseType: 'text',
@@ -194,7 +198,8 @@ export class SupabaseService {
     try {
       parsed = JSON.parse(rawData) as NgrokPasswordSignInResponse;
     } catch {
-      if (rawData.startsWith('This ngrok')) {
+      const normalizedRaw = rawData.toLowerCase();
+      if (normalizedRaw.startsWith('this ngrok') || (normalizedRaw.includes('ngrok') && normalizedRaw.includes('<html'))) {
         return {
           success: false,
           error: 'Ngrok tunnel returned browser warning content instead of Supabase auth JSON.',

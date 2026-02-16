@@ -153,8 +153,97 @@ export interface Review {
 })
 export class ServiceService {
   private supabaseService = inject(SupabaseService);
+  private readonly serviceCacheTtlMs = 2 * 60 * 1000;
+  private readonly providerServicesCacheTtlMs = 2 * 60 * 1000;
+  private readonly providerReviewsCacheTtlMs = 60 * 1000;
 
-  async getServiceWithProvider(serviceVariantId: string): Promise<ServiceWithProvider | null> {
+  private readonly serviceWithProvidersCache = new Map<string, { data: ServiceWithProviders; ts: number }>();
+  private readonly providerOtherServicesCache = new Map<string, { data: ProviderService[]; ts: number }>();
+  private readonly providerReviewsCache = new Map<string, { data: Review[]; ts: number }>();
+
+  private isCacheFresh(ts: number, ttlMs: number): boolean {
+    return Date.now() - ts < ttlMs;
+  }
+
+  private buildProviderOtherServicesCacheKey(providerId: string, excludeServiceVariantId?: string): string {
+    return `${providerId}|${excludeServiceVariantId || ''}`;
+  }
+
+  getCachedServiceWithAllProviders(serviceVariantId: string): ServiceWithProviders | null {
+    const cached = this.serviceWithProvidersCache.get(serviceVariantId);
+    if (!cached || !this.isCacheFresh(cached.ts, this.serviceCacheTtlMs)) {
+      this.serviceWithProvidersCache.delete(serviceVariantId);
+      return null;
+    }
+    return cached.data;
+  }
+
+  setServiceWithProvidersCache(serviceVariantId: string, data: ServiceWithProviders): void {
+    this.serviceWithProvidersCache.set(serviceVariantId, { data, ts: Date.now() });
+  }
+
+  invalidateServiceWithProvidersCache(serviceVariantId?: string): void {
+    if (serviceVariantId) {
+      this.serviceWithProvidersCache.delete(serviceVariantId);
+      return;
+    }
+    this.serviceWithProvidersCache.clear();
+  }
+
+  getCachedProviderOtherServices(providerId: string, excludeServiceVariantId?: string): ProviderService[] | null {
+    const key = this.buildProviderOtherServicesCacheKey(providerId, excludeServiceVariantId);
+    const cached = this.providerOtherServicesCache.get(key);
+    if (!cached || !this.isCacheFresh(cached.ts, this.providerServicesCacheTtlMs)) {
+      this.providerOtherServicesCache.delete(key);
+      return null;
+    }
+    return cached.data;
+  }
+
+  setProviderOtherServicesCache(
+    providerId: string,
+    excludeServiceVariantId: string | undefined,
+    data: ProviderService[]
+  ): void {
+    const key = this.buildProviderOtherServicesCacheKey(providerId, excludeServiceVariantId);
+    this.providerOtherServicesCache.set(key, { data, ts: Date.now() });
+  }
+
+  invalidateProviderOtherServicesCache(providerId?: string): void {
+    if (!providerId) {
+      this.providerOtherServicesCache.clear();
+      return;
+    }
+
+    for (const key of this.providerOtherServicesCache.keys()) {
+      if (key.startsWith(`${providerId}|`)) {
+        this.providerOtherServicesCache.delete(key);
+      }
+    }
+  }
+
+  getCachedProviderReviews(providerId: string): Review[] | null {
+    const cached = this.providerReviewsCache.get(providerId);
+    if (!cached || !this.isCacheFresh(cached.ts, this.providerReviewsCacheTtlMs)) {
+      this.providerReviewsCache.delete(providerId);
+      return null;
+    }
+    return cached.data;
+  }
+
+  setProviderReviewsCache(providerId: string, data: Review[]): void {
+    this.providerReviewsCache.set(providerId, { data, ts: Date.now() });
+  }
+
+  invalidateProviderReviewsCache(providerId?: string): void {
+    if (providerId) {
+      this.providerReviewsCache.delete(providerId);
+      return;
+    }
+    this.providerReviewsCache.clear();
+  }
+
+  async getServiceWithProvider(serviceVariantId: string, preferredProviderId?: string): Promise<ServiceWithProvider | null> {
     try {
       // Use a more direct approach to avoid type issues
       const client = this.supabaseService.client as any;
@@ -203,15 +292,21 @@ export class ServiceService {
         return null;
       }
 
-      // Sort by rating (highest first), then by creation date (oldest first)
-      const sortedOfferings = offeringsData.sort((a: any, b: any) => {
-        const ratingA = a.provider?.rating_avg || 0;
-        const ratingB = b.provider?.rating_avg || 0;
-        if (ratingB !== ratingA) return ratingB - ratingA;
-        return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
-      });
+      const preferredOffering = preferredProviderId
+        ? offeringsData.find((offering: any) => offering.provider?.id === preferredProviderId)
+        : null;
 
-      const offeringData = sortedOfferings[0];
+      let offeringData = preferredOffering;
+      if (!offeringData) {
+        // Sort by rating (highest first), then by creation date (oldest first)
+        const sortedOfferings = offeringsData.sort((a: any, b: any) => {
+          const ratingA = a.provider?.rating_avg || 0;
+          const ratingB = b.provider?.rating_avg || 0;
+          if (ratingB !== ratingA) return ratingB - ratingA;
+          return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+        });
+        offeringData = sortedOfferings[0];
+      }
 
       // Combine the data
       return {
@@ -277,7 +372,7 @@ export class ServiceService {
 
       // Return empty providers array if no online providers (don't treat as error)
       if (!offeringsData || offeringsData.length === 0) {
-        return {
+        const result = {
           ...variantData,
           service: variantData.service,
           providers: [],
@@ -287,6 +382,8 @@ export class ServiceService {
             icon_url: variantData.service.service_categories?.icon_url,
           },
         };
+        this.setServiceWithProvidersCache(serviceVariantId, result);
+        return result;
       }
 
       // Helper function to generate display name
@@ -318,7 +415,7 @@ export class ServiceService {
         providers[0].isDefault = true;
       }
 
-      return {
+      const result = {
         ...variantData,
         service: variantData.service,
         providers,
@@ -328,6 +425,8 @@ export class ServiceService {
           icon_url: variantData.service.service_categories?.icon_url,
         },
       };
+      this.setServiceWithProvidersCache(serviceVariantId, result);
+      return result;
     } catch (error) {
       console.error('Error in getServiceWithAllProviders:', error);
       return null;
@@ -356,6 +455,7 @@ export class ServiceService {
       }
 
       if (!offeringsData || offeringsData.length === 0) {
+        this.setProviderOtherServicesCache(providerId, excludeServiceVariantId, []);
         return [];
       }
 
@@ -373,7 +473,7 @@ export class ServiceService {
         return [];
       }
 
-      return (variantsData as any[]).map((variant: any) => ({
+      const result = (variantsData as any[]).map((variant: any) => ({
         id: variant.id,
         name: variant.name,
         description: variant.description,
@@ -381,6 +481,8 @@ export class ServiceService {
         price_max: variant.price_max,
         duration_minutes: variant.duration_minutes,
       }));
+      this.setProviderOtherServicesCache(providerId, excludeServiceVariantId, result);
+      return result;
     } catch (error) {
       console.error('Error in getProviderOtherServices:', error);
       return [];
@@ -424,7 +526,9 @@ export class ServiceService {
         return [];
       }
 
-      return data || [];
+      const result = data || [];
+      this.setProviderReviewsCache(providerId, result);
+      return result;
     } catch (error) {
       console.error('Error in getProviderReviews:', error);
       return [];

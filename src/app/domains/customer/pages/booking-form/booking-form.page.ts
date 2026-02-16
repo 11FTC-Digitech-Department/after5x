@@ -24,12 +24,14 @@ import {
   IonInput,
   IonTextarea,
   IonDatetime,
+  IonDatetimeButton,
+  IonModal,
   IonSelect,
   IonSelectOption,
   IonList,
   IonChip,
   IonAvatar,
-  IonSpinner, IonBackButton, IonFooter, IonBadge, IonNote, IonSegment, IonSegmentButton, IonToggle } from '@ionic/angular/standalone';
+  IonSpinner, IonBackButton, IonFooter, IonBadge, IonNote, IonSegment, IonSegmentButton, IonToggle, IonSkeletonText } from '@ionic/angular/standalone';
 import { Camera, CameraResultType, CameraSource, CameraPermissionType } from '@capacitor/camera';
 import { ServiceService, ServiceWithProvider } from '@core/services/service.service';
 import { SessionService } from '@core/auth/session';
@@ -73,6 +75,11 @@ interface PriceBreakdown {
   total: number;
 }
 
+interface BookingNavigationState {
+  selectedLocation?: GeocodeResult;
+  preSelectedProviderId?: string;
+}
+
 @Component({
   selector: 'app-booking-form',
   templateUrl: './booking-form.page.html',
@@ -99,12 +106,15 @@ interface PriceBreakdown {
     IonInput,
     IonTextarea,
     IonDatetime,
+    IonDatetimeButton,
+    IonModal,
     IonSelect,
     IonSelectOption,
     IonList,
     IonChip,
     IonAvatar,
     IonSpinner,
+    IonSkeletonText,
     IonBadge,
     IonNote,
     IonSegment,
@@ -115,6 +125,8 @@ interface PriceBreakdown {
     FormsModule]
 })
 export class BookingFormPage implements OnInit {
+  private static readonly MINIMUM_SLOT_LEAD_TIME_MINUTES = 60;
+
   private formBuilder = inject(FormBuilder);
   private router = inject(Router);
   private route = inject(ActivatedRoute);
@@ -135,10 +147,12 @@ export class BookingFormPage implements OnInit {
 
   // Pre-selected provider from service details page
   preSelectedProviderId = signal<string | null>(null);
+  hasPreSelectedProviderContext = signal(false);
 
   // Service data
   selectedService = signal<ServiceWithProvider | null>(null);
   currentServiceType = signal<string>('');
+  hasServiceVariantContext = signal(false);
 
   // Reactive urgency signal for computed properties
   currentUrgency = signal<string>('low');
@@ -275,6 +289,10 @@ export class BookingFormPage implements OnInit {
     return urgency ? this.getRecommendedTimeslot(urgency) : null;
   });
 
+  visibleTimeslots = computed(() => {
+    return this.timeslots.filter(slot => !this.disabledTimeslots().has(slot.value));
+  });
+
   isAsapSelected = computed(() => {
     return this.currentUrgency() === 'emergency';
   });
@@ -284,25 +302,19 @@ export class BookingFormPage implements OnInit {
     const selectedDateStr = this.selectedDate();
     if (!selectedDateStr) return new Set<string>();
 
-    const selectedDate = new Date(selectedDateStr);
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-
-    const selectedDateNormalized = new Date(selectedDate);
-    selectedDateNormalized.setHours(0, 0, 0, 0);
-
     // If selected date is not today, all timeslots are available
-    if (selectedDateNormalized.getTime() !== today.getTime()) {
+    if (!this.isToday(selectedDateStr)) {
       return new Set<string>();
     }
 
-    // For today, disable timeslots that are in the past
+    // For today, disable only timeslots that have already ended.
+    // Also disable slots with less than 60 minutes remaining before end.
     const now = new Date();
     const currentTimeInMinutes = now.getHours() * 60 + now.getMinutes();
 
     const disabled = new Set<string>();
     this.timeslots.forEach(timeslot => {
-      if (currentTimeInMinutes >= timeslot.startTime) {
+      if (this.isTimeslotUnavailableForToday(timeslot.endTime, currentTimeInMinutes)) {
         disabled.add(timeslot.value);
       }
     });
@@ -319,35 +331,43 @@ export class BookingFormPage implements OnInit {
     return true;
   });
 
-  // Smart timeslot recommendations based on urgency and current time
+  // Smart timeslot recommendations based on urgency, selected date, and availability
   getRecommendedTimeslot(urgency: string): string {
-    const now = new Date();
-    const currentHour = now.getHours();
-    const currentMinute = now.getMinutes();
-    const currentTimeInMinutes = currentHour * 60 + currentMinute;
+    const selectedDate = this.bookingForm?.get('preferredDate')?.value as string | null;
+    const availableSlots = this.getAvailableTimeslots(selectedDate ?? undefined);
 
+    if (availableSlots.length === 0) {
+      return this.timeslots[0].value;
+    }
+
+    // For future dates, prefer common daytime windows and keep urgency-specific guidance.
+    if (selectedDate && !this.isToday(selectedDate)) {
+      switch (urgency) {
+        case 'emergency':
+        case 'high':
+          return this.pickFirstAvailableByPriority(availableSlots, ['morning', 'noon', 'afternoon', 'evening', 'late-night', 'overnight', 'dawn']);
+        case 'medium':
+          return this.pickFirstAvailableByPriority(availableSlots, ['noon', 'afternoon', 'morning', 'evening', 'late-night', 'overnight', 'dawn']);
+        case 'low':
+        default:
+          return this.pickFirstAvailableByPriority(availableSlots, ['morning', 'noon', 'afternoon', 'evening', 'late-night', 'overnight', 'dawn']);
+      }
+    }
+
+    const now = new Date();
+    const currentTimeInMinutes = now.getHours() * 60 + now.getMinutes();
+
+    // For today, target a slot based on urgency lead-time, then snap to the next available slot.
     switch (urgency) {
       case 'emergency':
-        // For emergency, use the next available timeslot
-        return this.getNextAvailableTimeslot();
-
+        return this.getNextAvailableTimeslot(currentTimeInMinutes);
       case 'high':
-        // For high urgency (within 6 hours), recommend the soonest available timeslot
-        if (currentTimeInMinutes < 15 * 60) return 'afternoon'; // Before 3PM -> afternoon
-        if (currentTimeInMinutes < 17 * 60) return 'evening';   // Before 5PM -> evening
-        return 'late-night'; // After 5PM -> late-night
-
+        return this.getClosestAvailableSlotFromTime(currentTimeInMinutes + 60, availableSlots);
       case 'medium':
-        // For medium urgency (within 12 hours), give some buffer time
-        if (currentTimeInMinutes < 12 * 60) return 'afternoon'; // Before noon -> afternoon
-        if (currentTimeInMinutes < 15 * 60) return 'evening';   // Before 3PM -> evening
-        return 'late-night'; // After 3PM -> late-night
-
+        return this.getClosestAvailableSlotFromTime(currentTimeInMinutes + 180, availableSlots);
       case 'low':
       default:
-        // For low urgency (within 24 hours), recommend next business day morning
-        if (currentTimeInMinutes < 17 * 60) return 'morning';   // Before 5PM -> tomorrow morning
-        return 'morning'; // After 5PM -> next day morning
+        return this.getClosestAvailableSlotFromTime(currentTimeInMinutes + 360, availableSlots);
     }
   }
 
@@ -385,28 +405,20 @@ export class BookingFormPage implements OnInit {
     }
 
     // If no match found (shouldn't happen), find the next available timeslot
-    return this.getNextAvailableTimeslot();
+    return this.getNextAvailableTimeslot(currentTimeInMinutes);
   }
 
-  private getNextAvailableTimeslot(): string {
-    const now = new Date();
-    const currentHour = now.getHours();
+  private getNextAvailableTimeslot(currentTimeInMinutes: number): string {
+    const availableSlots = this.getAvailableTimeslots(this.selectedDate());
+    if (availableSlots.length === 0) {
+      return this.timeslots[0].value;
+    }
 
-    // Find the next available timeslot based on current time
-    if (currentHour >= 0 && currentHour < 3) return 'dawn';        // 12AM-3AM -> dawn (3AM-6AM)
-    if (currentHour >= 3 && currentHour < 8) return 'morning';     // 3AM-8AM -> morning (8AM-12PM)
-    if (currentHour >= 8 && currentHour < 12) return 'noon';       // 8AM-12PM -> noon (12PM-3PM)
-    if (currentHour >= 12 && currentHour < 15) return 'afternoon'; // 12PM-3PM -> afternoon (3PM-5PM)
-    if (currentHour >= 15 && currentHour < 17) return 'evening';   // 3PM-5PM -> evening (5PM-9PM)
-    if (currentHour >= 17 && currentHour < 21) return 'late-night'; // 5PM-9PM -> late-night (9PM-12AM)
-    if (currentHour >= 21) return 'overnight';                     // 9PM+ -> overnight (12AM-3AM)
-
-    return 'morning'; // Fallback
+    return this.getClosestAvailableSlotFromTime(currentTimeInMinutes, availableSlots);
   }
 
   private getFirstAvailableTimeslot(dateStr?: string): string {
-    const disabled = this.disabledTimeslots();
-    const availableTimeslots = this.timeslots.filter(slot => !disabled.has(slot.value));
+    const availableTimeslots = this.getAvailableTimeslots(dateStr);
 
     if (availableTimeslots.length > 0) {
       return availableTimeslots[0].value;
@@ -426,8 +438,8 @@ export class BookingFormPage implements OnInit {
       const today = new Date().toISOString().split('T')[0];
       this.bookingForm.get('preferredDate')?.setValue(today);
 
-      const currentTimeslot = this.getCurrentTimeTimeslot();
-      this.bookingForm.get('preferredTimeslot')?.setValue(currentTimeslot);
+      const recommendedTimeslot = this.getRecommendedTimeslot(urgency);
+      this.bookingForm.get('preferredTimeslot')?.setValue(recommendedTimeslot);
     } else {
       // For other urgencies: don't auto-select, just let the recommended badge guide the user
       // Only set if no timeslot is currently selected
@@ -491,14 +503,57 @@ export class BookingFormPage implements OnInit {
 
   // Timeslots with their start times in minutes from midnight
   timeslots = [
-    { value: 'morning', label: 'Morning', range: '8:00 AM - 12:00 PM', icon: 'sunny-outline', after5: false, startTime: 8 * 60 },
-    { value: 'noon', label: 'Noon', range: '12:00 PM - 3:00 PM', icon: 'sunny', after5: false, startTime: 12 * 60 },
-    { value: 'afternoon', label: 'Afternoon', range: '3:00 PM - 5:00 PM', icon: 'partly-sunny', after5: false, startTime: 15 * 60 },
-    { value: 'evening', label: 'Evening', range: '5:00 PM - 9:00 PM', icon: 'moon-outline', after5: true, startTime: 17 * 60 },
-    { value: 'late-night', label: 'Late Night', range: '9:00 PM - 12:00 AM', icon: 'moon', after5: true, startTime: 21 * 60 },
-    { value: 'overnight', label: 'Overnight', range: '12:00 AM - 3:00 AM', icon: 'cloudy-night', after5: true, startTime: 0 },
-    { value: 'dawn', label: 'Dawn', range: '3:00 AM - 6:00 AM', icon: 'sunny-outline', after5: true, startTime: 3 * 60 }
+    { value: 'morning', label: 'Morning', range: '8:00 AM - 12:00 PM', icon: 'sunny-outline', after5: false, startTime: 8 * 60, endTime: 12 * 60 },
+    { value: 'noon', label: 'Noon', range: '12:00 PM - 3:00 PM', icon: 'sunny', after5: false, startTime: 12 * 60, endTime: 15 * 60 },
+    { value: 'afternoon', label: 'Afternoon', range: '3:00 PM - 5:00 PM', icon: 'partly-sunny', after5: false, startTime: 15 * 60, endTime: 17 * 60 },
+    { value: 'evening', label: 'Evening', range: '5:00 PM - 9:00 PM', icon: 'moon-outline', after5: true, startTime: 17 * 60, endTime: 21 * 60 },
+    { value: 'late-night', label: 'Late Night', range: '9:00 PM - 12:00 AM', icon: 'moon', after5: true, startTime: 21 * 60, endTime: 24 * 60 },
+    { value: 'overnight', label: 'Overnight', range: '12:00 AM - 3:00 AM', icon: 'cloudy-night', after5: true, startTime: 0, endTime: 3 * 60 },
+    { value: 'dawn', label: 'Dawn', range: '3:00 AM - 6:00 AM', icon: 'sunny-outline', after5: true, startTime: 3 * 60, endTime: 6 * 60 }
   ];
+
+  private isToday(dateStr: string): boolean {
+    const selectedDate = new Date(dateStr);
+    const selectedDateNormalized = new Date(selectedDate);
+    selectedDateNormalized.setHours(0, 0, 0, 0);
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    return selectedDateNormalized.getTime() === today.getTime();
+  }
+
+  private getAvailableTimeslots(dateStr?: string): typeof this.timeslots {
+    if (!dateStr || !this.isToday(dateStr)) {
+      return this.timeslots;
+    }
+
+    const now = new Date();
+    const currentTimeInMinutes = now.getHours() * 60 + now.getMinutes();
+    return this.timeslots.filter(slot => !this.isTimeslotUnavailableForToday(slot.endTime, currentTimeInMinutes));
+  }
+
+  private isTimeslotUnavailableForToday(endTimeInMinutes: number, currentTimeInMinutes: number): boolean {
+    return (endTimeInMinutes - currentTimeInMinutes) < BookingFormPage.MINIMUM_SLOT_LEAD_TIME_MINUTES;
+  }
+
+  private getClosestAvailableSlotFromTime(targetMinutes: number, availableSlots: typeof this.timeslots): string {
+    const sameDaySlots = [...availableSlots].sort((a, b) => a.startTime - b.startTime);
+    const targetInDay = ((targetMinutes % (24 * 60)) + (24 * 60)) % (24 * 60);
+
+    const futureOrCurrentSlot = sameDaySlots.find(slot => slot.endTime > targetInDay);
+    if (futureOrCurrentSlot) {
+      return futureOrCurrentSlot.value;
+    }
+
+    return sameDaySlots[0]?.value ?? this.timeslots[0].value;
+  }
+
+  private pickFirstAvailableByPriority(availableSlots: typeof this.timeslots, priority: string[]): string {
+    const availableValues = new Set(availableSlots.map(slot => slot.value));
+    const preferred = priority.find(value => availableValues.has(value));
+    return preferred ?? availableSlots[0].value;
+  }
 
   // Common service descriptions by service type
   serviceDescriptions = {
@@ -561,6 +616,10 @@ export class BookingFormPage implements OnInit {
     ]
   };
 
+  isTimeslotRecommended(timeslotValue: string): boolean {
+    return !this.isAsapSelected() && timeslotValue === this.recommendedTimeslotForUrgency();
+  }
+
   // Get common descriptions for current service type
   commonDescriptions = computed(() => {
     const serviceType = this.currentServiceType() as keyof typeof this.serviceDescriptions;
@@ -573,49 +632,61 @@ export class BookingFormPage implements OnInit {
 
   async ngOnInit() {
     this.prePopulateUserData();
+    const initialState = this.readNavigationState();
+
+    if (initialState.selectedLocation) {
+      this.onLocationSelected(initialState.selectedLocation);
+    }
+
+    if (initialState.preSelectedProviderId) {
+      this.preSelectedProviderId.set(initialState.preSelectedProviderId);
+      this.hasPreSelectedProviderContext.set(true);
+    }
+
     await this.loadUserAddresses();
     const serviceId = this.route.snapshot.paramMap.get('id');
+    this.hasServiceVariantContext.set(Boolean(serviceId));
     if (serviceId) {
       await this.loadServiceData(serviceId);
-    }
-
-    // Check navigation state for pre-selected provider and location
-    const navigation = this.router.getCurrentNavigation();
-    const state = navigation?.extras?.state as {
-      selectedLocation?: GeocodeResult;
-      preSelectedProviderId?: string;
-    };
-
-    if (state?.selectedLocation) {
-      this.onLocationSelected(state.selectedLocation);
-    }
-
-    // Store pre-selected provider ID from service details page
-    if (state?.preSelectedProviderId) {
-      this.preSelectedProviderId.set(state.preSelectedProviderId);
     }
   }
 
   ionViewWillEnter() {
-    // Check for selected location and pre-selected provider in navigation state when returning to this page
-    const state = history.state as {
-      selectedLocation?: GeocodeResult;
-      preSelectedProviderId?: string;
-    };
+    const state = this.readNavigationState();
 
     if (state?.selectedLocation) {
       this.onLocationSelected(state.selectedLocation);
     }
 
-    // Store pre-selected provider ID if present
-    if (state?.preSelectedProviderId && !this.preSelectedProviderId()) {
+    let shouldReloadServiceData = false;
+    if (state?.preSelectedProviderId && state.preSelectedProviderId !== this.preSelectedProviderId()) {
       this.preSelectedProviderId.set(state.preSelectedProviderId);
+      this.hasPreSelectedProviderContext.set(true);
+      shouldReloadServiceData = this.selectedService()?.provider?.id !== state.preSelectedProviderId;
+    }
+
+    if (shouldReloadServiceData) {
+      const serviceId = this.route.snapshot.paramMap.get('id');
+      if (serviceId) {
+        void this.loadServiceData(serviceId);
+      }
     }
 
     // Clear the state after using it
     if (state?.selectedLocation || state?.preSelectedProviderId) {
       history.replaceState({}, '');
     }
+  }
+
+  private readNavigationState(): BookingNavigationState {
+    const navigation = this.router.getCurrentNavigation();
+    const routerState = navigation?.extras?.state as BookingNavigationState | undefined;
+    const historyState = history.state as BookingNavigationState | undefined;
+
+    return {
+      selectedLocation: routerState?.selectedLocation ?? historyState?.selectedLocation,
+      preSelectedProviderId: routerState?.preSelectedProviderId ?? historyState?.preSelectedProviderId
+    };
   }
 
   private prePopulateUserData() {
@@ -651,7 +722,10 @@ export class BookingFormPage implements OnInit {
   loadServiceData = async (serviceVariantId: string) => {
     try {
       this.isLoading.set(true);
-      const serviceData = await this.serviceService.getServiceWithProvider(serviceVariantId);
+      const serviceData = await this.serviceService.getServiceWithProvider(
+        serviceVariantId,
+        this.preSelectedProviderId() || undefined
+      );
       if (serviceData) {
         this.selectedService.set(serviceData);
         this.prePopulateFormWithServiceData(serviceData);
@@ -975,6 +1049,9 @@ export class BookingFormPage implements OnInit {
         formValue.preferredDate,
         formValue.preferredTimeslot
       );
+      const providerIdFromSelectionContext = this.hasPreSelectedProviderContext()
+        ? (this.preSelectedProviderId() || this.selectedService()?.provider?.id || undefined)
+        : undefined;
 
       const bookingData: BookingSubmissionData = {
         serviceType: formValue.serviceType,
@@ -995,7 +1072,7 @@ export class BookingFormPage implements OnInit {
         mediaFiles: this.mediaFiles(),
         specialInstructions: formValue.specialInstructions,
         serviceVariantId: this.selectedService()?.id,
-        preSelectedProviderId: this.preSelectedProviderId() || undefined,
+        preSelectedProviderId: providerIdFromSelectionContext,
         bodyCameraRequested: formValue.bodyCameraRequested === true
       };
 

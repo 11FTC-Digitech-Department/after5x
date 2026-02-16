@@ -74,7 +74,51 @@
                   </div>
                 }
 
-                @if (!selectedService()) {
+                @if (hasServiceVariantContext() && isLoading() && !selectedService()) {
+                  <div class="selected-service-hero is-loading">
+                    <ion-grid class="service-hero-content">
+                      <ion-row class="service-hero-main">
+                        <ion-col size="12" size-md="7" size-lg="8">
+                          <div class="service-hero-header loading-header">
+                            <ion-skeleton-text animated class="hero-skeleton hero-skeleton-icon"></ion-skeleton-text>
+                            <div class="service-hero-details">
+                              <ion-skeleton-text animated class="hero-skeleton hero-skeleton-name"></ion-skeleton-text>
+                              <ion-skeleton-text animated class="hero-skeleton hero-skeleton-category"></ion-skeleton-text>
+                            </div>
+                          </div>
+                        </ion-col>
+                        <ion-col size="12" size-md="5" size-lg="4">
+                          <div class="service-hero-provider loading-provider">
+                            <ion-skeleton-text animated class="hero-skeleton hero-skeleton-avatar"></ion-skeleton-text>
+                            <div class="provider-info">
+                              <ion-skeleton-text animated class="hero-skeleton hero-skeleton-provider-name"></ion-skeleton-text>
+                              <ion-skeleton-text animated class="hero-skeleton hero-skeleton-provider-label"></ion-skeleton-text>
+                            </div>
+                          </div>
+                        </ion-col>
+                      </ion-row>
+                      <ion-row class="service-hero-meta">
+                        <ion-col size="12">
+                          <div class="service-meta-content">
+                            <div class="service-price-display">
+                              <ion-skeleton-text animated class="hero-skeleton hero-skeleton-price"></ion-skeleton-text>
+                              <ion-skeleton-text animated class="hero-skeleton hero-skeleton-price-label"></ion-skeleton-text>
+                            </div>
+                            <div class="service-duration loading-duration">
+                              <ion-skeleton-text animated class="hero-skeleton hero-skeleton-duration-icon"></ion-skeleton-text>
+                              <div class="duration-info">
+                                <ion-skeleton-text animated class="hero-skeleton hero-skeleton-duration-value"></ion-skeleton-text>
+                                <ion-skeleton-text animated class="hero-skeleton hero-skeleton-duration-unit"></ion-skeleton-text>
+                              </div>
+                            </div>
+                          </div>
+                        </ion-col>
+                      </ion-row>
+                    </ion-grid>
+                  </div>
+                }
+
+                @if (!selectedService() && !(hasServiceVariantContext() && isLoading())) {
                   <!-- Service type selection -->
                   <ion-list>
                     <ion-item>
@@ -243,14 +287,27 @@
                 <ion-list>
                   <ion-item button="false" lines="none">
                     <ion-label position="stacked">Select Date *</ion-label>
-                    <ion-datetime
-                      formControlName="preferredDate"
-                      presentation="date"
-                      locale="en-PH"
-                      placeholder="Tap to select date"
-                      [min]="getMinDate()"
-                      [disabled]="isAsapSelected()"
-                    ></ion-datetime>
+                    <div class="date-picker-trigger">
+                      <ion-datetime-button
+                        datetime="preferred-date-picker"
+                        [disabled]="isAsapSelected()"
+                      ></ion-datetime-button>
+                    </div>
+                    <ion-modal [keepContentsMounted]="true">
+                      <ng-template>
+                        <ion-datetime
+                          id="preferred-date-picker"
+                          formControlName="preferredDate"
+                          presentation="date"
+                          locale="en-PH"
+                          [min]="getMinDate()"
+                          first-day-of-week="1"
+                          show-default-buttons="true"
+                          done-text="Set date"
+                          cancel-text="Cancel"
+                        ></ion-datetime>
+                      </ng-template>
+                    </ion-modal>
                     @if (isAsapSelected()) {
                       <ion-note slot="helper" color="primary">
                         <ion-icon name="information-circle"></ion-icon>
@@ -267,35 +324,36 @@
                     @if (isAsapSelected()) {
                       <span class="asap-indicator">
                         <ion-icon name="flash" color="danger"></ion-icon>
-                        Timeslot is set to current time for emergency services
+                        Emergency is auto-set to the next available slot
                       </span>
                     } @else if (isRecommendedTimeslot()) {
                       <span class="recommended-indicator">
                         <ion-icon name="checkmark-circle" color="success"></ion-icon>
-                        Recommended for your urgency level
+                        Selected slot matches recommended time
                       </span>
                     }
                   </ion-text>
                   <div class="timeslot-options">
-                    @for (timeslot of timeslots; track timeslot.value) {
-                      <ion-chip
+                    @for (timeslot of visibleTimeslots(); track timeslot.value) {
+                        <ion-chip
                         [color]="timeslot.value === bookingForm.get('preferredTimeslot')?.value ? 'primary' : 'light'"
                         [outline]="timeslot.value !== bookingForm.get('preferredTimeslot')?.value"
-                        (click)="isAsapSelected() ? null : (disabledTimeslots().has(timeslot.value) ? null : bookingForm.get('preferredTimeslot')?.setValue(timeslot.value))"
+                        (click)="isAsapSelected() ? null : bookingForm.get('preferredTimeslot')?.setValue(timeslot.value)"
                         class="timeslot-chip"
-                        [class.recommended]="!isAsapSelected() && timeslot.value === recommendedTimeslotForUrgency()"
-                        [class.disabled]="isAsapSelected() && timeslot.value !== bookingForm.get('preferredTimeslot')?.value || disabledTimeslots().has(timeslot.value)"
-                        [class.past-timeslot]="disabledTimeslots().has(timeslot.value)"
+                        [class.recommended]="isTimeslotRecommended(timeslot.value)"
+                        [class.disabled]="isAsapSelected() && timeslot.value !== bookingForm.get('preferredTimeslot')?.value"
                       >
                         <ion-icon [name]="timeslot.icon" class="timeslot-icon"></ion-icon>
-                        <ion-label>{{ timeslot.label }}</ion-label>
+                        <ion-label>
+                          {{ timeslot.label }}
+                          @if (timeslot.after5) {
+                            <span class="timeslot-tag after5">After5</span>
+                          }
+                          @if (isTimeslotRecommended(timeslot.value)) {
+                            <span class="timeslot-tag recommended">Recommended</span>
+                          }
+                        </ion-label>
                         <ion-text class="timeslot-range">{{ timeslot.range }}</ion-text>
-                        @if (!isAsapSelected() && timeslot.value === recommendedTimeslotForUrgency()) {
-                          <ion-badge color="success" class="recommended-badge">RECOMMENDED</ion-badge>
-                        }
-                        @if (timeslot.after5) {
-                          <ion-badge color="tertiary" class="after5-badge">After5</ion-badge>
-                        }
                         @if (isAsapSelected() && timeslot.value === bookingForm.get('preferredTimeslot')?.value) {
                           <ion-badge color="danger" class="asap-selected-badge">ASAP</ion-badge>
                         }
@@ -526,14 +584,19 @@
               </div>
 
               <div class="summary-item">
-                <ion-text class="summary-label">Time Slot:</ion-text>
+                <ion-text class="summary-label">
+                  Time Slot:
+                  @if (selectedTimeslotAfter5()) {
+                    <span class="summary-label-tag after5">After5</span>
+                  }
+                  @if (isTimeslotRecommended(bookingForm.get('preferredTimeslot')?.value || '')) {
+                    <span class="summary-label-tag recommended">Recommended</span>
+                  }
+                </ion-text>
                 <ion-chip [color]="selectedUrgencyColor()" class="timeslot-chip-small">
                   <ion-icon [name]="selectedTimeslotIcon()"></ion-icon>
                   <ion-label>{{ selectedTimeslotLabel() }}</ion-label>
                   <ion-text class="timeslot-range-small">{{ selectedTimeslotRange() }}</ion-text>
-                  @if (selectedTimeslotAfter5()) {
-                    <ion-badge color="tertiary" class="after5-badge-small">After5</ion-badge>
-                  }
                 </ion-chip>
               </div>
 
