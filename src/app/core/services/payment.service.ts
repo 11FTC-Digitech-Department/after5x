@@ -1,6 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { SupabaseService } from '../supabase/supabase';
 import { SessionService } from '../auth/session';
+import { devLog } from '../utils/logger';
 import {
   PaymentStatus,
   CreateInvoiceResponse,
@@ -28,14 +29,14 @@ export class PaymentService {
       throw new Error('Not authenticated');
     }
 
-    console.log('[PaymentService] Calling create-xendit-invoice for booking:', bookingId);
+    devLog('[PaymentService] Calling create-xendit-invoice for booking:', bookingId);
 
     // Supabase client automatically includes auth token when user is authenticated
     const response = await this.supabaseService.client.functions.invoke('create-xendit-invoice', {
       body: { bookingId }
     });
 
-    console.log('[PaymentService] Response:', response);
+    devLog('[PaymentService] Response:', response);
 
     if (response.error) {
       console.error('Failed to create invoice:', response.error);
@@ -106,7 +107,7 @@ export class PaymentService {
    * Sync invoice status with Xendit (polling fallback)
    */
   async syncInvoiceStatus(bookingId: string): Promise<CheckInvoiceStatusResponse> {
-    console.log('[PaymentService] syncInvoiceStatus called for booking:', bookingId);
+    devLog('[PaymentService] syncInvoiceStatus called for booking:', bookingId);
 
     // Try to refresh the session first (in case we just returned from external browser)
     const { data: refreshData, error: refreshError } = await this.supabaseService.client.auth.refreshSession();
@@ -115,12 +116,12 @@ export class PaymentService {
       console.warn('[PaymentService] Session refresh failed:', refreshError.message);
       // Continue anyway - getSession might still work
     } else {
-      console.log('[PaymentService] Session refreshed successfully');
+      devLog('[PaymentService] Session refreshed successfully');
     }
 
     const session = await this.supabaseService.client.auth.getSession();
 
-    console.log('[PaymentService] Session state:', {
+    devLog('[PaymentService] Session state:', {
       hasSession: !!session.data.session,
       tokenExpiry: session.data.session?.expires_at
         ? new Date(session.data.session.expires_at * 1000).toISOString()
@@ -132,14 +133,14 @@ export class PaymentService {
       throw new Error('Not authenticated');
     }
 
-    console.log('[PaymentService] Invoking check-invoice-status edge function');
+    devLog('[PaymentService] Invoking check-invoice-status edge function');
 
     // Supabase client automatically includes auth token when user is authenticated
     const response = await this.supabaseService.client.functions.invoke('check-invoice-status', {
       body: { bookingId }
     });
 
-    console.log('[PaymentService] Edge function response:', {
+    devLog('[PaymentService] Edge function response:', {
       data: response.data,
       error: response.error
     });
@@ -173,7 +174,7 @@ export class PaymentService {
           filter: `booking_id=eq.${bookingId}`
         },
         async (payload) => {
-          console.log('[Payment] Invoice update received:', payload);
+          devLog('[Payment] Invoice update received:', payload);
           // Fetch full status on any change
           try {
             const status = await this.getPaymentStatus(bookingId);
@@ -192,7 +193,7 @@ export class PaymentService {
           filter: `id=eq.${bookingId}`
         },
         async (payload) => {
-          console.log('[Payment] Booking update received:', payload);
+          devLog('[Payment] Booking update received:', payload);
           // Fetch full status on booking change
           try {
             const status = await this.getPaymentStatus(bookingId);
@@ -203,7 +204,7 @@ export class PaymentService {
         }
       )
       .subscribe((status) => {
-        console.log('[Payment] Subscription status:', status);
+        devLog('[Payment] Subscription status:', status);
       });
 
     this.invoiceChannels.set(bookingId, channel);

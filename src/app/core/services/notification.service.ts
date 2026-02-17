@@ -3,6 +3,7 @@ import { SupabaseService } from '../supabase/supabase';
 import { SessionService } from '../auth/session';
 import { RealTimeService } from './real-time.service';
 import { NotificationChannel, NotificationType, NotificationPayload } from '../models/booking.model';
+import { devLog } from '../utils/logger';
 
 @Injectable({
   providedIn: 'root'
@@ -253,7 +254,7 @@ export class NotificationService {
   private async sendPushNotification(recipients: string[], notification: NotificationPayload): Promise<void> {
     // For now, log the push notification
     // In production, integrate with FCM, OneSignal, or similar service
-    console.log('Sending push notification:', {
+    devLog('Sending push notification:', {
       recipients,
       title: notification.title,
       message: notification.message,
@@ -281,7 +282,7 @@ export class NotificationService {
 
     // For now, log SMS notifications
     // In production, integrate with Twilio, AWS SNS, or similar service
-    console.log('Sending SMS notifications:', {
+    devLog('Sending SMS notifications:', {
       phoneNumbers: profiles.map(p => p.phone_number),
       message: notification.message
     });
@@ -303,7 +304,7 @@ export class NotificationService {
 
     // For now, log email notifications
     // In production, integrate with SendGrid, AWS SES, or similar service
-    console.log('Sending email notifications:', {
+    devLog('Sending email notifications:', {
       recipients,
       subject: notification.title,
       message: notification.message,

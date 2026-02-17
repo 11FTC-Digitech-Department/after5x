@@ -11,6 +11,7 @@ import { Capacitor } from '@capacitor/core';
 import { SupabaseService } from '../supabase/supabase';
 import { Router } from '@angular/router';
 import { ChatNotificationService } from './chat-notification.service';
+import { devLog } from '../utils/logger';
 
 /**
  * Notification preferences interface matching database schema
@@ -118,12 +119,12 @@ export class PushNotificationService {
    */
   async initialize(): Promise<void> {
     if (!this.isPushAvailable()) {
-      console.log('PushNotificationService: Push not available on this platform');
+      devLog('PushNotificationService: Push not available on this platform');
       return;
     }
 
     if (this._isInitialized()) {
-      console.log('PushNotificationService: Already initialized');
+      devLog('PushNotificationService: Already initialized');
       return;
     }
 
@@ -140,24 +141,24 @@ export class PushNotificationService {
         await PushNotifications.register();
       } else if (permStatus.receive === 'prompt' || permStatus.receive === 'prompt-with-rationale') {
         // Request permission if not yet decided
-        console.log('PushNotificationService: Requesting push notification permission');
+        devLog('PushNotificationService: Requesting push notification permission');
         const requestResult = await PushNotifications.requestPermissions();
         this._permissionStatus.set(requestResult.receive);
 
         if (requestResult.receive === 'granted') {
           await PushNotifications.register();
         } else {
-          console.log('PushNotificationService: Permission denied by user');
+          devLog('PushNotificationService: Permission denied by user');
         }
       } else {
-        console.log('PushNotificationService: Permission previously denied');
+        devLog('PushNotificationService: Permission previously denied');
       }
 
       // Load user preferences
       await this.loadPreferences();
 
       this._isInitialized.set(true);
-      console.log('PushNotificationService: Initialized successfully');
+      devLog('PushNotificationService: Initialized successfully');
     } catch (error) {
       console.error('PushNotificationService: Initialization failed:', error);
     }
@@ -193,7 +194,7 @@ export class PushNotificationService {
   private setupListeners(): void {
     // Token received
     PushNotifications.addListener('registration', async (token: Token) => {
-      console.log(
+      devLog(
         'PushNotificationService: Token received:',
         token.value.substring(0, 20) + '...'
       );
@@ -210,7 +211,7 @@ export class PushNotificationService {
     PushNotifications.addListener(
       'pushNotificationReceived',
       (notification: PushNotificationSchema) => {
-        console.log('PushNotificationService: Foreground notification:', notification);
+        devLog('PushNotificationService: Foreground notification:', notification);
         this.handleForegroundNotification(notification);
       }
     );
@@ -219,7 +220,7 @@ export class PushNotificationService {
     PushNotifications.addListener(
       'pushNotificationActionPerformed',
       (action: ActionPerformed) => {
-        console.log('PushNotificationService: Notification action:', action);
+        devLog('PushNotificationService: Notification action:', action);
         this.handleNotificationAction(action);
       }
     );
@@ -258,7 +259,7 @@ export class PushNotificationService {
       if (error) {
         console.error('PushNotificationService: Failed to save token:', error);
       } else {
-        console.log('PushNotificationService: Token saved successfully');
+        devLog('PushNotificationService: Token saved successfully');
       }
     } catch (error) {
       console.error('PushNotificationService: Error saving token:', error);
@@ -278,7 +279,7 @@ export class PushNotificationService {
       await client.from('device_tokens').update({ is_active: false }).eq('token', token);
 
       this._fcmToken.set(null);
-      console.log('PushNotificationService: Token deactivated');
+      devLog('PushNotificationService: Token deactivated');
     } catch (error) {
       console.error('PushNotificationService: Error removing token:', error);
     }

@@ -41,6 +41,7 @@ import { RealTimeService } from '@core/services/real-time.service';
 import { UserAddress, GeocodeResult } from '@core/models/address.model';
 import { BookingSubmissionData, BookingResponse, BookingError } from '@core/models/booking.model';
 import { NavController } from '@ionic/angular/standalone';
+import { devLog } from '@core/utils/logger';
 
 interface BookingDetails {
   serviceType: string;
@@ -979,7 +980,7 @@ export class BookingFormPage implements OnInit {
 
   // Submit booking (arrow function to preserve 'this' context)
   submitBooking = async () => {
-    console.log('submitBooking called');
+    devLog('submitBooking called');
     
     if (!this.bookingForm.valid) {
       console.warn('Form is not valid');
@@ -990,7 +991,7 @@ export class BookingFormPage implements OnInit {
     const isAuthenticated = this.sessionService.isAuthenticated();
     let profile = this.sessionService.profile();
     
-    console.log('Auth check:', { 
+    devLog('Auth check:', { 
       isAuthenticated, 
       hasProfile: !!profile, 
       isLoading: this.sessionService.isLoading(),
@@ -1016,7 +1017,7 @@ export class BookingFormPage implements OnInit {
         if (session?.user?.id) {
           // Try to manually trigger profile fetch via session service
           // Use the session user ID directly as fallback
-          console.log('Using session user ID as fallback:', session.user.id);
+          devLog('Using session user ID as fallback:', session.user.id);
           // We'll pass the user ID to booking service to handle
         } else {
           throw new Error('No user ID in session');
@@ -1028,7 +1029,7 @@ export class BookingFormPage implements OnInit {
       }
     }
     
-    console.log('Authentication confirmed:', { profileId: profile?.id || 'using session', role: profile?.role });
+    devLog('Authentication confirmed:', { profileId: profile?.id || 'using session', role: profile?.role });
 
     // Validate location coordinates - prevent (0,0) which breaks provider matching
     const lat = this.selectedLocation()?.lat;
@@ -1043,7 +1044,7 @@ export class BookingFormPage implements OnInit {
     this.errorMessage.set(null);
 
     try {
-      console.log('Starting booking submission...');
+      devLog('Starting booking submission...');
       const formValue = this.bookingForm.value;
       const preferredDateTime = this.combineDateAndTimeslot(
         formValue.preferredDate,
@@ -1076,7 +1077,7 @@ export class BookingFormPage implements OnInit {
         bodyCameraRequested: formValue.bodyCameraRequested === true
       };
 
-      console.log('Calling bookingService.createBooking with data:', {
+      devLog('Calling bookingService.createBooking with data:', {
         serviceType: bookingData.serviceType,
         urgency: bookingData.urgency,
         hasVariant: !!bookingData.serviceVariantId,
@@ -1085,7 +1086,7 @@ export class BookingFormPage implements OnInit {
 
       const response: BookingResponse = await this.bookingService.createBooking(bookingData);
 
-      console.log('Booking created successfully:', response.bookingId);
+      devLog('Booking created successfully:', response.bookingId);
 
       // Store assigned provider for review display
       this.assignedProvider.set(response.assignedProvider);

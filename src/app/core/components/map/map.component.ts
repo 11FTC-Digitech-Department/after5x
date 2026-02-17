@@ -6,6 +6,7 @@ import { GoogleMap } from '@capacitor/google-maps';
 import { environment } from 'src/environments/environment';
 import { GoogleMapsService } from '@core/services/google-maps.service';
 import { GeocodeResult } from '@core/models/address.model';
+import { devLog } from '@core/utils/logger';
 
 export interface MapCamera {
   lat: number;
@@ -103,7 +104,7 @@ export class MapComponent implements OnInit, OnDestroy, AfterViewInit {
         },
       }));
 
-      console.log('Map initialized with dimensions:', element.getBoundingClientRect());
+      devLog('Map initialized with dimensions:', element.getBoundingClientRect());
       
       // Add initial marker if provided
       const initialMarkerPos = this.initialMarker();

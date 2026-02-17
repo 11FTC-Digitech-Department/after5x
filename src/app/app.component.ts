@@ -1,3 +1,4 @@
+import { devLog } from './core/utils/logger';
 import { Component, inject, NgZone, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
 import { IonApp, IonRouterOutlet, Platform } from '@ionic/angular/standalone';
@@ -45,11 +46,11 @@ export class AppComponent implements OnInit {
     App.addListener('appUrlOpen', (event: URLOpenListenerEvent) => {
       this.zone.run(async () => {
         const urlString = event.url;
-        console.log('AppComponent: Deep link received:', urlString);
+        devLog('AppComponent: Deep link received:', urlString);
 
         // Check if this is an OAuth callback
         if (this.isOAuthCallback(urlString)) {
-          console.log('AppComponent: OAuth callback detected');
+          devLog('AppComponent: OAuth callback detected');
           await this.handleOAuthDeepLink(urlString);
           return;
         }
@@ -104,22 +105,22 @@ export class AppComponent implements OnInit {
         return;
       }
 
-      console.log('AppComponent: OAuth callback successful, session:', !!result.session);
+      devLog('AppComponent: OAuth callback successful, session:', !!result.session);
 
       if (result.session) {
         // Wait a moment for auth state change to propagate
         await new Promise(resolve => setTimeout(resolve, 500));
 
         // Wait for profile to be loaded (or created for new OAuth users)
-        console.log('AppComponent: Waiting for profile...');
+        devLog('AppComponent: Waiting for profile...');
         await this.waitForProfile(8000);
 
         const profile = this.sessionService.profile();
-        console.log('AppComponent: Profile loaded:', !!profile, 'role:', profile?.role);
+        devLog('AppComponent: Profile loaded:', !!profile, 'role:', profile?.role);
 
         // Navigate to appropriate page
         await this.authFlowService.navigateAfterAuthentication(this.sessionService.userRole());
-        console.log('AppComponent: Navigation triggered');
+        devLog('AppComponent: Navigation triggered');
         this.oauthService.setProcessingCallback(false);
       } else {
         console.warn('AppComponent: No session after OAuth callback');

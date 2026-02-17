@@ -56,6 +56,7 @@ import { ProviderBookingService, ProviderBooking } from '@core/services/provider
 import { RealTimeService } from '@core/services/real-time.service';
 import { ChatService } from '@core/services/chat.service';
 import { BookingStatus, BookingTimelineRow } from '@core/models/booking.model';
+import { devLog } from '@core/utils/logger';
 
 // Status display configuration
 const STATUS_CONFIG: Record<string, { label: string; color: string; icon: string; message: string }> = {
@@ -614,7 +615,7 @@ export class JobExecutionPage implements OnInit, OnDestroy {
         }
       );
 
-      console.log('Location tracking started, watchId:', this.locationWatchId);
+      devLog('Location tracking started, watchId:', this.locationWatchId);
     } catch (error) {
       console.error('Failed to start location tracking:', error);
       await this.showToast('Failed to start GPS tracking', 'warning');
@@ -625,7 +626,7 @@ export class JobExecutionPage implements OnInit, OnDestroy {
     if (this.locationWatchId) {
       try {
         await Geolocation.clearWatch({ id: this.locationWatchId });
-        console.log('Location tracking stopped');
+        devLog('Location tracking stopped');
       } catch (error) {
         console.error('Failed to stop location tracking:', error);
       }

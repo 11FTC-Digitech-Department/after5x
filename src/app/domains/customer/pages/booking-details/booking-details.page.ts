@@ -57,6 +57,7 @@ import { BookingStatusService } from '@core/services/booking-status.service';
 import { RealtimeManagerService, ConnectionMode } from '@core/services/realtime-manager.service';
 import { ChatService } from '@core/services/chat.service';
 import { CustomerBooking, BookingStatus, BookingTimelineRow } from '@core/models/booking.model';
+import { devLog } from '@core/utils/logger';
 
 // Status display configuration
 const STATUS_CONFIG: Record<string, { label: string; color: string; icon: string; message: string }> = {
@@ -395,7 +396,7 @@ export class BookingDetailsPage implements OnInit, OnDestroy {
     const config = STATUS_CONFIG[status];
     if (config) {
       // The UI will update automatically via signals
-      console.log(`[BookingDetails] Status updated to: ${config.label}`);
+      devLog(`[BookingDetails] Status updated to: ${config.label}`);
     }
   }
 

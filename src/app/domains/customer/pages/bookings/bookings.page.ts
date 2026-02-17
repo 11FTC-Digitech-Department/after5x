@@ -48,6 +48,7 @@ import { SessionService } from '@core/auth/session';
 import { BookingService } from '@core/services/booking.service';
 import { RealtimeManagerService, ConnectionMode } from '@core/services/realtime-manager.service';
 import { CustomerBooking, BookingStatus } from '@core/models/booking.model';
+import { devLog } from '@core/utils/logger';
 
 type FilterStatus = 'all' | 'active' | 'completed' | 'cancelled';
 type SortBy = 'date' | 'status';
@@ -375,7 +376,7 @@ export class BookingsPage implements OnInit, OnDestroy {
 
   private debugLog(message: string, ...args: any[]): void {
     if (this.debugMode) {
-      console.log(`[BookingsPage] ${message}`, ...args);
+      devLog(`[BookingsPage] ${message}`, ...args);
     }
   }
 
@@ -385,7 +386,7 @@ export class BookingsPage implements OnInit, OnDestroy {
   enableDebugMode(): void {
     this.debugMode = true;
     this.realtimeManager.setDebugMode(true);
-    console.log('[BookingsPage] Debug mode enabled');
+    devLog('[BookingsPage] Debug mode enabled');
   }
 
   private async showStatusChangeToast(booking: any, oldStatus: string, newStatus: string) {

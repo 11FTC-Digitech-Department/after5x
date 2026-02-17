@@ -1,3 +1,4 @@
+import { devLog } from '@core/utils/logger';
 import { Component, OnInit, OnDestroy, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import {
@@ -171,7 +172,7 @@ export class WalletPage implements OnInit, OnDestroy {
   private subscribeToUpdates() {
     this.unsubscribeWallet = this.walletService.subscribeToWallet(
       (wallet) => {
-        console.log('[Wallet] Real-time update:', wallet);
+        devLog('[Wallet] Real-time update:', wallet);
         this.wallet.set(wallet);
         // Reload transactions to show new ones
         this.loadTransactionsOnly();

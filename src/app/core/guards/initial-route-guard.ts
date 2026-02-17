@@ -1,6 +1,7 @@
 import { inject } from '@angular/core';
 import { CanActivateFn, Router } from '@angular/router';
 import { SessionService } from '../auth/session';
+import { devLog } from '../utils/logger';
 
 /**
  * Guard for the root route that determines initial navigation.
@@ -25,7 +26,7 @@ export const initialRouteGuard: CanActivateFn = async () => {
 
   if (sessionService.isAuthenticated()) {
     const userRole = sessionService.userRole();
-    console.log('initialRouteGuard: Authenticated user, redirecting to home. Role:', userRole);
+    devLog('initialRouteGuard: Authenticated user, redirecting to home. Role:', userRole);
 
     switch (userRole) {
       case 'customer':
@@ -40,6 +41,6 @@ export const initialRouteGuard: CanActivateFn = async () => {
   }
 
   // Not authenticated - redirect to welcome
-  console.log('initialRouteGuard: Not authenticated, redirecting to welcome');
+  devLog('initialRouteGuard: Not authenticated, redirecting to welcome');
   return router.createUrlTree(['/auth/welcome']);
 };

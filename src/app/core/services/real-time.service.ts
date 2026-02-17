@@ -2,6 +2,7 @@ import { Injectable, inject, signal, computed } from '@angular/core';
 import { SupabaseService } from '../supabase/supabase';
 import { RealtimeChannel, RealtimePostgresChangesPayload, REALTIME_SUBSCRIBE_STATES } from '@supabase/supabase-js';
 import { BookingCallbacks, BookingTimelineEntry } from '../models/booking.model';
+import { devLog } from '../utils/logger';
 
 export type ConnectionState = 'connected' | 'connecting' | 'disconnected' | 'error';
 
@@ -74,7 +75,7 @@ export class RealTimeService {
 
   private log(message: string, ...args: any[]): void {
     if (this._debugMode()) {
-      console.log(`[RealTimeService] ${message}`, ...args);
+      devLog(`[RealTimeService] ${message}`, ...args);
     }
   }
 

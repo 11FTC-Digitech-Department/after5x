@@ -43,6 +43,7 @@ import {
   Review
 } from '@core/services/service.service';
 import { RealTimeService } from '@core/services/real-time.service';
+import { devLog } from '@core/utils/logger';
 
 @Component({
   selector: 'app-service-details',
@@ -482,7 +483,7 @@ export class ServiceDetailsPage implements OnInit, OnDestroy {
   }
 
   async addReview(rating: number, comment: string) {
-    console.log('Adding review:', { rating, comment, providerId: this.selectedProvider()?.providerId });
+    devLog('Adding review:', { rating, comment, providerId: this.selectedProvider()?.providerId });
   }
 
   async doRefresh(event: RefresherCustomEvent) {

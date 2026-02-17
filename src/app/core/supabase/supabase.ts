@@ -4,6 +4,7 @@ import { Capacitor, CapacitorHttp } from '@capacitor/core';
 import { ConfigService, SupabaseConfig } from '../config/config.service';
 import { Database } from './database.types';
 import { CapacitorStorageAdapter } from '../storage/capacitor-storage.adapter';
+import { devLog } from '../utils/logger';
 
 export interface AuthResult {
   success: boolean;
@@ -50,7 +51,7 @@ export class SupabaseService {
       : undefined;
 
     if (isNgrokUrl) {
-      console.log('SupabaseService: ngrok mode', {
+      devLog('SupabaseService: ngrok mode', {
         url: config.url,
         capacitorPlatform,
         nativeFetchOverride: !!globalOptions,

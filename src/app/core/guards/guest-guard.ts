@@ -1,6 +1,7 @@
 import { inject } from '@angular/core';
 import { CanActivateFn, Router } from '@angular/router';
 import { SessionService } from '../auth/session';
+import { devLog } from '../utils/logger';
 
 /**
  * Guard for guest-only routes (auth pages).
@@ -25,7 +26,7 @@ export const guestGuard: CanActivateFn = async () => {
 
   // Redirect authenticated users to their home
   if (sessionService.isAuthenticated()) {
-    console.log('guestGuard: User is authenticated, redirecting to home');
+    devLog('guestGuard: User is authenticated, redirecting to home');
 
     const userRole = sessionService.userRole();
     switch (userRole) {

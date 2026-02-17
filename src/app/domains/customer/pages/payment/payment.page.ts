@@ -48,6 +48,7 @@ import { PaymentContextService } from '@core/services/payment-context.service';
 import { CustomerBooking, BookingStatus } from '@core/models/booking.model';
 import { PaymentStatus, InvoiceStatus } from '@core/models/payment.model';
 import { PaymentSuccessModalComponent, PaymentSuccessData } from '@shared/components/payment-success-modal/payment-success-modal.component';
+import { devLog } from '@core/utils/logger';
 
 // Status display configuration
 const PAYMENT_STATUS_CONFIG: Record<InvoiceStatus | 'NONE', { label: string; color: string; icon: string; message: string }> = {
@@ -214,7 +215,7 @@ export class PaymentPage implements OnInit, OnDestroy {
     const isReturningFromPayment = queryStatus === 'success' || queryStatus === 'failed';
     const wasInPaymentFlow = this.paymentContextService.isInPaymentFlow();
 
-    console.log('[Payment] ngOnInit - bookingId:', bookingId, 'queryStatus:', queryStatus, 'wasInPaymentFlow:', wasInPaymentFlow);
+    devLog('[Payment] ngOnInit - bookingId:', bookingId, 'queryStatus:', queryStatus, 'wasInPaymentFlow:', wasInPaymentFlow);
 
     if (isReturningFromPayment) {
       // Show feedback immediately
@@ -236,7 +237,7 @@ export class PaymentPage implements OnInit, OnDestroy {
 
       // Sync status if returning from payment OR if we were in payment flow
       if (isReturningFromPayment || wasInPaymentFlow) {
-        console.log('[Payment] Returning from payment flow, syncing status...');
+        devLog('[Payment] Returning from payment flow, syncing status...');
         this.paymentContextService.exitPaymentFlow();
         this.syncRetryCount = 0;
         await this.syncPaymentStatusWithRetry();
@@ -300,12 +301,12 @@ export class PaymentPage implements OnInit, OnDestroy {
     this.unsubscribePayment = this.paymentService.subscribeToPaymentStatus(
       bookingId,
       (status) => {
-        console.log('[Payment] Real-time status update:', status);
+        devLog('[Payment] Real-time status update:', status);
         this.paymentStatus.set(status);
 
         // Show success modal when payment is confirmed via real-time
         if (status.invoiceStatus === 'PAID' && !this.showSuccessModal()) {
-          console.log('[Payment] Real-time: Payment confirmed! Showing success modal...');
+          devLog('[Payment] Real-time: Payment confirmed! Showing success modal...');
           this.successModalData.set({
             amount: status.amount,
             paymentMethod: status.paymentMethod,
@@ -323,11 +324,11 @@ export class PaymentPage implements OnInit, OnDestroy {
   private async setupAppStateListener(bookingId: string) {
     try {
       this.appStateListener = await App.addListener('appStateChange', async ({ isActive }) => {
-        console.log('[Payment] App state changed, isActive:', isActive);
+        devLog('[Payment] App state changed, isActive:', isActive);
         
         // When app becomes active and we were in payment flow, sync status
         if (isActive && this.paymentContextService.isInPaymentFlow()) {
-          console.log('[Payment] App resumed during payment flow, syncing...');
+          devLog('[Payment] App resumed during payment flow, syncing...');
           this.paymentContextService.exitPaymentFlow();
           this.syncRetryCount = 0;
           await this.syncPaymentStatusWithRetry();
@@ -335,7 +336,7 @@ export class PaymentPage implements OnInit, OnDestroy {
       });
     } catch (err) {
       // App listener might not work on web
-      console.log('[Payment] Could not set up app state listener:', err);
+      devLog('[Payment] Could not set up app state listener:', err);
     }
   }
 
@@ -354,9 +355,9 @@ export class PaymentPage implements OnInit, OnDestroy {
     this.isProcessing.set(true);
 
     try {
-      console.log(`[Payment] Sync attempt ${this.syncRetryCount + 1}/${this.MAX_SYNC_RETRIES + 1}`);
+      devLog(`[Payment] Sync attempt ${this.syncRetryCount + 1}/${this.MAX_SYNC_RETRIES + 1}`);
       const result = await this.paymentService.syncInvoiceStatus(bookingId);
-      console.log('[Payment] syncInvoiceStatus result:', result);
+      devLog('[Payment] syncInvoiceStatus result:', result);
 
       if (result.success) {
         this.paymentStatus.set({
@@ -374,7 +375,7 @@ export class PaymentPage implements OnInit, OnDestroy {
 
         // If payment confirmed, show success modal
         if (result.invoiceStatus === 'PAID') {
-          console.log('[Payment] Payment confirmed! Showing success modal...');
+          devLog('[Payment] Payment confirmed! Showing success modal...');
           this.isProcessing.set(false);
           this.successModalData.set({
             amount: result.amount,
@@ -388,7 +389,7 @@ export class PaymentPage implements OnInit, OnDestroy {
         // If still PENDING and we haven't maxed out retries, try again
         if (result.invoiceStatus === 'PENDING' && this.syncRetryCount < this.MAX_SYNC_RETRIES) {
           this.syncRetryCount++;
-          console.log(`[Payment] Status still PENDING, retrying in ${this.SYNC_RETRY_DELAY}ms...`);
+          devLog(`[Payment] Status still PENDING, retrying in ${this.SYNC_RETRY_DELAY}ms...`);
           setTimeout(() => {
             this.syncPaymentStatusWithRetry();
           }, this.SYNC_RETRY_DELAY);
@@ -397,7 +398,7 @@ export class PaymentPage implements OnInit, OnDestroy {
 
         // Max retries reached or non-PENDING status
         if (result.invoiceStatus === 'PENDING') {
-          console.log('[Payment] Max sync retries reached, status still PENDING');
+          devLog('[Payment] Max sync retries reached, status still PENDING');
           await this.showToast('Payment verification in progress. Please wait or pull to refresh.', 'warning');
         }
       }
@@ -407,7 +408,7 @@ export class PaymentPage implements OnInit, OnDestroy {
       // Retry on error if we haven't maxed out
       if (this.syncRetryCount < this.MAX_SYNC_RETRIES) {
         this.syncRetryCount++;
-        console.log(`[Payment] Sync error, retrying in ${this.SYNC_RETRY_DELAY}ms...`);
+        devLog(`[Payment] Sync error, retrying in ${this.SYNC_RETRY_DELAY}ms...`);
         setTimeout(() => {
           this.syncPaymentStatusWithRetry();
         }, this.SYNC_RETRY_DELAY);
@@ -479,7 +480,7 @@ export class PaymentPage implements OnInit, OnDestroy {
 
       // Listen for browser close - sync status when user returns
       const browserFinishedListener = await Browser.addListener('browserFinished', async () => {
-        console.log('[Payment] Browser closed, syncing payment status...');
+        devLog('[Payment] Browser closed, syncing payment status...');
         browserFinishedListener.remove();
         
         // Exit payment flow and sync with retry logic
@@ -499,7 +500,7 @@ export class PaymentPage implements OnInit, OnDestroy {
       });
     } catch (err) {
       // Fallback to window.open for web
-      console.log('[Payment] Opening payment URL in browser window');
+      devLog('[Payment] Opening payment URL in browser window');
       window.open(url, '_blank');
       
       // For web, show a message to manually refresh
@@ -511,7 +512,7 @@ export class PaymentPage implements OnInit, OnDestroy {
    * Public sync method - uses the retry logic internally
    */
   async syncPaymentStatus() {
-    console.log('[Payment] syncPaymentStatus called');
+    devLog('[Payment] syncPaymentStatus called');
     this.syncRetryCount = 0;
     await this.syncPaymentStatusWithRetry();
   }
@@ -520,7 +521,7 @@ export class PaymentPage implements OnInit, OnDestroy {
    * Handle success modal dismiss - navigate to booking details
    */
   onSuccessModalDismiss() {
-    console.log('[Payment] Success modal dismissed, navigating to bookings list');
+    devLog('[Payment] Success modal dismissed, navigating to bookings list');
     this.showSuccessModal.set(false);
     this.successModalData.set(null);
     this.router.navigate(['/c/bookings']);

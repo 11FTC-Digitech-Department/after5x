@@ -1,6 +1,7 @@
 import { Injectable, inject, signal } from '@angular/core';
 import { Platform } from '@ionic/angular';
 import { Browser } from '@capacitor/browser';
+import { devLog } from '../utils/logger';
 import { SupabaseService } from '../supabase/supabase';
 import { Provider, Session } from '@supabase/supabase-js';
 
@@ -55,7 +56,7 @@ export class OAuthService {
   async signInWithProvider(provider: OAuthProvider): Promise<OAuthResult> {
     try {
       const redirectTo = this.getRedirectUrl();
-      console.log(`OAuthService: Starting ${provider} OAuth flow, redirectTo:`, redirectTo);
+      devLog(`OAuthService: Starting ${provider} OAuth flow, redirectTo:`, redirectTo);
 
       if (this.isNativePlatform()) {
         // Mobile flow: get OAuth URL and open in browser
@@ -109,7 +110,7 @@ export class OAuthService {
    */
   async handleOAuthCallback(url: string): Promise<OAuthResult> {
     try {
-      console.log('OAuthService: Handling callback URL:', url);
+      devLog('OAuthService: Handling callback URL:', url);
 
       // Parse the URL to extract parameters
       // Handle both deep link (after5://) and web URLs
@@ -140,7 +141,7 @@ export class OAuthService {
       // For PKCE flow, exchange the authorization code for a session
       const code = queryParams.get('code');
       if (code) {
-        console.log('OAuthService: Exchanging authorization code for session...');
+        devLog('OAuthService: Exchanging authorization code for session...');
         const { data, error: exchangeError } = await this.supabase.auth.exchangeCodeForSession(code);
 
         if (exchangeError) {
@@ -148,14 +149,14 @@ export class OAuthService {
           return { success: false, error: exchangeError.message };
         }
 
-        console.log('OAuthService: Code exchange successful, session:', !!data.session);
+        devLog('OAuthService: Code exchange successful, session:', !!data.session);
 
         // Close the in-app browser after successful authentication
         await this.closeBrowser();
 
         // Verify session is set
         const { data: sessionData } = await this.supabase.auth.getSession();
-        console.log('OAuthService: Verified session exists:', !!sessionData.session);
+        devLog('OAuthService: Verified session exists:', !!sessionData.session);
 
         return { success: true, session: sessionData.session };
       }
@@ -165,7 +166,7 @@ export class OAuthService {
       const refreshToken = hashParams.get('refresh_token');
 
       if (accessToken) {
-        console.log('OAuthService: Setting session from tokens...');
+        devLog('OAuthService: Setting session from tokens...');
         const { error: sessionError } = await this.supabase.auth.setSession({
           access_token: accessToken,
           refresh_token: refreshToken || ''

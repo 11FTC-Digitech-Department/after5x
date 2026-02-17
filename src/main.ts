@@ -12,6 +12,7 @@ import { SessionService } from './app/core/auth/session';
 
 import { defineCustomElements } from '@ionic/pwa-elements/loader';
 import { environment } from './environments/environment';
+import { devLog } from './app/core/utils/logger';
 
 defineCustomElements(window);
 if (environment.production) {
@@ -39,7 +40,7 @@ bootstrapApplication(AppComponent, {
         waited += checkIntervalMs;
       }
 
-      console.log('Session initialized:', {
+      devLog('Session initialized:', {
         isAuthenticated: sessionService.isAuthenticated(),
         waitedMs: waited
       });

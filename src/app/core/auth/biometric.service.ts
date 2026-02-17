@@ -1,6 +1,7 @@
 import { Injectable, inject, signal } from '@angular/core';
 import { NativeBiometric, BiometryType } from 'capacitor-native-biometric';
 import { Platform } from '@ionic/angular';
+import { devLog } from '../utils/logger';
 import { Preferences } from '@capacitor/preferences';
 import { SupabaseService } from '../supabase/supabase';
 import { AUTH_CONFIG } from './auth.config';
@@ -47,7 +48,7 @@ export class BiometricService {
    */
   private async initialize() {
     if (!this.platform.is('capacitor')) {
-      console.log('BiometricService: Not running on Capacitor, biometrics unavailable');
+      devLog('BiometricService: Not running on Capacitor, biometrics unavailable');
       this._isInitialized.set(true);
       return;
     }
@@ -60,9 +61,9 @@ export class BiometricService {
       if (capability.isAvailable) {
         const enabled = await this.getBiometricEnabledSetting();
         this._isBiometricEnabled.set(enabled);
-        console.log('BiometricService: Initialized -', this.getBiometryTypeName(), enabled ? 'enabled' : 'disabled');
+        devLog('BiometricService: Initialized -', this.getBiometryTypeName(), enabled ? 'enabled' : 'disabled');
       } else {
-        console.log('BiometricService: Biometrics not available -', capability.errorMessage);
+        devLog('BiometricService: Biometrics not available -', capability.errorMessage);
       }
     } catch (error) {
       console.error('BiometricService: Initialization failed:', error);
@@ -128,7 +129,7 @@ export class BiometricService {
       });
 
       this._isBiometricEnabled.set(true);
-      console.log('BiometricService: Biometric enabled successfully');
+      devLog('BiometricService: Biometric enabled successfully');
       return { success: true };
 
     } catch (error: any) {
@@ -157,7 +158,7 @@ export class BiometricService {
       });
 
       this._isBiometricEnabled.set(false);
-      console.log('BiometricService: Biometric disabled successfully');
+      devLog('BiometricService: Biometric disabled successfully');
       return { success: true };
 
     } catch (error: any) {
@@ -222,7 +223,7 @@ export class BiometricService {
         });
       }
 
-      console.log('BiometricService: Authentication successful');
+      devLog('BiometricService: Authentication successful');
       return { success: true };
 
     } catch (error: any) {

@@ -57,7 +57,7 @@ serve(async (req) => {
     // Check both cases for header name (some proxies lowercase headers)
     const authHeader = req.headers.get('Authorization') || req.headers.get('authorization')
 
-    console.log('Auth header present:', !!authHeader)
+    // Auth header present check (no sensitive data logged)
 
     if (!authHeader) {
       // Log all headers for debugging (without sensitive values)
@@ -84,7 +84,7 @@ serve(async (req) => {
       )
     }
 
-    console.log('User authenticated:', user.id)
+    // User authenticated
 
     // Parse request body
     const { bookingId }: CreateInvoiceRequest = await req.json()
@@ -242,7 +242,7 @@ serve(async (req) => {
     }
 
     const xenditSession: XenditSessionResponse = await xenditResponse.json()
-    console.log('Xendit session created:', JSON.stringify(xenditSession, null, 2))
+    console.log('Xendit session created:', xenditSession.payment_session_id, 'status:', xenditSession.status)
 
     // Validate we got a session ID
     if (!xenditSession.payment_session_id) {
@@ -273,7 +273,7 @@ serve(async (req) => {
       )
     }
 
-    console.log('Invoice record created:', invoiceRecord)
+    console.log('Invoice record created:', invoiceRecord ? 'success' : 'no record returned')
 
     // 9. Return success response (map v3 fields to existing response format)
     return new Response(

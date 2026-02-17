@@ -1,6 +1,7 @@
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { devLog } from '../../../../../core/utils/logger';
 import { Router } from '@angular/router';
 import {
   IonContent,
@@ -182,7 +183,7 @@ export class NotificationSettingsPage implements OnInit {
 
       if (value) {
         const localSettings = JSON.parse(value);
-        console.log('Migrating local notification settings to server:', localSettings);
+        devLog('Migrating local notification settings to server:', localSettings);
 
         // Update server with local settings
         const success = await this.pushNotificationService.updatePreferences(localSettings);
@@ -190,7 +191,7 @@ export class NotificationSettingsPage implements OnInit {
         if (success) {
           // Remove local settings after successful migration
           await Preferences.remove({ key: this.STORAGE_KEY });
-          console.log('Local notification settings migrated successfully');
+          devLog('Local notification settings migrated successfully');
         }
       }
     } catch (error) {

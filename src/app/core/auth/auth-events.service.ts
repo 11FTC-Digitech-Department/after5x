@@ -1,4 +1,5 @@
 import { Injectable, signal, computed } from '@angular/core';
+import { devLog } from '../utils/logger';
 
 export type AuthEventType = 'SESSION_STARTED' | 'SESSION_REFRESHED' | 'SESSION_EXPIRED' | 'SIGNED_OUT';
 
@@ -42,7 +43,7 @@ export class AuthEventsService {
     };
     this._lastEvent.set(event);
     this._eventCounter.update(c => c + 1);
-    console.log(`AuthEventsService: Emitted ${type}`, userId ? `for user ${userId}` : '');
+    devLog(`AuthEventsService: Emitted ${type}`, userId ? `for user ${userId}` : '');
   }
 
   /**

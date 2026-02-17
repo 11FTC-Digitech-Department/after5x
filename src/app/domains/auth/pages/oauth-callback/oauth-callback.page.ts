@@ -1,6 +1,7 @@
 import { Component, OnInit, inject } from '@angular/core';
 import { Router } from '@angular/router';
 import { IonContent, IonSpinner } from '@ionic/angular/standalone';
+import { devLog } from '../../../../core/utils/logger';
 import { OAuthService } from '../../../../core/auth/oauth.service';
 import { SessionService } from '../../../../core/auth/session';
 import { AuthFlowService } from '../../../../core/auth/auth-flow.service';
@@ -45,7 +46,7 @@ export class OAuthCallbackPage implements OnInit {
     try {
       // Handle the OAuth callback from web redirect
       const fullUrl = window.location.href;
-      console.log('OAuthCallbackPage: Processing callback URL');
+      devLog('OAuthCallbackPage: Processing callback URL');
 
       const result = await this.oauthService.handleOAuthCallback(fullUrl);
 
@@ -57,22 +58,22 @@ export class OAuthCallbackPage implements OnInit {
         return;
       }
 
-      console.log('OAuthCallbackPage: Callback successful, session:', !!result.session);
+      devLog('OAuthCallbackPage: Callback successful, session:', !!result.session);
 
       if (result.session) {
         // Wait a moment for auth state change to propagate
         await new Promise(resolve => setTimeout(resolve, 500));
 
         // Wait for profile to be loaded
-        console.log('OAuthCallbackPage: Waiting for profile...');
+        devLog('OAuthCallbackPage: Waiting for profile...');
         await this.waitForProfile(8000);
 
         const profile = this.sessionService.profile();
-        console.log('OAuthCallbackPage: Profile loaded:', !!profile, 'role:', profile?.role);
+        devLog('OAuthCallbackPage: Profile loaded:', !!profile, 'role:', profile?.role);
 
         // Navigate to appropriate page based on user role
         await this.authFlowService.navigateAfterAuthentication(this.sessionService.userRole());
-        console.log('OAuthCallbackPage: Navigation triggered');
+        devLog('OAuthCallbackPage: Navigation triggered');
       } else {
         console.warn('OAuthCallbackPage: No session after OAuth callback');
         this.router.navigate(['/auth/login'], {

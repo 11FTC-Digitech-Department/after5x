@@ -1,6 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { SupabaseService } from '../supabase/supabase';
 import { SessionService } from '../auth/session';
+import { devLog } from '../utils/logger';
 import {
   WalletBalance,
   WalletTransaction,
@@ -127,7 +128,7 @@ export class WalletService {
           filter: `owner_id=eq.${profile.id}`
         },
         async () => {
-          console.log('[Wallet] Wallet update received');
+          devLog('[Wallet] Wallet update received');
           try {
             const balance = await this.getWalletBalance();
             callback(balance);
@@ -146,7 +147,7 @@ export class WalletService {
         async (payload) => {
           // Check if this transaction belongs to the provider's wallet
           const transaction = payload.new as any;
-          console.log('[Wallet] New transaction:', transaction);
+          devLog('[Wallet] New transaction:', transaction);
           try {
             const balance = await this.getWalletBalance();
             callback(balance);
@@ -156,7 +157,7 @@ export class WalletService {
         }
       )
       .subscribe((status) => {
-        console.log('[Wallet] Subscription status:', status);
+        devLog('[Wallet] Subscription status:', status);
       });
 
     this.walletChannel = channel;

@@ -1,6 +1,7 @@
 import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { devLog } from '../../../../core/utils/logger';
 import { Router } from '@angular/router';
 import {
   IonContent,
@@ -51,6 +52,6 @@ export class ForgotPasswordPage implements OnInit {
 
   onForgotPassword() {
     // Handle forgot password logic
-    console.log('Forgot password for:', this.forgotForm);
+    devLog('Forgot password for:', this.forgotForm);
   }
 }
