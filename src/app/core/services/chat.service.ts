@@ -1,5 +1,6 @@
 import { Injectable, inject, signal, computed } from '@angular/core';
 import { SupabaseService } from '../supabase/supabase';
+import { devError } from '../utils/logger';
 import { SessionService } from '../auth/session';
 import { RealTimeService } from './real-time.service';
 import {
@@ -38,7 +39,7 @@ export class ChatService {
   async getConversations(): Promise<Conversation[]> {
     const userId = this.sessionService.profile()?.id;
     if (!userId) {
-      console.error('[ChatService] No user ID available');
+      devError('[ChatService] No user ID available');
       return [];
     }
 
@@ -49,7 +50,7 @@ export class ChatService {
       );
 
       if (error) {
-        console.error('[ChatService] Error fetching conversations:', error);
+        devError('[ChatService] Error fetching conversations:', error);
         return [];
       }
 
@@ -61,7 +62,7 @@ export class ChatService {
 
       return conversations;
     } catch (error) {
-      console.error('[ChatService] Error fetching conversations:', error);
+      devError('[ChatService] Error fetching conversations:', error);
       return [];
     }
   }
@@ -86,7 +87,7 @@ export class ChatService {
         .order('created_at', { ascending: true });
 
       if (error) {
-        console.error('[ChatService] Error fetching messages:', error);
+        devError('[ChatService] Error fetching messages:', error);
         return [];
       }
 
@@ -102,7 +103,7 @@ export class ChatService {
         created_at: msg.created_at ?? ''
       }));
     } catch (error) {
-      console.error('[ChatService] Error fetching messages:', error);
+      devError('[ChatService] Error fetching messages:', error);
       return [];
     }
   }
@@ -117,7 +118,7 @@ export class ChatService {
   ): Promise<ChatMessage | null> {
     const userId = this.sessionService.profile()?.id;
     if (!userId) {
-      console.error('[ChatService] No user ID available');
+      devError('[ChatService] No user ID available');
       return null;
     }
 
@@ -143,7 +144,7 @@ export class ChatService {
         .single();
 
       if (error) {
-        console.error('[ChatService] Error sending message:', error);
+        devError('[ChatService] Error sending message:', error);
         return null;
       }
 
@@ -159,7 +160,7 @@ export class ChatService {
         created_at: data.created_at ?? ''
       };
     } catch (error) {
-      console.error('[ChatService] Error sending message:', error);
+      devError('[ChatService] Error sending message:', error);
       return null;
     }
   }
@@ -170,7 +171,7 @@ export class ChatService {
   async sendImage(bookingId: string, file: File): Promise<ChatMessage | null> {
     const userId = this.sessionService.profile()?.id;
     if (!userId) {
-      console.error('[ChatService] No user ID available');
+      devError('[ChatService] No user ID available');
       return null;
     }
 
@@ -190,7 +191,7 @@ export class ChatService {
         });
 
       if (uploadError) {
-        console.error('[ChatService] Error uploading image:', uploadError);
+        devError('[ChatService] Error uploading image:', uploadError);
         return null;
       }
 
@@ -203,7 +204,7 @@ export class ChatService {
       // Send message with image URL
       return this.sendMessage(bookingId, urlData.publicUrl, 'IMAGE');
     } catch (error) {
-      console.error('[ChatService] Error sending image:', error);
+      devError('[ChatService] Error sending image:', error);
       return null;
     }
   }
@@ -224,13 +225,13 @@ export class ChatService {
         .is('read_at', null);
 
       if (error) {
-        console.error('[ChatService] Error marking messages as read:', error);
+        devError('[ChatService] Error marking messages as read:', error);
       }
 
       // Refresh total unread count
       await this.refreshTotalUnreadCount();
     } catch (error) {
-      console.error('[ChatService] Error marking messages as read:', error);
+      devError('[ChatService] Error marking messages as read:', error);
     }
   }
 
@@ -251,13 +252,13 @@ export class ChatService {
       );
 
       if (error) {
-        console.error('[ChatService] Error getting unread count:', error);
+        devError('[ChatService] Error getting unread count:', error);
         return 0;
       }
 
       return (data as number) || 0;
     } catch (error) {
-      console.error('[ChatService] Error getting unread count:', error);
+      devError('[ChatService] Error getting unread count:', error);
       return 0;
     }
   }
@@ -496,7 +497,7 @@ export class ChatService {
         }
       };
     } catch (error) {
-      console.error('[ChatService] Error getting chat context:', error);
+      devError('[ChatService] Error getting chat context:', error);
       return null;
     }
   }

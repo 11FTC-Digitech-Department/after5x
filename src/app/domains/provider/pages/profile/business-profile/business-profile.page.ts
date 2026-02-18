@@ -1,4 +1,5 @@
 import { Component, OnInit, inject, signal } from '@angular/core';
+import { devError } from '../../../../../core/utils/logger';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
@@ -92,7 +93,7 @@ export class BusinessProfilePage implements OnInit {
         };
       }
     } catch (error) {
-      console.error('Error loading business profile:', error);
+      devError('Error loading business profile:', error);
       await this.showToast('An unexpected error occurred', 'danger');
     } finally {
       this.isLoading.set(false);
@@ -130,7 +131,7 @@ export class BusinessProfilePage implements OnInit {
       await this.showToast('Business profile updated', 'success');
       this.goBack();
     } catch (error) {
-      console.error('Error saving business profile:', error);
+      devError('Error saving business profile:', error);
       await this.showToast('Failed to save business profile', 'danger');
     } finally {
       this.isSaving.set(false);

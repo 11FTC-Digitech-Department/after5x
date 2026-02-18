@@ -1,4 +1,5 @@
 import { Component, OnInit, OnDestroy, inject, signal, computed, effect } from '@angular/core';
+import { devError } from '../../../../core/utils/logger';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import {
@@ -233,7 +234,7 @@ export class SchedulePage implements OnInit, OnDestroy {
       const bookings = await this.providerBookingService.getProviderBookings(providerId);
       this.bookings.set(bookings);
     } catch (error) {
-      console.error('Failed to load bookings:', error);
+      devError('Failed to load bookings:', error);
       await this.showToast('Failed to load jobs', 'danger');
     } finally {
       this.isLoading.set(false);

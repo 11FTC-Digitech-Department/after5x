@@ -29,7 +29,7 @@ import {
 import { SupabaseService } from '../../../../core/supabase/supabase';
 import { ServiceService } from '../../../../core/services/service.service';
 import { SignupSuccessModalComponent } from '../../../../shared/components/signup-success-modal/signup-success-modal.component';
-import { devLog } from '../../../../core/utils/logger';
+import { devLog, devError } from '../../../../core/utils/logger';
 
 interface ServiceCategory {
   id: string;
@@ -169,7 +169,7 @@ export class ProviderApplicationFormPage implements OnInit {
         this.categories.set(data);
       }
     } catch (error) {
-      console.error('Error loading categories:', error);
+      devError('Error loading categories:', error);
       await this.showToast('Failed to load service categories', 'danger');
     } finally {
       this.isLoadingCategories.set(false);
@@ -441,7 +441,7 @@ export class ProviderApplicationFormPage implements OnInit {
             try { 
               body = JSON.parse(body); 
             } catch (e) { 
-              console.error('[Provider Signup] Failed to parse error context:', e);
+              devError('[Provider Signup] Failed to parse error context:', e);
               return body ? { message: body, code: null } : null; 
             }
           }
@@ -486,7 +486,7 @@ export class ProviderApplicationFormPage implements OnInit {
           }
           
           // Log full details for debugging
-          console.error('[Provider Signup] Edge Function Error Details:', {
+          devError('[Provider Signup] Edge Function Error Details:', {
             message: edgeError.message,
             code: edgeError.code,
             missingFields: edgeError.missingFields,
@@ -502,7 +502,7 @@ export class ProviderApplicationFormPage implements OnInit {
           });
         } else {
           // If we couldn't extract error, show raw response
-          console.error('[Provider Signup] Could not extract error. Raw response:', { data, error });
+          devError('[Provider Signup] Could not extract error. Raw response:', { data, error });
           if (data?.error) {
             errorMessage = typeof data.error === 'string' ? data.error : JSON.stringify(data.error);
           } else if (error) {
@@ -533,7 +533,7 @@ export class ProviderApplicationFormPage implements OnInit {
 
       this.showSuccessModal.set(true);
     } catch (err) {
-      console.error('Submit error:', err);
+      devError('Submit error:', err);
       await this.showToast('Try again.', 'danger');
     } finally {
       this.isSubmitting.set(false);

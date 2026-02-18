@@ -1,0 +1,91 @@
+<ion-header>
+  <ion-toolbar>
+    <ion-title>Service Catalog</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content>
+  <ion-refresher slot="fixed" (ionRefresh)="handleRefresh($event)">
+    <ion-refresher-content></ion-refresher-content>
+  </ion-refresher>
+
+  @if (loading()) {
+    <div class="loading-container">
+      <ion-spinner name="crescent"></ion-spinner>
+    </div>
+  } @else {
+    <ion-accordion-group [multiple]="true">
+      @for (category of categories(); track category.id) {
+        <ion-accordion [value]="category.id">
+          <ion-item slot="header">
+            <ion-icon name="layers-outline" slot="start" color="primary"></ion-icon>
+            <ion-label>
+              <h2>{{ category.name }}</h2>
+              <p>{{ category.services?.length || 0 }} services &middot; {{ getActiveCount(category.services) }} active</p>
+            </ion-label>
+            <ion-badge slot="end" [color]="category.is_active ? 'success' : 'medium'">
+              {{ category.is_active ? 'Active' : 'Inactive' }}
+            </ion-badge>
+          </ion-item>
+
+          <div class="ion-padding" slot="content">
+            @for (service of category.services || []; track service.id) {
+              <div class="service-card">
+                <div class="service-header">
+                  <h3>
+                    {{ service.name }}
+                    @if (!service.is_active) {
+                      <ion-badge color="medium">Inactive</ion-badge>
+                    }
+                  </h3>
+                  <p class="service-description">{{ service.description }}</p>
+                </div>
+
+                @if (service.service_variants?.length) {
+                  <div class="variants-list">
+                    <p class="variants-header">
+                      <ion-icon name="pricetag-outline"></ion-icon>
+                      {{ service.service_variants.length }} variants
+                    </p>
+                    @for (variant of service.service_variants; track variant.id) {
+                      <div class="variant-row">
+                        <span class="variant-name">
+                          {{ variant.name }}
+                          @if (!variant.is_active) {
+                            <ion-icon name="close-circle" color="medium"></ion-icon>
+                          }
+                        </span>
+                        <span class="variant-price">
+                          {{ formatPrice(variant.price_min) }}
+                          @if (variant.price_min !== variant.price_max) {
+                            &ndash; {{ formatPrice(variant.price_max) }}
+                          }
+                        </span>
+                      </div>
+                      <div class="variant-details">
+                        After5: {{ formatPrice(variant.price_after5_min) }}
+                        @if (variant.price_after5_min !== variant.price_after5_max) {
+                          &ndash; {{ formatPrice(variant.price_after5_max) }}
+                        }
+                        &middot; {{ variant.duration_minutes }}min
+                        &middot; VAT {{ variant.vat_rate }}%
+                        &middot; Commission {{ variant.commission_rate }}%
+                      </div>
+                    }
+                  </div>
+                }
+              </div>
+            } @empty {
+              <p class="no-services">No services in this category</p>
+            }
+          </div>
+        </ion-accordion>
+      } @empty {
+        <div class="empty-state">
+          <ion-icon name="layers-outline"></ion-icon>
+          <p>No service categories found</p>
+        </div>
+      }
+    </ion-accordion-group>
+  }
+</ion-content>

@@ -1,5 +1,6 @@
 import { Injectable, inject } from '@angular/core';
 import { SupabaseService } from '../supabase/supabase';
+import { devError } from '../utils/logger';
 import { SessionService } from '../auth/session';
 import { BookingStatus, BookingTimelineEntry, StatusTransition, InvalidStatusTransitionError, NotificationType } from '../models/booking.model';
 import { NotificationService } from './notification.service';
@@ -150,7 +151,7 @@ export class BookingStatusService {
     });
 
     if (error) {
-      console.error('Failed to create timeline entry:', error);
+      devError('Failed to create timeline entry:', error);
     }
   }
 
@@ -266,7 +267,7 @@ export class BookingStatusService {
         }
       }
     } catch (error) {
-      console.error('Failed to send status notifications:', error);
+      devError('Failed to send status notifications:', error);
     }
   }
 
@@ -366,7 +367,7 @@ export class BookingStatusService {
       .eq('id', booking.provider_id);
 
     if (updateError) {
-      console.error('Failed to update provider availability:', updateError);
+      devError('Failed to update provider availability:', updateError);
     }
   }
 
@@ -380,7 +381,7 @@ export class BookingStatusService {
       .order('created_at', { ascending: true });
 
     if (error) {
-      console.error('Failed to get booking timeline:', error);
+      devError('Failed to get booking timeline:', error);
       return [];
     }
 

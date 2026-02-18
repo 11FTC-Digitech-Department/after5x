@@ -47,6 +47,18 @@
 	</array>
 	<key>UIViewControllerBasedStatusBarAppearance</key>
 	<true/>
+	<key>NSCameraUsageDescription</key>
+	<string>After5 needs access to your camera to take photos for your profile and during service bookings.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>After5 needs access to your photo library to upload photos for your profile and during service bookings.</string>
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>After5 needs permission to save photos to your library.</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>After5 needs your location to find nearby service providers and show your position on the map.</string>
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>After5 needs your location to track service provider progress during active bookings.</string>
+	<key>NSFaceIDUsageDescription</key>
+	<string>After5 uses Face ID for quick and secure sign-in.</string>
 	<key>UIBackgroundModes</key>
 	<array>
 		<string>remote-notification</string>

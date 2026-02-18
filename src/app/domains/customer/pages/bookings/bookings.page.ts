@@ -48,7 +48,7 @@ import { SessionService } from '@core/auth/session';
 import { BookingService } from '@core/services/booking.service';
 import { RealtimeManagerService, ConnectionMode } from '@core/services/realtime-manager.service';
 import { CustomerBooking, BookingStatus } from '@core/models/booking.model';
-import { devLog } from '@core/utils/logger';
+import { devLog, devError } from '../../../../core/utils/logger';
 
 type FilterStatus = 'all' | 'active' | 'completed' | 'cancelled';
 type SortBy = 'date' | 'status';
@@ -264,7 +264,7 @@ export class BookingsPage implements OnInit, OnDestroy {
       const bookings = await this.bookingService.getCustomerBookings(profile.id);
       this.bookings.set(bookings);
     } catch (error) {
-      console.error('[BookingsPage] Silent refresh failed:', error);
+      devError('[BookingsPage] Silent refresh failed:', error);
     }
   }
 
@@ -291,7 +291,7 @@ export class BookingsPage implements OnInit, OnDestroy {
       const bookings = await this.bookingService.getCustomerBookings(profile.id);
       this.bookings.set(bookings);
     } catch (error) {
-      console.error('Failed to load bookings:', error);
+      devError('Failed to load bookings:', error);
       await this.showToast('Failed to load bookings', 'danger');
     } finally {
       this.isLoading.set(false);
@@ -346,7 +346,7 @@ export class BookingsPage implements OnInit, OnDestroy {
               }
             } catch (error) {
               // Fallback: merge partial data on error
-              console.error('Failed to fetch full booking:', error);
+              devError('Failed to fetch full booking:', error);
               this.debugLog('Fetch failed, using partial merge fallback');
               const updated = [...currentBookings];
               updated[index] = { ...updated[index], ...updatedBooking };

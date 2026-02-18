@@ -1,7 +1,7 @@
 import { Component, OnInit, inject } from '@angular/core';
 import { Router } from '@angular/router';
 import { IonContent, IonSpinner } from '@ionic/angular/standalone';
-import { devLog } from '../../../../core/utils/logger';
+import { devLog, devError, devWarn } from '../../../../core/utils/logger';
 import { OAuthService } from '../../../../core/auth/oauth.service';
 import { SessionService } from '../../../../core/auth/session';
 import { AuthFlowService } from '../../../../core/auth/auth-flow.service';
@@ -51,7 +51,7 @@ export class OAuthCallbackPage implements OnInit {
       const result = await this.oauthService.handleOAuthCallback(fullUrl);
 
       if (!result.success) {
-        console.error('OAuth callback failed:', result.error);
+        devError('OAuth callback failed:', result.error);
         this.router.navigate(['/auth/login'], {
           queryParams: { oauth_error: result.error || 'Authentication failed' }
         });
@@ -75,13 +75,13 @@ export class OAuthCallbackPage implements OnInit {
         await this.authFlowService.navigateAfterAuthentication(this.sessionService.userRole());
         devLog('OAuthCallbackPage: Navigation triggered');
       } else {
-        console.warn('OAuthCallbackPage: No session after OAuth callback');
+        devWarn('OAuthCallbackPage: No session after OAuth callback');
         this.router.navigate(['/auth/login'], {
           queryParams: { oauth_error: 'Failed to establish session' }
         });
       }
     } catch (error) {
-      console.error('OAuthCallbackPage: Error processing callback:', error);
+      devError('OAuthCallbackPage: Error processing callback:', error);
       this.router.navigate(['/auth/login'], {
         queryParams: { oauth_error: 'Authentication failed' }
       });
@@ -96,7 +96,7 @@ export class OAuthCallbackPage implements OnInit {
       }
       await new Promise(resolve => setTimeout(resolve, 100));
     }
-    console.warn('OAuthCallbackPage: Profile load timeout');
+    devWarn('OAuthCallbackPage: Profile load timeout');
     return false;
   }
 }

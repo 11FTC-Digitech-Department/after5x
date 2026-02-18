@@ -1,4 +1,5 @@
 import { Component, OnInit, OnDestroy, inject, signal, computed, effect } from '@angular/core';
+import { devError } from '../../../../core/utils/logger';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import {
@@ -203,7 +204,7 @@ export class DashboardPage implements OnInit, OnDestroy {
       await this.loadCalendarJobs();
 
     } catch (error) {
-      console.error('Failed to load dashboard data:', error);
+      devError('Failed to load dashboard data:', error);
       await this.showToast('Failed to load dashboard', 'danger');
     } finally {
       this.isLoading.set(false);
@@ -231,7 +232,7 @@ export class DashboardPage implements OnInit, OnDestroy {
       const jobs = await this.dashboardService.getCalendarJobs(providerId, start, end);
       this.calendarJobs.set(jobs);
     } catch (error) {
-      console.error('Failed to load calendar jobs:', error);
+      devError('Failed to load calendar jobs:', error);
     }
   }
 
@@ -278,7 +279,7 @@ export class DashboardPage implements OnInit, OnDestroy {
         newStatus ? 'success' : 'medium'
       );
     } catch (error) {
-      console.error('Failed to toggle status:', error);
+      devError('Failed to toggle status:', error);
       await this.showToast('Failed to update status', 'danger');
     } finally {
       this.isTogglingStatus.set(false);
@@ -336,7 +337,7 @@ export class DashboardPage implements OnInit, OnDestroy {
       await this.showToast('Job accepted!', 'success');
       await this.loadDashboardData();
     } catch (error) {
-      console.error('Failed to accept job:', error);
+      devError('Failed to accept job:', error);
       await this.showToast('Failed to accept job', 'danger');
     }
   }
@@ -372,7 +373,7 @@ export class DashboardPage implements OnInit, OnDestroy {
               await this.loadDashboardData();
               return true;
             } catch (error) {
-              console.error('Failed to reject job:', error);
+              devError('Failed to reject job:', error);
               await this.showToast('Failed to reject job', 'danger');
               return false;
             }

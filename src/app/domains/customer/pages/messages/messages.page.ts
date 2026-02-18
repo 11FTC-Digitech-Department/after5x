@@ -1,4 +1,5 @@
 import { Component, OnInit, OnDestroy, inject, signal, effect } from '@angular/core';
+import { devError } from '../../../../core/utils/logger';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import {
@@ -100,7 +101,7 @@ export class MessagesPage implements OnInit, OnDestroy {
         this.setupRealtimeSubscription();
       }
     } catch (err) {
-      console.error('[MessagesPage] Error loading conversations:', err);
+      devError('[MessagesPage] Error loading conversations:', err);
       this.error.set('Failed to load conversations');
     } finally {
       this.loading.set(false);

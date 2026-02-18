@@ -1,6 +1,6 @@
 import { ConfigService, AppConfig } from './config.service';
 import { environment } from '../../../environments/environment';
-import { devLog } from '../utils/logger';
+import { devLog, devError } from '../utils/logger';
 
 /**
  * Config is taken from the build-time environment (fileReplacements in angular.json).
@@ -21,7 +21,7 @@ export function initializeConfig(configService: ConfigService): () => Promise<vo
       configService.setConfig(config);
       devLog('Configuration loaded:', { production: config.production, supabaseUrl: config.supabase.url });
     } catch (error) {
-      console.error('Failed to initialize configuration:', error);
+      devError('Failed to initialize configuration:', error);
       throw error;
     }
   };

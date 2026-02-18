@@ -1,7 +1,7 @@
 import { Injectable, inject, signal } from '@angular/core';
 import { Platform } from '@ionic/angular';
 import { Browser } from '@capacitor/browser';
-import { devLog } from '../utils/logger';
+import { devLog, devError } from '../utils/logger';
 import { SupabaseService } from '../supabase/supabase';
 import { Provider, Session } from '@supabase/supabase-js';
 
@@ -69,7 +69,7 @@ export class OAuthService {
         });
 
         if (error) {
-          console.error('OAuth error:', error);
+          devError('OAuth error:', error);
           return { success: false, error: error.message };
         }
 
@@ -98,7 +98,7 @@ export class OAuthService {
         return { success: true };
       }
     } catch (error: unknown) {
-      console.error('OAuth sign-in error:', error);
+      devError('OAuth sign-in error:', error);
       const message = error instanceof Error ? error.message : 'OAuth sign-in failed';
       return { success: false, error: message };
     }
@@ -134,7 +134,7 @@ export class OAuthService {
       const errorDescription = hashParams.get('error_description') || queryParams.get('error_description');
 
       if (error) {
-        console.error('OAuth callback error:', error, errorDescription);
+        devError('OAuth callback error:', error, errorDescription);
         return { success: false, error: errorDescription || error };
       }
 
@@ -145,7 +145,7 @@ export class OAuthService {
         const { data, error: exchangeError } = await this.supabase.auth.exchangeCodeForSession(code);
 
         if (exchangeError) {
-          console.error('Code exchange error:', exchangeError);
+          devError('Code exchange error:', exchangeError);
           return { success: false, error: exchangeError.message };
         }
 
@@ -183,7 +183,7 @@ export class OAuthService {
 
       return { success: false, error: 'No authentication data in callback' };
     } catch (error: unknown) {
-      console.error('OAuth callback handling error:', error);
+      devError('OAuth callback handling error:', error);
       const message = error instanceof Error ? error.message : 'Failed to process OAuth callback';
       return { success: false, error: message };
     }

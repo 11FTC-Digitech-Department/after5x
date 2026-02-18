@@ -9,6 +9,7 @@ import {
   effect
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { devError } from '../../../../core/utils/logger';
 import { ActivatedRoute, Router } from '@angular/router';
 import {
   IonContent,
@@ -222,7 +223,7 @@ export class ChatRoomPage implements OnInit, OnDestroy {
       // Scroll to bottom after messages load
       setTimeout(() => this.scrollToBottom(), 100);
     } catch (err) {
-      console.error('[ChatRoomPage] Error loading chat:', err);
+      devError('[ChatRoomPage] Error loading chat:', err);
       this.error.set('Failed to load chat');
     } finally {
       this.loading.set(false);
@@ -325,7 +326,7 @@ export class ChatRoomPage implements OnInit, OnDestroy {
 
   async onSendMessage(event: ChatInputEvent): Promise<void> {
     if (!this.canChat()) {
-      console.error('[ChatRoomPage] Chat not available');
+      devError('[ChatRoomPage] Chat not available');
       return;
     }
 
@@ -350,7 +351,7 @@ export class ChatRoomPage implements OnInit, OnDestroy {
         setTimeout(() => this.scrollToBottom(), 50);
       }
     } catch (err) {
-      console.error('[ChatRoomPage] Error sending message:', err);
+      devError('[ChatRoomPage] Error sending message:', err);
     } finally {
       this.sending.set(false);
     }

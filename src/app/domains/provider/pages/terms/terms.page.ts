@@ -1,4 +1,5 @@
 import { Component, inject } from '@angular/core';
+import { devError } from '../../../../core/utils/logger';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import {
@@ -42,7 +43,7 @@ export class TermsPage {
   private router = inject(Router);
 
   readonly fullTermsUrl = 'https://after5.ph/terms-conditions/';
-  readonly lastUpdated = 'January 2024';
+  readonly lastUpdated = 'February 2026';
 
   readonly sections = [
     {
@@ -119,7 +120,7 @@ export class TermsPage {
     try {
       await Browser.open({ url: this.fullTermsUrl });
     } catch (error) {
-      console.error('Error opening browser:', error);
+      devError('Error opening browser:', error);
       window.open(this.fullTermsUrl, '_blank');
     }
   }

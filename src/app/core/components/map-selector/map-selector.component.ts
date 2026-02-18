@@ -1,4 +1,5 @@
 import { Component, OnInit, OnDestroy, input, output, effect, signal, computed, ViewChild } from '@angular/core';
+import { devWarn, devError } from '../../utils/logger';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { CUSTOM_ELEMENTS_SCHEMA } from '@angular/core';
@@ -111,7 +112,7 @@ export class MapSelectorComponent implements OnInit, OnDestroy {
 
       }
     } catch (error) {
-      console.error('Error initializing map:', error);
+      devError('Error initializing map:', error);
     } finally {
       this.isLoading.set(false);
     }
@@ -134,7 +135,7 @@ export class MapSelectorComponent implements OnInit, OnDestroy {
         }
       }
     } catch (error) {
-      console.error('Error setting location:', error);
+      devError('Error setting location:', error);
     }
   }
 
@@ -154,7 +155,7 @@ export class MapSelectorComponent implements OnInit, OnDestroy {
       const results = await this.googleMapsService.searchPlaces(query, location);
       this.searchResults.set(results);
     } catch (error) {
-      console.error('Error performing search:', error);
+      devError('Error performing search:', error);
       this.searchResults.set([]);
     } finally {
       this.isSearching.set(false);
@@ -165,7 +166,7 @@ export class MapSelectorComponent implements OnInit, OnDestroy {
     try {
       // Handle mock results (when not in Capacitor)
       if (place.place_id.startsWith('mock_')) {
-        console.warn('Mock place selected - using current location as placeholder');
+        devWarn('Mock place selected - using current location as placeholder');
         const currentLocation = this.selectedLocation();
         if (currentLocation) {
           // Keep current location for mock results
@@ -182,7 +183,7 @@ export class MapSelectorComponent implements OnInit, OnDestroy {
         this.searchResults.set([]);
       }
     } catch (error) {
-      console.error('Error selecting place:', error);
+      devError('Error selecting place:', error);
     }
   }
 
@@ -193,7 +194,7 @@ export class MapSelectorComponent implements OnInit, OnDestroy {
         await this.setLocation(currentPosition.lat, currentPosition.lng);
       }
     } catch (error) {
-      console.error('Error getting current location:', error);
+      devError('Error getting current location:', error);
     }
   }
 

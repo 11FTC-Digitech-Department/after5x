@@ -48,7 +48,7 @@ import { PaymentContextService } from '@core/services/payment-context.service';
 import { CustomerBooking, BookingStatus } from '@core/models/booking.model';
 import { PaymentStatus, InvoiceStatus } from '@core/models/payment.model';
 import { PaymentSuccessModalComponent, PaymentSuccessData } from '@shared/components/payment-success-modal/payment-success-modal.component';
-import { devLog } from '@core/utils/logger';
+import { devLog, devWarn, devError } from '../../../../core/utils/logger';
 
 // Status display configuration
 const PAYMENT_STATUS_CONFIG: Record<InvoiceStatus | 'NONE', { label: string; color: string; icon: string; message: string }> = {
@@ -290,7 +290,7 @@ export class PaymentPage implements OnInit, OnDestroy {
         this.router.navigate(['/c/bookings', bookingId]);
       }
     } catch (err) {
-      console.error('Failed to load payment data:', err);
+      devError('Failed to load payment data:', err);
       this.error.set('Failed to load payment information');
     } finally {
       this.isLoading.set(false);
@@ -347,7 +347,7 @@ export class PaymentPage implements OnInit, OnDestroy {
   private async syncPaymentStatusWithRetry() {
     const bookingId = this.booking()?.id;
     if (!bookingId) {
-      console.warn('[Payment] syncPaymentStatusWithRetry: No bookingId');
+      devWarn('[Payment] syncPaymentStatusWithRetry: No bookingId');
       return;
     }
 
@@ -403,7 +403,7 @@ export class PaymentPage implements OnInit, OnDestroy {
         }
       }
     } catch (err) {
-      console.error('[Payment] Sync error:', err);
+      devError('[Payment] Sync error:', err);
       
       // Retry on error if we haven't maxed out
       if (this.syncRetryCount < this.MAX_SYNC_RETRIES) {
@@ -457,7 +457,7 @@ export class PaymentPage implements OnInit, OnDestroy {
         throw new Error(result.error || 'Failed to create payment invoice');
       }
     } catch (err: any) {
-      console.error('Payment initiation failed:', err);
+      devError('Payment initiation failed:', err);
       this.error.set(err.message || 'Failed to initiate payment');
       await this.showToast('Failed to initiate payment. Please try again.', 'danger');
     } finally {

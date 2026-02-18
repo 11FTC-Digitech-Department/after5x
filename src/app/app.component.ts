@@ -1,4 +1,4 @@
-import { devLog } from './core/utils/logger';
+import { devLog, devWarn, devError } from './core/utils/logger';
 import { Component, inject, NgZone, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
 import { IonApp, IonRouterOutlet, Platform } from '@ionic/angular/standalone';
@@ -37,7 +37,7 @@ export class AppComponent implements OnInit {
         await EdgeToEdge.setStatusBarColor({ color: '#00000000' });
         await EdgeToEdge.setNavigationBarColor({ color: '#00000000' });
       } catch (error) {
-        console.warn('Edge-to-edge initialization failed:', error);
+        devWarn('Edge-to-edge initialization failed:', error);
       }
     }
   }
@@ -97,7 +97,7 @@ export class AppComponent implements OnInit {
       const result = await this.oauthService.handleOAuthCallback(urlString);
 
       if (!result.success) {
-        console.error('OAuth callback failed:', result.error);
+        devError('OAuth callback failed:', result.error);
         this.oauthService.setProcessingCallback(false);
         this.router.navigate(['/auth/login'], {
           queryParams: { oauth_error: result.error || 'Authentication failed' }
@@ -123,14 +123,14 @@ export class AppComponent implements OnInit {
         devLog('AppComponent: Navigation triggered');
         this.oauthService.setProcessingCallback(false);
       } else {
-        console.warn('AppComponent: No session after OAuth callback');
+        devWarn('AppComponent: No session after OAuth callback');
         this.oauthService.setProcessingCallback(false);
         this.router.navigate(['/auth/login'], {
           queryParams: { oauth_error: 'Failed to establish session' }
         });
       }
     } catch (error) {
-      console.error('AppComponent: OAuth deep link handling error:', error);
+      devError('AppComponent: OAuth deep link handling error:', error);
       this.oauthService.setProcessingCallback(false);
       this.router.navigate(['/auth/login'], {
         queryParams: { oauth_error: 'Authentication failed' }
@@ -149,7 +149,7 @@ export class AppComponent implements OnInit {
       }
       await new Promise(resolve => setTimeout(resolve, 100));
     }
-    console.warn('AppComponent: Profile load timeout');
+    devWarn('AppComponent: Profile load timeout');
     return false;
   }
 }

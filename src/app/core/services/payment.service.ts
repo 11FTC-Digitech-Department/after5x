@@ -1,7 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { SupabaseService } from '../supabase/supabase';
 import { SessionService } from '../auth/session';
-import { devLog } from '../utils/logger';
+import { devLog, devError, devWarn } from '../utils/logger';
 import {
   PaymentStatus,
   CreateInvoiceResponse,
@@ -39,7 +39,7 @@ export class PaymentService {
     devLog('[PaymentService] Response:', response);
 
     if (response.error) {
-      console.error('Failed to create invoice:', response.error);
+      devError('Failed to create invoice:', response.error);
       throw new Error(response.error.message || 'Failed to create payment invoice');
     }
 
@@ -113,7 +113,7 @@ export class PaymentService {
     const { data: refreshData, error: refreshError } = await this.supabaseService.client.auth.refreshSession();
 
     if (refreshError) {
-      console.warn('[PaymentService] Session refresh failed:', refreshError.message);
+      devWarn('[PaymentService] Session refresh failed:', refreshError.message);
       // Continue anyway - getSession might still work
     } else {
       devLog('[PaymentService] Session refreshed successfully');
@@ -129,7 +129,7 @@ export class PaymentService {
     });
 
     if (!session.data.session) {
-      console.error('[PaymentService] Not authenticated - no session');
+      devError('[PaymentService] Not authenticated - no session');
       throw new Error('Not authenticated');
     }
 
@@ -146,7 +146,7 @@ export class PaymentService {
     });
 
     if (response.error) {
-      console.error('[PaymentService] Failed to check invoice status:', response.error);
+      devError('[PaymentService] Failed to check invoice status:', response.error);
       throw new Error(response.error.message || 'Failed to check payment status');
     }
 
@@ -180,7 +180,7 @@ export class PaymentService {
             const status = await this.getPaymentStatus(bookingId);
             callback(status);
           } catch (error) {
-            console.error('[Payment] Error fetching status:', error);
+            devError('[Payment] Error fetching status:', error);
           }
         }
       )
@@ -199,7 +199,7 @@ export class PaymentService {
             const status = await this.getPaymentStatus(bookingId);
             callback(status);
           } catch (error) {
-            console.error('[Payment] Error fetching status:', error);
+            devError('[Payment] Error fetching status:', error);
           }
         }
       )

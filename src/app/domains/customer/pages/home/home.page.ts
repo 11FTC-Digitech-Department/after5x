@@ -1,4 +1,5 @@
 import { Component, OnInit, inject, signal, computed, effect } from '@angular/core';
+import { devError } from '../../../../core/utils/logger';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
@@ -174,7 +175,7 @@ export class HomePage implements OnInit {
         this.currentLocation.set('Select your location');
       }
     } catch (error) {
-      console.error('Error loading default address:', error);
+      devError('Error loading default address:', error);
       this.currentLocation.set('Select your location');
     }
   }

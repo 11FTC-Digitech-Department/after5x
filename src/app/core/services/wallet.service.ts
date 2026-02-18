@@ -1,7 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { SupabaseService } from '../supabase/supabase';
 import { SessionService } from '../auth/session';
-import { devLog } from '../utils/logger';
+import { devLog, devError, devWarn } from '../utils/logger';
 import {
   WalletBalance,
   WalletTransaction,
@@ -38,7 +38,7 @@ export class WalletService {
     }) as { data: WalletData[] | null; error: any };
 
     if (error) {
-      console.error('Failed to get wallet:', error);
+      devError('Failed to get wallet:', error);
       throw new Error('Failed to retrieve wallet information');
     }
 
@@ -84,7 +84,7 @@ export class WalletService {
     }) as { data: WalletTransactionRow[] | null; error: any };
 
     if (error) {
-      console.error('Failed to get transactions:', error);
+      devError('Failed to get transactions:', error);
       throw new Error('Failed to retrieve transaction history');
     }
 
@@ -110,7 +110,7 @@ export class WalletService {
     const profile = this.sessionService.profile();
 
     if (!profile || profile.role !== 'provider') {
-      console.warn('Cannot subscribe to wallet: user is not a provider');
+      devWarn('Cannot subscribe to wallet: user is not a provider');
       return () => {};
     }
 
@@ -133,7 +133,7 @@ export class WalletService {
             const balance = await this.getWalletBalance();
             callback(balance);
           } catch (error) {
-            console.error('[Wallet] Error fetching balance:', error);
+            devError('[Wallet] Error fetching balance:', error);
           }
         }
       )
@@ -152,7 +152,7 @@ export class WalletService {
             const balance = await this.getWalletBalance();
             callback(balance);
           } catch (error) {
-            console.error('[Wallet] Error fetching balance:', error);
+            devError('[Wallet] Error fetching balance:', error);
           }
         }
       )

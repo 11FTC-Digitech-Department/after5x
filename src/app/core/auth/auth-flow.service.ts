@@ -1,7 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { Router } from '@angular/router';
 import { CapacitorStorageAdapter } from '../storage/capacitor-storage.adapter';
-import { devLog } from '../utils/logger';
+import { devLog, devWarn, devError } from '../utils/logger';
 
 export interface NavigationState {
   returnUrl: string;
@@ -43,7 +43,7 @@ export class AuthFlowService {
       await this.storage.setItem(this.TIMESTAMP_KEY, Date.now().toString());
       devLog(`AuthFlowService: Preserved navigation state - URL: ${url}, Reason: ${reason}`);
     } catch (error) {
-      console.error('AuthFlowService: Failed to preserve navigation state:', error);
+      devError('AuthFlowService: Failed to preserve navigation state:', error);
     }
   }
 
@@ -76,7 +76,7 @@ export class AuthFlowService {
       devLog(`AuthFlowService: Consumed navigation state - URL: ${url}, Reason: ${reason}`);
       return result;
     } catch (error) {
-      console.error('AuthFlowService: Failed to consume navigation state:', error);
+      devError('AuthFlowService: Failed to consume navigation state:', error);
       return null;
     }
   }
@@ -89,7 +89,7 @@ export class AuthFlowService {
       const url = await this.storage.getItem(this.RETURN_URL_KEY);
       return !!url;
     } catch (error) {
-      console.error('AuthFlowService: Failed to check navigation state:', error);
+      devError('AuthFlowService: Failed to check navigation state:', error);
       return false;
     }
   }
@@ -106,7 +106,7 @@ export class AuthFlowService {
       ]);
       devLog('AuthFlowService: Cleared navigation state');
     } catch (error) {
-      console.error('AuthFlowService: Failed to clear navigation state:', error);
+      devError('AuthFlowService: Failed to clear navigation state:', error);
     }
   }
 
@@ -188,20 +188,20 @@ export class AuthFlowService {
 
       // Only allow same-origin URLs
       if (urlObj.origin !== window.location.origin) {
-        console.warn('AuthFlowService: Rejecting external URL:', url);
+        devWarn('AuthFlowService: Rejecting external URL:', url);
         return false;
       }
 
       // Prevent redirecting to auth routes (would cause loops)
       if (urlObj.pathname.startsWith('/auth/')) {
-        console.warn('AuthFlowService: Rejecting auth route URL:', url);
+        devWarn('AuthFlowService: Rejecting auth route URL:', url);
         return false;
       }
 
       // Basic validation passed
       return true;
     } catch (error) {
-      console.error('AuthFlowService: Invalid URL format:', url, error);
+      devError('AuthFlowService: Invalid URL format:', url, error);
       return false;
     }
   }

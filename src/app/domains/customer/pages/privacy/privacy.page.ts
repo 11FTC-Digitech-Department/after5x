@@ -1,4 +1,5 @@
 import { Component, inject } from '@angular/core';
+import { devError } from '../../../../core/utils/logger';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import {
@@ -42,7 +43,7 @@ export class PrivacyPage {
   private router = inject(Router);
 
   readonly fullPolicyUrl = 'https://after5.ph/privacy-policy/';
-  readonly lastUpdated = 'January 2024';
+  readonly lastUpdated = 'February 2026';
 
   readonly sections = [
     {
@@ -107,7 +108,7 @@ export class PrivacyPage {
     try {
       await Browser.open({ url: this.fullPolicyUrl });
     } catch (error) {
-      console.error('Error opening browser:', error);
+      devError('Error opening browser:', error);
       window.open(this.fullPolicyUrl, '_blank');
     }
   }

@@ -11,7 +11,7 @@ import { Capacitor } from '@capacitor/core';
 import { SupabaseService } from '../supabase/supabase';
 import { Router } from '@angular/router';
 import { ChatNotificationService } from './chat-notification.service';
-import { devLog } from '../utils/logger';
+import { devLog, devWarn, devError } from '../utils/logger';
 
 /**
  * Notification preferences interface matching database schema
@@ -160,7 +160,7 @@ export class PushNotificationService {
       this._isInitialized.set(true);
       devLog('PushNotificationService: Initialized successfully');
     } catch (error) {
-      console.error('PushNotificationService: Initialization failed:', error);
+      devError('PushNotificationService: Initialization failed:', error);
     }
   }
 
@@ -183,7 +183,7 @@ export class PushNotificationService {
 
       return false;
     } catch (error) {
-      console.error('PushNotificationService: Permission request failed:', error);
+      devError('PushNotificationService: Permission request failed:', error);
       return false;
     }
   }
@@ -204,7 +204,7 @@ export class PushNotificationService {
 
     // Registration error
     PushNotifications.addListener('registrationError', (error: RegistrationError) => {
-      console.error('PushNotificationService: Registration error:', error.error);
+      devError('PushNotificationService: Registration error:', error.error);
     });
 
     // Notification received while app is in foreground
@@ -231,7 +231,7 @@ export class PushNotificationService {
    */
   private async saveTokenToServer(token: string): Promise<void> {
     if (!this._userContext) {
-      console.warn('PushNotificationService: No user context, cannot save token');
+      devWarn('PushNotificationService: No user context, cannot save token');
       return;
     }
 
@@ -257,12 +257,12 @@ export class PushNotificationService {
       );
 
       if (error) {
-        console.error('PushNotificationService: Failed to save token:', error);
+        devError('PushNotificationService: Failed to save token:', error);
       } else {
         devLog('PushNotificationService: Token saved successfully');
       }
     } catch (error) {
-      console.error('PushNotificationService: Error saving token:', error);
+      devError('PushNotificationService: Error saving token:', error);
     }
   }
 
@@ -281,7 +281,7 @@ export class PushNotificationService {
       this._fcmToken.set(null);
       devLog('PushNotificationService: Token deactivated');
     } catch (error) {
-      console.error('PushNotificationService: Error removing token:', error);
+      devError('PushNotificationService: Error removing token:', error);
     }
   }
 
@@ -387,7 +387,7 @@ export class PushNotificationService {
       });
 
       if (error) {
-        console.error('PushNotificationService: Failed to load preferences:', error);
+        devError('PushNotificationService: Failed to load preferences:', error);
         // Use defaults on error
         this._preferences.set({ ...DEFAULT_PREFERENCES });
         return;
@@ -395,7 +395,7 @@ export class PushNotificationService {
 
       this._preferences.set(data as NotificationPreferences);
     } catch (error) {
-      console.error('PushNotificationService: Error loading preferences:', error);
+      devError('PushNotificationService: Error loading preferences:', error);
       // Use defaults on error
       this._preferences.set({ ...DEFAULT_PREFERENCES });
     }
@@ -419,7 +419,7 @@ export class PushNotificationService {
         .eq('user_id', this._userContext.id);
 
       if (error) {
-        console.error('PushNotificationService: Failed to update preferences:', error);
+        devError('PushNotificationService: Failed to update preferences:', error);
         return false;
       }
 
@@ -431,7 +431,7 @@ export class PushNotificationService {
 
       return true;
     } catch (error) {
-      console.error('PushNotificationService: Error updating preferences:', error);
+      devError('PushNotificationService: Error updating preferences:', error);
       return false;
     }
   }

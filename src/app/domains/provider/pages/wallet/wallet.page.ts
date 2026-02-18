@@ -1,4 +1,4 @@
-import { devLog } from '@core/utils/logger';
+import { devLog, devError } from '../../../../core/utils/logger';
 import { Component, OnInit, OnDestroy, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import {
@@ -133,7 +133,7 @@ export class WalletPage implements OnInit, OnDestroy {
       this.hasMoreTransactions.set(initialTransactions.length >= this.PAGE_SIZE);
       this.transactionOffset = initialTransactions.length;
     } catch (err: any) {
-      console.error('Failed to load wallet:', err);
+      devError('Failed to load wallet:', err);
       this.error.set(err.message || 'Failed to load wallet information');
     } finally {
       this.isLoading.set(false);
@@ -161,7 +161,7 @@ export class WalletPage implements OnInit, OnDestroy {
 
       this.hasMoreTransactions.set(moreTransactions.length >= this.PAGE_SIZE);
     } catch (err) {
-      console.error('Failed to load more transactions:', err);
+      devError('Failed to load more transactions:', err);
       await this.showToast('Failed to load more transactions', 'danger');
     } finally {
       this.isLoadingMore.set(false);
@@ -186,7 +186,7 @@ export class WalletPage implements OnInit, OnDestroy {
       this.transactions.set(latestTransactions);
       this.transactionOffset = latestTransactions.length;
     } catch (err) {
-      console.error('Failed to refresh transactions:', err);
+      devError('Failed to refresh transactions:', err);
     }
   }
 

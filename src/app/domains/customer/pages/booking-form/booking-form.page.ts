@@ -41,7 +41,7 @@ import { RealTimeService } from '@core/services/real-time.service';
 import { UserAddress, GeocodeResult } from '@core/models/address.model';
 import { BookingSubmissionData, BookingResponse, BookingError } from '@core/models/booking.model';
 import { NavController } from '@ionic/angular/standalone';
-import { devLog } from '@core/utils/logger';
+import { devLog, devWarn, devError } from '../../../../core/utils/logger';
 
 interface BookingDetails {
   serviceType: string;
@@ -711,12 +711,12 @@ export class BookingFormPage implements OnInit {
     try {
       const result = await this.addressService.getUserAddresses();
       if (result.error) {
-        console.error('Error loading user addresses:', result.error);
+        devError('Error loading user addresses:', result.error);
       } else {
         this.userAddresses.set(result.data || []);
       }
     } catch (error) {
-      console.error('Unexpected error loading user addresses:', error);
+      devError('Unexpected error loading user addresses:', error);
     }
   }
 
@@ -732,7 +732,7 @@ export class BookingFormPage implements OnInit {
         this.prePopulateFormWithServiceData(serviceData);
       }
     } catch (error) {
-      console.error('Error loading service data:', error);
+      devError('Error loading service data:', error);
     } finally {
       this.isLoading.set(false);
     }
@@ -915,7 +915,7 @@ export class BookingFormPage implements OnInit {
         await this.addMediaFileFromUri(image.webPath, 'image', `photo_${Date.now()}.jpg`);
       }
     } catch (error) {
-      console.error('Error taking photo:', error);
+      devError('Error taking photo:', error);
       this.errorMessage.set('Failed to take photo. Please try again.');
     }
   }
@@ -945,7 +945,7 @@ export class BookingFormPage implements OnInit {
         await this.addMediaFileFromUri(image.webPath, 'image', `gallery_${Date.now()}.jpg`);
       }
     } catch (error) {
-      console.error('Error selecting from gallery:', error);
+      devError('Error selecting from gallery:', error);
       this.errorMessage.set('Failed to select image from gallery. Please try again.');
     }
   }
@@ -968,7 +968,7 @@ export class BookingFormPage implements OnInit {
 
       this.mediaFiles.update(files => [...files, mediaFile]);
     } catch (error) {
-      console.error('Error adding media file:', error);
+      devError('Error adding media file:', error);
       this.errorMessage.set('Failed to add media file. Please try again.');
     }
   }
@@ -983,7 +983,7 @@ export class BookingFormPage implements OnInit {
     devLog('submitBooking called');
     
     if (!this.bookingForm.valid) {
-      console.warn('Form is not valid');
+      devWarn('Form is not valid');
       return;
     }
 
@@ -999,7 +999,7 @@ export class BookingFormPage implements OnInit {
     });
     
     if (!isAuthenticated) {
-      console.error('User not authenticated - no session');
+      devError('User not authenticated - no session');
       this.errorMessage.set('Please log in to submit a booking.');
       setTimeout(() => {
         this.router.navigate(['/auth/welcome'], {
@@ -1011,7 +1011,7 @@ export class BookingFormPage implements OnInit {
     
     // If authenticated but profile not loaded, try to refresh it
     if (!profile) {
-      console.warn('Profile missing but session exists - attempting to refresh profile');
+      devWarn('Profile missing but session exists - attempting to refresh profile');
       try {
         const session = this.sessionService.session();
         if (session?.user?.id) {
@@ -1023,7 +1023,7 @@ export class BookingFormPage implements OnInit {
           throw new Error('No user ID in session');
         }
       } catch (error) {
-        console.error('Failed to get user ID from session:', error);
+        devError('Failed to get user ID from session:', error);
         this.errorMessage.set('Unable to load your profile. Please refresh the page and try again.');
         return;
       }
@@ -1035,7 +1035,7 @@ export class BookingFormPage implements OnInit {
     const lat = this.selectedLocation()?.lat;
     const lng = this.selectedLocation()?.lng;
     if (!lat || !lng || (lat === 0 && lng === 0)) {
-      console.warn('Invalid location coordinates');
+      devWarn('Invalid location coordinates');
       this.errorMessage.set('Please select your location on the map for accurate service delivery.');
       return;
     }
@@ -1097,8 +1097,8 @@ export class BookingFormPage implements OnInit {
       });
 
     } catch (error) {
-      console.error('Error submitting booking:', error);
-      console.error('Error details:', {
+      devError('Error submitting booking:', error);
+      devError('Error details:', {
         message: error instanceof Error ? error.message : String(error),
         stack: error instanceof Error ? error.stack : undefined,
         error: error

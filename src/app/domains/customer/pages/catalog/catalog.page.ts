@@ -1,4 +1,5 @@
 import { Component, OnInit, inject, signal } from '@angular/core';
+import { devError } from '../../../../core/utils/logger';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
@@ -122,7 +123,7 @@ export class CatalogPage implements OnInit {
         this.serviceGroups.set(groups);
       }
     } catch (error) {
-      console.error('Error loading category data:', error);
+      devError('Error loading category data:', error);
     } finally {
       this.isLoading.set(false);
     }

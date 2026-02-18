@@ -1,4 +1,5 @@
 import { Component, Input, Output, EventEmitter, ViewChild, ElementRef } from '@angular/core';
+import { devError } from '../../../core/utils/logger';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { IonButton, IonIcon, IonTextarea, IonSpinner } from '@ionic/angular/standalone';
@@ -118,7 +119,7 @@ export class ChatInputComponent {
         this.selectedFile = this.dataUrlToFile(photo.dataUrl, 'camera-photo.jpg');
       }
     } catch (error) {
-      console.error('Camera error:', error);
+      devError('Camera error:', error);
     }
   }
 
@@ -138,7 +139,7 @@ export class ChatInputComponent {
         this.selectedFile = this.dataUrlToFile(photo.dataUrl, 'gallery-photo.jpg');
       }
     } catch (error) {
-      console.error('Gallery error:', error);
+      devError('Gallery error:', error);
     }
   }
 
@@ -149,7 +150,7 @@ export class ChatInputComponent {
 
       // Check file size (5MB limit)
       if (file.size > 5 * 1024 * 1024) {
-        console.error('File too large');
+        devError('File too large');
         return;
       }
 

@@ -1,7 +1,7 @@
 import { Injectable, inject, signal, OnDestroy } from '@angular/core';
 import { SupabaseService } from '../supabase/supabase';
 import { CustomerBooking } from '../models/booking.model';
-import { devLog } from '../utils/logger';
+import { devLog, devError } from '../utils/logger';
 
 export interface PollingSubscription {
   id: string;
@@ -52,7 +52,7 @@ export class PollingFallbackService implements OnDestroy {
   }
 
   private logError(message: string, ...args: any[]): void {
-    console.error(`[PollingFallback] ${message}`, ...args);
+    devError(`[PollingFallback] ${message}`, ...args);
   }
 
   /**

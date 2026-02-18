@@ -9,7 +9,7 @@ import { AUTH_CONFIG } from './auth.config';
 import { ToastController } from '@ionic/angular/standalone';
 import { PaymentContextService } from '../services/payment-context.service';
 import { PushNotificationService } from '../services/push-notification.service';
-import { devLog } from '../utils/logger';
+import { devLog, devWarn, devError } from '../utils/logger';
 
 export interface UserProfile {
   id: string;
@@ -63,7 +63,7 @@ export class SessionService {
       const { data, error } = await this.supabase.auth.getSession();
 
       if (error) {
-        console.error('Error getting session:', error);
+        devError('Error getting session:', error);
       }
 
       this._session.set(data.session);
@@ -73,12 +73,12 @@ export class SessionService {
         try {
           await this.fetchProfileWithTimeout(data.session.user.id);
         } catch (error) {
-          console.error('SessionService: Initial profile fetch failed:', error);
+          devError('SessionService: Initial profile fetch failed:', error);
           // Continue - profile may be retried later
         }
       }
     } catch (error) {
-      console.error('Error during session initialization:', error);
+      devError('Error during session initialization:', error);
       this._session.set(null);
       this._profile.set(null);
     } finally {
@@ -103,7 +103,7 @@ export class SessionService {
             devLog('SessionService: Signup in progress - skipping auto-navigation');
             // Still fetch profile but don't navigate
             this.fetchProfile(session.user.id).catch(err =>
-              console.warn('SessionService: Background profile fetch during signup failed:', err)
+              devWarn('SessionService: Background profile fetch during signup failed:', err)
             );
             return;
           }
@@ -112,7 +112,7 @@ export class SessionService {
           if (this.paymentContextService.isInPaymentFlow()) {
             devLog('SessionService: Returning from payment flow - background profile fetch');
             this.fetchProfile(session.user.id).catch(err =>
-              console.warn('SessionService: Background profile refresh failed:', err)
+              devWarn('SessionService: Background profile refresh failed:', err)
             );
             this.paymentContextService.exitPaymentFlow();
           } else {
@@ -128,7 +128,7 @@ export class SessionService {
               if (profile) {
                 this.pushNotificationService.setUserContext({ id: profile.id, role: profile.role });
                 this.pushNotificationService.initialize().catch(err =>
-                  console.warn('SessionService: Push notification initialization failed:', err)
+                  devWarn('SessionService: Push notification initialization failed:', err)
                 );
               }
               // Navigation is handled by the calling component (LoginPage, etc.)
@@ -137,7 +137,7 @@ export class SessionService {
                 devLog('SessionService: Skipping navigation - signup in progress');
               }
             } catch (error) {
-              console.error('SessionService: Error fetching profile during auth state change:', error);
+              devError('SessionService: Error fetching profile during auth state change:', error);
               // Don't clear the session on profile fetch error - profile might load on retry
             } finally {
               this._loading.set(false);
@@ -149,7 +149,7 @@ export class SessionService {
           this.authEventsService.emit('SESSION_REFRESHED', session.user.id);
           // Refresh profile in background without setting loading state
           this.fetchProfile(session.user.id).catch(err =>
-            console.warn('SessionService: Silent profile refresh failed:', err)
+            devWarn('SessionService: Silent profile refresh failed:', err)
           );
         }
       } else {
@@ -209,7 +209,7 @@ export class SessionService {
       // If activated column doesn't exist, fallback to query without it
       if (error && typeof error === 'object' && 'message' in error && 
           typeof error.message === 'string' && error.message.includes("column 'activated' does not exist")) {
-        console.warn('SessionService: activated column not found, fetching without it');
+        devWarn('SessionService: activated column not found, fetching without it');
         const fallbackResult = await this.supabase
           .from('profiles')
           .select('id, email, full_name, role, phone_number')
@@ -230,7 +230,7 @@ export class SessionService {
       }
 
       if (error) {
-        console.error('SessionService: Error fetching profile:', error);
+        devError('SessionService: Error fetching profile:', error);
         throw new Error(`Failed to fetch profile: ${error.message}`);
       }
 
@@ -238,12 +238,12 @@ export class SessionService {
         this._profile.set(data as UserProfile);
         devLog('SessionService: Profile set successfully, role:', (data as any).role);
       } else {
-        console.warn('SessionService: Profile not found for user:', userId);
+        devWarn('SessionService: Profile not found for user:', userId);
         // Try to create profile for OAuth users
         await this.createProfileIfNeeded(userId);
       }
     } catch (error) {
-      console.error('SessionService: Unexpected error fetching profile:', error);
+      devError('SessionService: Unexpected error fetching profile:', error);
       throw error; // Re-throw to be handled by caller
     }
   }
@@ -254,7 +254,7 @@ export class SessionService {
       const { data: userData, error: userError } = await this.supabase.auth.getUser();
 
       if (userError || !userData.user) {
-        console.error('Error getting user data:', userError);
+        devError('Error getting user data:', userError);
         return;
       }
 
@@ -316,7 +316,7 @@ export class SessionService {
           await this.fetchProfile(userId);
           return;
         }
-        console.error('Error creating profile:', profileError);
+        devError('Error creating profile:', profileError);
         return;
       }
 
@@ -333,7 +333,7 @@ export class SessionService {
           .insert(customerData);
 
         if (customerError) {
-          console.error('Error creating customer record:', customerError);
+          devError('Error creating customer record:', customerError);
           // Don't return here - profile was created successfully
         } else {
           devLog('Customer record created successfully for user:', userId);
@@ -344,7 +344,7 @@ export class SessionService {
       this._profile.set(profileData as UserProfile);
 
     } catch (error) {
-      console.error('Error creating profile for user:', error);
+      devError('Error creating profile for user:', error);
     }
   }
 
@@ -376,14 +376,14 @@ export class SessionService {
 
       // Clean up push notifications before signing out
       await this.pushNotificationService.cleanup().catch(err =>
-        console.warn('SessionService: Push notification cleanup failed:', err)
+        devWarn('SessionService: Push notification cleanup failed:', err)
       );
 
       // Attempt to sign out from Supabase
       const { error } = await this.supabase.auth.signOut();
 
       if (error) {
-        console.warn('SessionService: Supabase signOut error (likely expired session):', error);
+        devWarn('SessionService: Supabase signOut error (likely expired session):', error);
         // Continue with force logout even if server logout fails
       }
 
@@ -405,7 +405,7 @@ export class SessionService {
       }
 
     } catch (error) {
-      console.error('SessionService: Unexpected error during signOut:', error);
+      devError('SessionService: Unexpected error during signOut:', error);
 
       // Even on unexpected errors, force clear local state and navigate
       this._session.set(null);
@@ -453,7 +453,7 @@ export class SessionService {
   async enableBiometricForCurrentSession(): Promise<boolean> {
     const session = this._session();
     if (!session?.refresh_token) {
-      console.warn('SessionService: No session or refresh token available for biometric');
+      devWarn('SessionService: No session or refresh token available for biometric');
       return false;
     }
 

@@ -1,5 +1,6 @@
 import { Injectable, inject } from '@angular/core';
 import { SupabaseService } from '../supabase/supabase';
+import { devError } from '../utils/logger';
 
 // Variant properties for structured selection
 export interface VariantProperties {
@@ -263,7 +264,7 @@ export class ServiceService {
         .single();
 
       if (variantError || !variantData) {
-        console.error('Error fetching service variant:', variantError);
+        devError('Error fetching service variant:', variantError);
         return null;
       }
 
@@ -283,12 +284,12 @@ export class ServiceService {
         .eq('is_active', true);
 
       if (offeringError) {
-        console.error('Error fetching provider offerings:', offeringError);
+        devError('Error fetching provider offerings:', offeringError);
         return null;
       }
 
       if (!offeringsData || offeringsData.length === 0) {
-        console.error('No provider offerings found for service variant:', serviceVariantId);
+        devError('No provider offerings found for service variant:', serviceVariantId);
         return null;
       }
 
@@ -322,7 +323,7 @@ export class ServiceService {
         },
       };
     } catch (error) {
-      console.error('Error in getServiceWithProvider:', error);
+      devError('Error in getServiceWithProvider:', error);
       return null;
     }
   }
@@ -346,7 +347,7 @@ export class ServiceService {
         .single();
 
       if (variantError || !variantData) {
-        console.error('Error fetching service variant:', variantError);
+        devError('Error fetching service variant:', variantError);
         return null;
       }
 
@@ -366,7 +367,7 @@ export class ServiceService {
         .in('provider.status', ['online', 'busy']);
 
       if (offeringError) {
-        console.error('Error fetching provider offerings:', offeringError);
+        devError('Error fetching provider offerings:', offeringError);
         return null;
       }
 
@@ -428,7 +429,7 @@ export class ServiceService {
       this.setServiceWithProvidersCache(serviceVariantId, result);
       return result;
     } catch (error) {
-      console.error('Error in getServiceWithAllProviders:', error);
+      devError('Error in getServiceWithAllProviders:', error);
       return null;
     }
   }
@@ -450,7 +451,7 @@ export class ServiceService {
       const { data: offeringsData, error: offeringsError } = await query.limit(5);
 
       if (offeringsError) {
-        console.error('Error fetching provider offerings:', offeringsError);
+        devError('Error fetching provider offerings:', offeringsError);
         return [];
       }
 
@@ -469,7 +470,7 @@ export class ServiceService {
         .eq('is_active', true);
 
       if (variantsError) {
-        console.error('Error fetching service variants:', variantsError);
+        devError('Error fetching service variants:', variantsError);
         return [];
       }
 
@@ -484,7 +485,7 @@ export class ServiceService {
       this.setProviderOtherServicesCache(providerId, excludeServiceVariantId, result);
       return result;
     } catch (error) {
-      console.error('Error in getProviderOtherServices:', error);
+      devError('Error in getProviderOtherServices:', error);
       return [];
     }
   }
@@ -498,13 +499,13 @@ export class ServiceService {
         .order('sort_order');
 
       if (error) {
-        console.error('Error fetching categories:', error);
+        devError('Error fetching categories:', error);
         return [];
       }
 
       return data;
     } catch (error) {
-      console.error('Error in getServiceCategories:', error);
+      devError('Error in getServiceCategories:', error);
       return [];
     }
   }
@@ -522,7 +523,7 @@ export class ServiceService {
         .order('created_at', { ascending: false });
 
       if (error) {
-        console.error('Error fetching provider reviews:', error);
+        devError('Error fetching provider reviews:', error);
         return [];
       }
 
@@ -530,7 +531,7 @@ export class ServiceService {
       this.setProviderReviewsCache(providerId, result);
       return result;
     } catch (error) {
-      console.error('Error in getProviderReviews:', error);
+      devError('Error in getProviderReviews:', error);
       return [];
     }
   }
@@ -550,7 +551,7 @@ export class ServiceService {
         .eq('is_public', true);
 
       if (reviewsError) {
-        console.error('Error fetching reviews for rating calculation:', reviewsError);
+        devError('Error fetching reviews for rating calculation:', reviewsError);
         return;
       }
 
@@ -581,10 +582,10 @@ export class ServiceService {
         .eq('id', providerId);
 
       if (updateError) {
-        console.error('Error updating provider rating:', updateError);
+        devError('Error updating provider rating:', updateError);
       }
     } catch (error) {
-      console.error('Error in updateProviderRating:', error);
+      devError('Error in updateProviderRating:', error);
     }
   }
 
@@ -616,7 +617,7 @@ export class ServiceService {
         });
 
       if (error) {
-        console.error('Error adding review:', error);
+        devError('Error adding review:', error);
         return { success: false, error: error.message };
       }
 
@@ -625,7 +626,7 @@ export class ServiceService {
 
       return { success: true };
     } catch (error) {
-      console.error('Error in addReview:', error);
+      devError('Error in addReview:', error);
       return { success: false, error: 'Failed to add review' };
     }
   }
@@ -645,7 +646,7 @@ export class ServiceService {
         .eq('is_active', true);
 
       if (servicesError) {
-        console.error('Error fetching services:', servicesError);
+        devError('Error fetching services:', servicesError);
         return [];
       }
 
@@ -669,7 +670,7 @@ export class ServiceService {
             .eq('provider_offerings.is_active', true);
 
           if (variantsError) {
-            console.error('Error fetching variants for service:', service.id, variantsError);
+            devError('Error fetching variants for service:', service.id, variantsError);
             return { ...service, service_variants: [] };
           }
 
@@ -679,7 +680,7 @@ export class ServiceService {
 
       return servicesWithVariants;
     } catch (error) {
-      console.error('Error in getServicesByCategory:', error);
+      devError('Error in getServicesByCategory:', error);
       return [];
     }
   }
@@ -703,7 +704,7 @@ export class ServiceService {
         .eq('is_active', true);
 
       if (servicesError) {
-        console.error('Error fetching services:', servicesError);
+        devError('Error fetching services:', servicesError);
         return [];
       }
 
@@ -721,7 +722,7 @@ export class ServiceService {
             .eq('provider_offerings.is_active', true);
 
           if (variantsError) {
-            console.error('Error fetching variants for service:', service.id, variantsError);
+            devError('Error fetching variants for service:', service.id, variantsError);
             return null;
           }
 
@@ -756,7 +757,7 @@ export class ServiceService {
       // Filter out null entries (services with no available variants)
       return serviceGroups.filter((g): g is ServiceGroup => g !== null);
     } catch (error) {
-      console.error('Error in getGroupedServicesByCategory:', error);
+      devError('Error in getGroupedServicesByCategory:', error);
       return [];
     }
   }

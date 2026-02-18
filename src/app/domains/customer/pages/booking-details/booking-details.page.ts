@@ -57,7 +57,7 @@ import { BookingStatusService } from '@core/services/booking-status.service';
 import { RealtimeManagerService, ConnectionMode } from '@core/services/realtime-manager.service';
 import { ChatService } from '@core/services/chat.service';
 import { CustomerBooking, BookingStatus, BookingTimelineRow } from '@core/models/booking.model';
-import { devLog } from '@core/utils/logger';
+import { devLog, devError } from '../../../../core/utils/logger';
 
 // Status display configuration
 const STATUS_CONFIG: Record<string, { label: string; color: string; icon: string; message: string }> = {
@@ -306,7 +306,7 @@ export class BookingDetailsPage implements OnInit, OnDestroy {
         this.booking.set(booking);
       }
     } catch (error) {
-      console.error('[BookingDetails] Silent refresh failed:', error);
+      devError('[BookingDetails] Silent refresh failed:', error);
     }
   }
 
@@ -330,7 +330,7 @@ export class BookingDetailsPage implements OnInit, OnDestroy {
         this.router.navigate(['/c/bookings']);
       }
     } catch (error) {
-      console.error('Failed to load booking:', error);
+      devError('Failed to load booking:', error);
       await this.showToast('Failed to load booking details', 'danger');
     } finally {
       this.isLoading.set(false);
@@ -458,7 +458,7 @@ export class BookingDetailsPage implements OnInit, OnDestroy {
       await this.showToast('Booking cancelled successfully', 'success');
       await this.loadBooking(booking.id);
     } catch (error) {
-      console.error('Failed to cancel booking:', error);
+      devError('Failed to cancel booking:', error);
       await this.showToast('Failed to cancel booking', 'danger');
     } finally {
       this.isCancelling.set(false);
@@ -494,7 +494,7 @@ export class BookingDetailsPage implements OnInit, OnDestroy {
       const count = await this.chatService.getUnreadCount(bookingId);
       this.unreadChatCount.set(count);
     } catch (error) {
-      console.error('[BookingDetails] Failed to load unread chat count:', error);
+      devError('[BookingDetails] Failed to load unread chat count:', error);
     }
   }
 

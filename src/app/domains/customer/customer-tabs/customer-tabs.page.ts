@@ -1,4 +1,5 @@
 import { Component, OnInit, OnDestroy, inject, signal, effect } from '@angular/core';
+import { devError } from '../../../core/utils/logger';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import {
@@ -125,7 +126,7 @@ export class CustomerTabsPage implements OnInit, OnDestroy {
       const count = await this.chatService.refreshTotalUnreadCount();
       this.unreadChatCount.set(count);
     } catch (error) {
-      console.error('Failed to load chat count:', error);
+      devError('Failed to load chat count:', error);
     }
   }
 

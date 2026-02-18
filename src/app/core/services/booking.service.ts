@@ -1,5 +1,6 @@
 import { Injectable, inject } from '@angular/core';
 import { SupabaseService } from '../supabase/supabase';
+import { devError } from '../utils/logger';
 import { SessionService } from '../auth/session';
 import { MediaService } from './media.service';
 import { ProviderMatcherService } from './provider-matcher.service';
@@ -98,7 +99,7 @@ export class BookingService {
       .single();
 
     if (error) {
-      console.error('Failed to fetch booking:', error);
+      devError('Failed to fetch booking:', error);
       return null;
     }
 
@@ -207,7 +208,7 @@ export class BookingService {
         try {
           uploadedMedia = await this.mediaService.uploadBookingMedia(bookingId, data.mediaFiles, 'PROBLEM_REPORT');
         } catch (mediaError) {
-          console.error('Media upload failed:', mediaError);
+          devError('Media upload failed:', mediaError);
         }
       }
 
@@ -316,7 +317,7 @@ export class BookingService {
 
       return provider;
     } catch (error) {
-      console.error('Provider assignment failed:', error);
+      devError('Provider assignment failed:', error);
       return null;
     }
   }
@@ -337,9 +338,9 @@ export class BookingService {
         p_transportation_fee: pricing.transportationFee,
         p_vat_rate: pricing.vat_rate
       });
-      if (itemError) console.error('Failed to create booking item:', itemError);
+      if (itemError) devError('Failed to create booking item:', itemError);
     } catch (error) {
-      console.error('Error in createBookingItemWithPricing:', error);
+      devError('Error in createBookingItemWithPricing:', error);
     }
   }
 
@@ -354,7 +355,7 @@ export class BookingService {
         .single();
 
       if (variantError || !variant) {
-        console.error('Failed to get service variant:', variantError);
+        devError('Failed to get service variant:', variantError);
         return;
       }
 
@@ -376,9 +377,9 @@ export class BookingService {
         p_vat_rate: variant.vat_rate ?? 0.12
       });
 
-      if (itemError) console.error('Failed to create booking item:', itemError);
+      if (itemError) devError('Failed to create booking item:', itemError);
     } catch (error) {
-      console.error('Error in createBookingItem:', error);
+      devError('Error in createBookingItem:', error);
     }
   }
 
@@ -397,7 +398,7 @@ export class BookingService {
     });
 
     if (error) {
-      console.error('Failed to update provider status:', error);
+      devError('Failed to update provider status:', error);
       // Don't throw - status update failure shouldn't break the booking flow
     }
   }
@@ -490,11 +491,11 @@ export class BookingService {
       });
 
       if (error) {
-        console.error('Error ensuring customer record:', error);
+        devError('Error ensuring customer record:', error);
         throw new BookingError('Failed to create customer record', 'CUSTOMER_CREATION_FAILED');
       }
     } catch (error) {
-      console.error('Error in ensureCustomerRecord:', error);
+      devError('Error in ensureCustomerRecord:', error);
       throw error;
     }
   }
@@ -516,7 +517,7 @@ export class BookingService {
         .eq('id', bookingId);
 
     } catch (rollbackError) {
-      console.error('Rollback failed:', rollbackError);
+      devError('Rollback failed:', rollbackError);
     }
   }
 }
