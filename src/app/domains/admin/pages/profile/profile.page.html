@@ -1,0 +1,68 @@
+<ion-header>
+  <ion-toolbar>
+    <ion-title>Profile</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content [fullscreen]="true">
+  <ion-header collapse="condense">
+    <ion-toolbar>
+      <ion-title size="large">Profile</ion-title>
+    </ion-toolbar>
+  </ion-header>
+
+  <ion-refresher slot="fixed" (ionRefresh)="onRefresh($event)">
+    <ion-refresher-content></ion-refresher-content>
+  </ion-refresher>
+
+  <app-profile-card
+    [fullName]="profile()?.full_name || ''"
+    [avatarUrl]="profile()?.avatar_url"
+    [role]="'admin'"
+    [memberSince]="getMemberSince()"
+    [isLoading]="isLoading()"
+    [isUploadingAvatar]="isUploadingAvatar()"
+    (avatarClick)="onAvatarClick()">
+  </app-profile-card>
+
+  @for (section of menuSections; track section.title) {
+    <ion-list [inset]="true" class="menu-section">
+      @if (section.title) {
+        <ion-list-header>
+          <ion-label>{{ section.title }}</ion-label>
+        </ion-list-header>
+      }
+
+      @for (item of section.items; track item.label) {
+        <ion-item
+          button
+          [detail]="!item.action"
+          (click)="onMenuItemClick(item)"
+          [disabled]="item.action === 'logout' && isLoggingOut()">
+          <ion-icon [name]="item.icon" slot="start" [color]="item.color || ''"></ion-icon>
+          <ion-label [color]="item.color || ''">
+            @if (item.action === 'logout' && isLoggingOut()) {
+              <div class="logout-loading">
+                <ion-spinner name="crescent"></ion-spinner>
+                <span>Logging out...</span>
+              </div>
+            } @else {
+              {{ item.label }}
+            }
+          </ion-label>
+        </ion-item>
+      }
+    </ion-list>
+  }
+
+  <div class="version-info">
+    <ion-text color="medium">
+      <small>
+        After5 v{{ appVersion() || '0.0.1' }}
+        @if (buildNumber()) {
+          <span>(build {{ buildNumber() }})</span>
+        }
+      </small>
+    </ion-text>
+  </div>
+</ion-content>

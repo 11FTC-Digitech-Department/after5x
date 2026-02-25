@@ -16,6 +16,7 @@ import {
   briefcaseOutline,
   calendarOutline,
   gridOutline,
+  personOutline,
 } from 'ionicons/icons';
 
 @Component({
@@ -36,6 +37,6 @@ import {
 })
 export class AdminTabsPage {
   constructor() {
-    addIcons({ homeOutline, peopleOutline, briefcaseOutline, calendarOutline, gridOutline });
+    addIcons({ homeOutline, peopleOutline, briefcaseOutline, calendarOutline, gridOutline, personOutline });
   }
 }

@@ -31,6 +31,14 @@ export const ADMIN_ROUTES: Routes = [
         loadComponent: () => import('./pages/services/services.page').then(m => m.ServicesPage),
       },
       {
+        path: 'profile',
+        loadComponent: () => import('./pages/profile/profile.page').then(m => m.AdminProfilePage),
+      },
+      {
+        path: 'profile/edit',
+        loadComponent: () => import('./pages/profile/edit-profile/edit-profile.page').then(m => m.AdminEditProfilePage),
+      },
+      {
         path: '',
         redirectTo: '/a/dashboard',
         pathMatch: 'full',
