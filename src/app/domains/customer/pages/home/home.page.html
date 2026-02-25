@@ -112,15 +112,32 @@
               </ion-label>
             </ion-list-header>
           </ion-list>
-          <ion-card class="promo-card">
-            <img src="assets/splash/main-splash.png" alt="Special Promo" class="promo-image" />
-            <ion-card-content class="promo-content">
-              <ion-badge class="promo-badge">Limited Time</ion-badge>
-              <h4 class="promo-title">50% Off First Service</h4>
-              <p class="promo-description">Get 50% discount on your first booking with After5</p>
-              <ion-button class="promo-btn" (click)="navigateToCategories()">Claim Now</ion-button>
-            </ion-card-content>
-          </ion-card>
+          @if (offers().length > 0) {
+            @for (offer of offers(); track offer.id) {
+              <ion-card class="promo-card">
+                <img [src]="offer.image_url || 'assets/splash/main-splash.png'" alt="Offer Banner" class="promo-image" />
+                <ion-card-content class="promo-content">
+                  <ion-badge class="promo-badge">{{ offer.badge_text || 'Special Offer' }}</ion-badge>
+                  <h4 class="promo-title">{{ offer.title }}</h4>
+                  <p class="promo-description">{{ offer.description }}</p>
+                  @if (offer.voucher_code) {
+                    <div class="voucher-box">
+                      <strong>{{ offer.voucher_code }}</strong>
+                    </div>
+                  }
+                  @if (offer.note) {
+                    <p class="promo-note">{{ offer.note }}</p>
+                  }
+                </ion-card-content>
+              </ion-card>
+            }
+          } @else {
+            <ion-card class="promo-empty-card">
+              <ion-card-content>
+                <p>No active offers right now. Check back soon.</p>
+              </ion-card-content>
+            </ion-card>
+          }
         </div>
       </ion-col>
     </ion-row>

@@ -630,6 +630,8 @@ export type Database = {
           created_at: string | null
           customer_id: string
           finished_work_at: string | null
+          grand_total_after_voucher: number | null
+          grand_total_before_voucher: number | null
           grand_total: number | null
           id: string
           otp_end: string | null
@@ -647,6 +649,12 @@ export type Database = {
           total_materials_amount: number | null
           total_transport_fees: number | null
           total_vat_amount: number | null
+          voucher_amount: number | null
+          voucher_code: string | null
+          voucher_discount_type: Database["public"]["Enums"]["voucher_discount_type"] | null
+          voucher_id: string | null
+          voucher_max_discount: number | null
+          voucher_percent_off: number | null
           base_service_fee: number | null
           urgent_fee: number | null
           body_camera_fee: number | null
@@ -663,6 +671,8 @@ export type Database = {
           created_at?: string | null
           customer_id: string
           finished_work_at?: string | null
+          grand_total_after_voucher?: number | null
+          grand_total_before_voucher?: number | null
           grand_total?: number | null
           id?: string
           otp_end?: string | null
@@ -680,6 +690,12 @@ export type Database = {
           total_materials_amount?: number | null
           total_transport_fees?: number | null
           total_vat_amount?: number | null
+          voucher_amount?: number | null
+          voucher_code?: string | null
+          voucher_discount_type?: Database["public"]["Enums"]["voucher_discount_type"] | null
+          voucher_id?: string | null
+          voucher_max_discount?: number | null
+          voucher_percent_off?: number | null
           base_service_fee?: number | null
           urgent_fee?: number | null
           body_camera_fee?: number | null
@@ -696,6 +712,8 @@ export type Database = {
           created_at?: string | null
           customer_id?: string
           finished_work_at?: string | null
+          grand_total_after_voucher?: number | null
+          grand_total_before_voucher?: number | null
           grand_total?: number | null
           id?: string
           otp_end?: string | null
@@ -713,6 +731,12 @@ export type Database = {
           total_materials_amount?: number | null
           total_transport_fees?: number | null
           total_vat_amount?: number | null
+          voucher_amount?: number | null
+          voucher_code?: string | null
+          voucher_discount_type?: Database["public"]["Enums"]["voucher_discount_type"] | null
+          voucher_id?: string | null
+          voucher_max_discount?: number | null
+          voucher_percent_off?: number | null
           base_service_fee?: number | null
           urgent_fee?: number | null
           body_camera_fee?: number | null
@@ -3425,6 +3449,7 @@ export type Database = {
       provider_status: "offline" | "online" | "busy" | "suspended"
       ticket_category: "DISPUTE" | "BILLING" | "TECHNICAL" | "OTHER"
       ticket_status: "OPEN" | "IN_PROGRESS" | "RESOLVED" | "CLOSED"
+      voucher_discount_type: "amount" | "percent"
       verification_status: "pending" | "verified" | "rejected"
     }
     CompositeTypes: {
@@ -3603,8 +3628,8 @@ export const Constants = {
       provider_status: ["offline", "online", "busy", "suspended"],
       ticket_category: ["DISPUTE", "BILLING", "TECHNICAL", "OTHER"],
       ticket_status: ["OPEN", "IN_PROGRESS", "RESOLVED", "CLOSED"],
+      voucher_discount_type: ["amount", "percent"],
       verification_status: ["pending", "verified", "rejected"],
     },
   },
 } as const
-

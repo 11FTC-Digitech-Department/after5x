@@ -20,6 +20,9 @@ import {
   IonSkeletonText,
   IonRefresher,
   IonRefresherContent,
+  IonItem,
+  IonLabel,
+  IonInput,
   ToastController,
   AlertController,
   RefresherCustomEvent
@@ -37,13 +40,15 @@ import {
   openOutline,
   shieldCheckmarkOutline,
   arrowBack,
-  arrowBackOutline
+  arrowBackOutline,
+  pricetagOutline,
+  trashOutline
 } from 'ionicons/icons';
 import { Browser, BrowserOpenOptions } from '@capacitor/browser';
 import { App } from '@capacitor/app';
 
 import { BookingService } from '@core/services/booking.service';
-import { PaymentService } from '@core/services/payment.service';
+import { PaymentService, VoucherError } from '@core/services/payment.service';
 import { PaymentContextService } from '@core/services/payment-context.service';
 import { CustomerBooking, BookingStatus } from '@core/models/booking.model';
 import { PaymentStatus, InvoiceStatus } from '@core/models/payment.model';
@@ -108,6 +113,9 @@ const PAYMENT_STATUS_CONFIG: Record<InvoiceStatus | 'NONE', { label: string; col
     IonSkeletonText,
     IonRefresher,
     IonRefresherContent,
+    IonItem,
+    IonLabel,
+    IonInput,
     PaymentSuccessModalComponent
   ]
 })
@@ -130,6 +138,9 @@ export class PaymentPage implements OnInit, OnDestroy {
   isProcessing = signal(false);
   processingType = signal<'initiating' | 'verifying'>('verifying');
   error = signal<string | null>(null);
+  voucherCode = signal('');
+  isApplyingVoucher = signal(false);
+  isRemovingVoucher = signal(false);
 
   // Success modal state
   showSuccessModal = signal(false);
@@ -167,6 +178,29 @@ export class PaymentPage implements OnInit, OnDestroy {
     return status?.invoiceStatus === 'PENDING' && status?.invoiceUrl;
   });
 
+  voucherApplied = computed(() => {
+    return !!this.booking()?.voucher_code;
+  });
+
+  getVoucherSummary(): string | null {
+    const booking = this.booking();
+    if (!booking || !booking.voucher_discount_type) return null;
+    if (booking.voucher_discount_type === 'percent' && booking.voucher_percent_off) {
+      let summary = `${booking.voucher_percent_off}% off`;
+      if (booking.voucher_max_discount) {
+        summary += ` (up to ${this.formatPrice(booking.voucher_max_discount)})`;
+      }
+      return summary;
+    }
+    return null;
+  }
+
+  displayTotal = computed(() => {
+    const booking = this.booking();
+    if (!booking) return 0;
+    return booking.grand_total_after_voucher ?? booking.grand_total ?? 0;
+  });
+
   isPaid = computed(() => {
     const status = this.paymentStatus();
     return status?.invoiceStatus === 'PAID' ||
@@ -187,7 +221,9 @@ export class PaymentPage implements OnInit, OnDestroy {
       openOutline,
       shieldCheckmarkOutline,
       arrowBack,
-      arrowBackOutline
+      arrowBackOutline,
+      pricetagOutline,
+      trashOutline
     });
   }
 
@@ -268,10 +304,7 @@ export class PaymentPage implements OnInit, OnDestroy {
 
     try {
       // Load booking and payment status in parallel
-      const [booking, status] = await Promise.all([
-        this.bookingService.getBookingById(bookingId),
-        this.paymentService.getPaymentStatus(bookingId)
-      ]);
+      const { booking, status } = await this.fetchPaymentPageData(bookingId);
 
       if (!booking) {
         this.error.set('Booking not found');
@@ -294,6 +327,15 @@ export class PaymentPage implements OnInit, OnDestroy {
     } finally {
       this.isLoading.set(false);
     }
+  }
+
+  private async fetchPaymentPageData(bookingId: string): Promise<{ booking: CustomerBooking | null; status: PaymentStatus }> {
+    const [booking, status] = await Promise.all([
+      this.bookingService.getBookingById(bookingId),
+      this.paymentService.getPaymentStatus(bookingId)
+    ]);
+
+    return { booking, status };
   }
 
   private setupRealTimeSubscription(bookingId: string) {
@@ -427,6 +469,88 @@ export class PaymentPage implements OnInit, OnDestroy {
       await this.loadData(bookingId);
     }
     event.target.complete();
+  }
+
+  async applyVoucher() {
+    const bookingId = this.booking()?.id;
+    const code = this.voucherCode().trim();
+    if (!bookingId || !code) {
+      await this.showToast('Enter a voucher code', 'warning');
+      return;
+    }
+
+    if (this.voucherApplied()) {
+      await this.showToast('Voucher already applied', 'warning');
+      return;
+    }
+
+    this.isApplyingVoucher.set(true);
+    try {
+      await this.paymentService.redeemVoucher(bookingId, code);
+      this.voucherCode.set('');
+      const { booking, status } = await this.fetchPaymentPageData(bookingId);
+      if (booking) {
+        this.booking.set(booking);
+      }
+      this.paymentStatus.set(status);
+      await this.showToast('Voucher Applied Successfully.', 'success');
+    } catch (err: any) {
+      console.error('[Voucher] Redeem failed', {
+        bookingId,
+        code,
+        message: err?.message ?? err
+      });
+      await this.showToast(this.getVoucherErrorMessage(err), 'danger');
+    } finally {
+      this.isApplyingVoucher.set(false);
+    }
+  }
+
+  private getVoucherErrorMessage(err: any): string {
+    const code = err instanceof VoucherError ? err.code : undefined;
+    switch (code) {
+      case 'MULTIPLE_REDEMPTION_ATTEMPT':
+        return 'This voucher can only be used once per account.';
+      case 'VOUCHER_EXPIRED':
+        return 'This voucher has expired and can no longer be used.';
+      case 'USAGE_LIMIT_REACHED':
+        return 'This voucher is no longer available.';
+      case 'ALREADY_REDEEMED':
+        return 'You have already used this voucher.';
+      case 'NETWORK_ERROR':
+        return 'We are having trouble connecting. Please check your internet connection and try again.';
+      default: {
+        const message = `${err?.message || ''}`.toLowerCase();
+        if (message.includes('failed to fetch') || message.includes('network')) {
+          return 'We are having trouble connecting. Please check your internet connection and try again.';
+        }
+        return 'Invalid voucher code.';
+      }
+    }
+  }
+
+  async removeVoucher() {
+    const bookingId = this.booking()?.id;
+    if (!bookingId || !this.voucherApplied()) return;
+
+    this.isRemovingVoucher.set(true);
+    try {
+      await this.paymentService.removeVoucher(bookingId);
+      const { booking, status } = await this.fetchPaymentPageData(bookingId);
+      if (booking) {
+        this.booking.set(booking);
+      }
+      this.paymentStatus.set(status);
+      await this.showToast('Voucher removed', 'success');
+    } catch (err: any) {
+      console.error('[Voucher] Remove failed', {
+        bookingId,
+        message: err?.message ?? err
+      });
+      await this.showToast('Unable to remove voucher', 'danger');
+    } finally {
+      this.isRemovingVoucher.set(false);
+    }
   }
 
   async initiatePayment() {

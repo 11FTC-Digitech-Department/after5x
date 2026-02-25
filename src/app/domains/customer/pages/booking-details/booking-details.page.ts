@@ -349,12 +349,14 @@ export class BookingDetailsPage implements OnInit, OnDestroy {
             // Show visual feedback when update is received
             if (previousStatus !== updatedBooking.status) {
               this.showStatusUpdateFeedback(updatedBooking.status);
+              this.showStatusToast(updatedBooking.status);
             }
           }
         },
-        onStatusChange: (newStatus) => {
-          // Show status-specific toast notification
-          this.showStatusToast(newStatus);
+        onStatusChange: () => {
+          // Intentionally ignored here.
+          // onStatusChange can be emitted for non-status booking updates;
+          // we only show toasts when an actual status transition is detected in onBookingUpdate.
         },
         onTimelineUpdate: (entry) => {
           const current = this.booking();
