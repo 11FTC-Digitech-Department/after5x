@@ -220,7 +220,7 @@ BEGIN
   END IF;
 
   IF v_booking.voucher_id IS NOT NULL OR v_booking.grand_total_after_voucher IS NOT NULL THEN
-    PERFORM public.log_voucher_attempt(v_booking.voucher_id, p_booking_id, auth.uid(), v_booking.voucher_code, 'failed', 'already_redeemed', NULL);
+    PERFORM public.log_voucher_attempt(v_booking.voucher_id, p_booking_id, auth.uid(), v_code, 'failed', 'already_redeemed', NULL);
     RAISE EXCEPTION 'ALREADY_REDEEMED';
   END IF;
 

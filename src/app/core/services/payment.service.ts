@@ -68,7 +68,17 @@ export class PaymentService {
     });
 
     if (response.error) {
-      const payload = response.data as any;
+      let payload = response.data as any;
+      if (!payload) {
+        const context = (response.error as any)?.context;
+        if (context && typeof context.json === 'function') {
+          try {
+            payload = await context.clone().json();
+          } catch {
+            payload = null;
+          }
+        }
+      }
       const debug = payload?.debug;
       const errorCode = payload?.errorCode || (
         response.error.message?.toLowerCase().includes('failed to fetch') ? 'NETWORK_ERROR' : 'INVALID_VOUCHER'

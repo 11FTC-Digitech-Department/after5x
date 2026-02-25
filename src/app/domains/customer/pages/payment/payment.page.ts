@@ -493,7 +493,7 @@ export class PaymentPage implements OnInit, OnDestroy {
         this.booking.set(booking);
       }
       this.paymentStatus.set(status);
-      await this.showToast('Voucher Applied Successfully. Your voucher has been applied successfully.', 'success');
+      await this.showToast('Voucher Applied Successfully.', 'success');
     } catch (err: any) {
       console.error('[Voucher] Redeem failed', {
         bookingId,

@@ -20,6 +20,16 @@ function normalizeErrorCode(message: string | undefined): string {
   return 'INVALID_VOUCHER'
 }
 
+function errorCodeFromReason(reason: string | undefined | null): string {
+  const value = (reason || '').toLowerCase()
+  if (value === 'expired') return 'VOUCHER_EXPIRED'
+  if (value === 'max_redemptions_reached') return 'USAGE_LIMIT_REACHED'
+  if (value === 'inactive') return 'USAGE_LIMIT_REACHED'
+  if (value === 'per_user_limit') return 'MULTIPLE_REDEMPTION_ATTEMPT'
+  if (value === 'already_redeemed') return 'ALREADY_REDEEMED'
+  return 'INVALID_VOUCHER'
+}
+
 function getMessageForCode(code: string): string {
   switch (code) {
     case 'MULTIPLE_REDEMPTION_ATTEMPT':
@@ -92,7 +102,20 @@ serve(async (req) => {
     })
 
     if (error || !data || data.length === 0) {
-      const errorCode = normalizeErrorCode(error?.message)
+      let errorCode = normalizeErrorCode(error?.message)
+      if (errorCode === 'INVALID_VOUCHER') {
+        const { data: latestFailure } = await supabase
+          .from('voucher_redemption_logs')
+          .select('reason_code')
+          .eq('booking_id', bookingId)
+          .eq('customer_id', user.id)
+          .eq('status', 'failed')
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .maybeSingle()
+
+        errorCode = errorCodeFromReason((latestFailure as any)?.reason_code) || errorCode
+      }
       if (debugEnabled) {
         console.error('[redeem-voucher] RPC error:', error?.message)
       }
