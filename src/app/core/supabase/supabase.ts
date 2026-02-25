@@ -43,22 +43,36 @@ export class SupabaseService {
     const isNativeCapacitorRuntime = Capacitor.isNativePlatform() || capacitorPlatform === 'android' || capacitorPlatform === 'ios';
     this.useNativeNgrokAuth = isNgrokUrl && isNativeCapacitorRuntime;
 
+    // In browser with ngrok URL, CORS blocks preflight. Use same-origin proxy so requests
+    // go to the dev server and are forwarded to local Supabase (proxy.conf.json).
+    const isBrowserWithNgrok = isNgrokUrl && !isNativeCapacitorRuntime && typeof window !== 'undefined';
+    const effectiveUrl = isBrowserWithNgrok
+      ? `${window.location.origin}/supabase`
+      : config.url;
+
     // Avoid WebView/browser CORS preflight on ngrok free tunnels by routing
     // Supabase HTTP requests through Capacitor's native HTTP bridge.
-    const globalOptions = this.useNativeNgrokAuth
-      ? { fetch: this.nativeNgrokFetch.bind(this) as typeof fetch }
-      : undefined;
+    // In browser with ngrok, use a fetch that rewrites ngrok URLs to same-origin /supabase
+    // so the dev server proxy handles them (avoids CORS when client still uses raw URL).
+    let globalOptions: { fetch: typeof fetch } | undefined;
+    if (this.useNativeNgrokAuth) {
+      globalOptions = { fetch: this.nativeNgrokFetch.bind(this) as typeof fetch };
+    } else if (isBrowserWithNgrok) {
+      globalOptions = { fetch: this.browserNgrokProxyFetch.bind(this) };
+    }
 
     if (isNgrokUrl) {
       console.log('SupabaseService: ngrok mode', {
         url: config.url,
+        effectiveUrl: isBrowserWithNgrok ? effectiveUrl : config.url,
         capacitorPlatform,
         nativeFetchOverride: !!globalOptions,
         useNativeNgrokAuth: this.useNativeNgrokAuth,
+        browserProxy: isBrowserWithNgrok,
       });
     }
 
-    this._client = createClient(config.url, config.key, {
+    this._client = createClient(effectiveUrl, config.key, {
       ...(globalOptions && { global: globalOptions }),
       auth: {
         storage: this.storage,
@@ -78,6 +92,22 @@ export class SupabaseService {
         schema: 'public'
       }
     });
+  }
+
+  /**
+   * In browser with ngrok config: rewrite any request to the ngrok host to same-origin /supabase
+   * so the Angular dev server proxy forwards to local Supabase. Avoids CORS when the client or
+   * auth flow uses the raw ngrok URL.
+   */
+  private browserNgrokProxyFetch(input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
+    const url = typeof input === 'string' ? input : input instanceof URL ? input.href : input.url;
+    const base = this.supabaseConfig.url.replace(/\/$/, '');
+    if (url.startsWith(base + '/') || url === base) {
+      const path = url === base ? '' : url.slice(base.length);
+      const proxyUrl = `${window.location.origin}/supabase${path}`;
+      return fetch(proxyUrl, init);
+    }
+    return fetch(input, init);
   }
 
   private async nativeNgrokFetch(input: RequestInfo | URL, init?: RequestInit): Promise<Response> {

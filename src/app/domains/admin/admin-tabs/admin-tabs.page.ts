@@ -10,7 +10,13 @@ import {
   IonRouterOutlet
 } from '@ionic/angular/standalone';
 import { addIcons } from 'ionicons';
-import { homeOutline, peopleOutline, settingsOutline } from 'ionicons/icons';
+import {
+  homeOutline,
+  peopleOutline,
+  briefcaseOutline,
+  calendarOutline,
+  gridOutline,
+} from 'ionicons/icons';
 
 @Component({
   selector: 'app-admin-tabs',
@@ -29,9 +35,7 @@ import { homeOutline, peopleOutline, settingsOutline } from 'ionicons/icons';
   ]
 })
 export class AdminTabsPage {
-
   constructor() {
-    addIcons({ homeOutline, peopleOutline, settingsOutline });
+    addIcons({ homeOutline, peopleOutline, briefcaseOutline, calendarOutline, gridOutline });
   }
-
 }

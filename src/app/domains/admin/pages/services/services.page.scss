@@ -1,0 +1,18 @@
+.category-content {
+  background: var(--ion-background-color, #fff);
+}
+
+.service-block {
+  border-left: 3px solid var(--ion-color-primary, #3880ff);
+  margin: 4px 8px;
+  border-radius: 0 4px 4px 0;
+}
+
+.variant-item {
+  --padding-start: 24px;
+  --background: var(--ion-color-light, #f4f5f8);
+}
+
+.add-service-btn {
+  --color: var(--ion-color-primary);
+}

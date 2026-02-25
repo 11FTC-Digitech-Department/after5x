@@ -1,0 +1,64 @@
+<ion-header>
+  <ion-toolbar>
+    <ion-title>Users</ion-title>
+  </ion-toolbar>
+  <ion-toolbar>
+    <ion-searchbar
+      placeholder="Search by name or email"
+      debounce="400"
+      (ionInput)="onSearchChange($event)">
+    </ion-searchbar>
+  </ion-toolbar>
+  <ion-toolbar>
+    <ion-segment value="" (ionChange)="onRoleFilter($event)">
+      <ion-segment-button value=""><ion-label>All</ion-label></ion-segment-button>
+      <ion-segment-button value="customer"><ion-label>Customers</ion-label></ion-segment-button>
+      <ion-segment-button value="provider"><ion-label>Providers</ion-label></ion-segment-button>
+      <ion-segment-button value="admin"><ion-label>Admins</ion-label></ion-segment-button>
+    </ion-segment>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content>
+  <ion-refresher slot="fixed" (ionRefresh)="onRefresh($event)">
+    <ion-refresher-content></ion-refresher-content>
+  </ion-refresher>
+
+  @if (isLoading() && users().length === 0) {
+    <div class="ion-text-center ion-padding">
+      <ion-spinner></ion-spinner>
+    </div>
+  }
+
+  <ion-list>
+    @for (user of users(); track user.id) {
+      <ion-item>
+        <ion-avatar slot="start">
+          <ion-icon name="person-outline" style="font-size:32px;margin:8px"></ion-icon>
+        </ion-avatar>
+        <ion-label>
+          <h2>{{ user.full_name }}</h2>
+          <p>{{ user.email }}</p>
+          <p>
+            <ion-badge [color]="getRoleColor(user.role)">{{ user.role }}</ion-badge>
+            @if (!user.activated) {
+              <ion-badge color="warning" style="margin-left:4px">inactive</ion-badge>
+            }
+          </p>
+        </ion-label>
+        <ion-button fill="clear" slot="end" (click)="openActions(user)">
+          <ion-icon slot="icon-only" name="ellipsis-horizontal-outline"></ion-icon>
+        </ion-button>
+      </ion-item>
+    }
+    @if (!isLoading() && users().length === 0) {
+      <ion-item>
+        <ion-label class="ion-text-center">No users found</ion-label>
+      </ion-item>
+    }
+  </ion-list>
+
+  <ion-infinite-scroll [disabled]="!hasMore" (ionInfinite)="onInfiniteScroll($event)">
+    <ion-infinite-scroll-content loadingText="Loading more..."></ion-infinite-scroll-content>
+  </ion-infinite-scroll>
+</ion-content>

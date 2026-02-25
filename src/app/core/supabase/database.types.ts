@@ -1537,6 +1537,7 @@ export type Database = {
         Row: {
           cancellation_fee: number | null
           created_at: string | null
+          description: string | null
           icon_url: string | null
           id: string
           is_active: boolean | null
@@ -1547,6 +1548,7 @@ export type Database = {
         Insert: {
           cancellation_fee?: number | null
           created_at?: string | null
+          description?: string | null
           icon_url?: string | null
           id?: string
           is_active?: boolean | null
@@ -1557,6 +1559,7 @@ export type Database = {
         Update: {
           cancellation_fee?: number | null
           created_at?: string | null
+          description?: string | null
           icon_url?: string | null
           id?: string
           is_active?: boolean | null
@@ -1662,6 +1665,7 @@ export type Database = {
           image_url: string | null
           is_active: boolean | null
           name: string
+          sort_order: number | null
           updated_at: string | null
           variant_selection_schema: Json | null
         }
@@ -1674,6 +1678,7 @@ export type Database = {
           image_url?: string | null
           is_active?: boolean | null
           name: string
+          sort_order?: number | null
           updated_at?: string | null
           variant_selection_schema?: Json | null
         }
@@ -1686,6 +1691,7 @@ export type Database = {
           image_url?: string | null
           is_active?: boolean | null
           name?: string
+          sort_order?: number | null
           updated_at?: string | null
           variant_selection_schema?: Json | null
         }

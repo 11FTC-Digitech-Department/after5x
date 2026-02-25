@@ -1,0 +1,320 @@
+<ion-header>
+  <ion-toolbar>
+    <ion-title>Service Catalog</ion-title>
+    <ion-buttons slot="end">
+      <ion-button (click)="openAddCategory()">
+        <ion-icon slot="icon-only" name="add-outline"></ion-icon>
+      </ion-button>
+    </ion-buttons>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content>
+  <ion-refresher slot="fixed" (ionRefresh)="onRefresh($event)">
+    <ion-refresher-content></ion-refresher-content>
+  </ion-refresher>
+
+  @if (isLoading()) {
+    <div class="ion-text-center ion-padding">
+      <ion-spinner></ion-spinner>
+    </div>
+  }
+
+  <ion-accordion-group [multiple]="true">
+    @for (cat of catalog(); track cat.id) {
+      <ion-accordion [value]="cat.id">
+        <!-- Category Header -->
+        <ion-item slot="header" color="light">
+          <ion-label>
+            <h2>{{ cat.name }}</h2>
+            <p>{{ (cat.services || []).length }} service(s)</p>
+          </ion-label>
+          @if (!cat.is_active) {
+            <ion-badge color="medium" slot="end">inactive</ion-badge>
+          }
+          <ion-buttons slot="end" (click)="$event.stopPropagation()">
+            <ion-button fill="clear" size="small" (click)="openEditCategory(cat, $event)">
+              <ion-icon slot="icon-only" name="pencil-outline"></ion-icon>
+            </ion-button>
+            <ion-button fill="clear" size="small" color="danger" (click)="deleteCategory(cat, $event)">
+              <ion-icon slot="icon-only" name="trash-outline"></ion-icon>
+            </ion-button>
+          </ion-buttons>
+        </ion-item>
+
+        <!-- Services within category -->
+        <div slot="content" class="category-content">
+          @for (svc of cat.services || []; track svc.id) {
+            <div class="service-block">
+              <!-- Service row -->
+              <ion-item color="white">
+                <ion-label>
+                  <h3>{{ svc.name }}</h3>
+                  <p>{{ (svc.variants || []).length }} variant(s)</p>
+                </ion-label>
+                @if (!svc.is_active) {
+                  <ion-badge color="medium">inactive</ion-badge>
+                }
+                <ion-buttons slot="end">
+                  <ion-button fill="clear" size="small" (click)="openAddVariant(svc.id)">
+                    <ion-icon slot="icon-only" name="add-outline"></ion-icon>
+                  </ion-button>
+                  <ion-button fill="clear" size="small" (click)="openEditService(svc, $event)">
+                    <ion-icon slot="icon-only" name="pencil-outline"></ion-icon>
+                  </ion-button>
+                  <ion-button fill="clear" size="small" color="danger" (click)="deleteService(svc, $event)">
+                    <ion-icon slot="icon-only" name="trash-outline"></ion-icon>
+                  </ion-button>
+                </ion-buttons>
+              </ion-item>
+
+              <!-- Variants -->
+              @for (variant of svc.variants || []; track variant.id) {
+                <ion-item class="variant-item">
+                  <ion-label>
+                    <p>{{ variant.name }}</p>
+                    <p>
+                      Day: ₱{{ variant.price_min | number:'1.0-0' }}–₱{{ variant.price_max | number:'1.0-0' }} |
+                      After5: ₱{{ variant.price_after5_min | number:'1.0-0' }}–₱{{ variant.price_after5_max | number:'1.0-0' }}
+                    </p>
+                    <p>{{ variant.duration_minutes }}min</p>
+                  </ion-label>
+                  @if (!variant.is_active) {
+                    <ion-badge color="medium">inactive</ion-badge>
+                  }
+                  <ion-buttons slot="end">
+                    <ion-button fill="clear" size="small" (click)="openEditVariant(variant, $event)">
+                      <ion-icon slot="icon-only" name="pencil-outline"></ion-icon>
+                    </ion-button>
+                    <ion-button fill="clear" size="small" color="danger" (click)="deleteVariant(variant, $event)">
+                      <ion-icon slot="icon-only" name="trash-outline"></ion-icon>
+                    </ion-button>
+                  </ion-buttons>
+                </ion-item>
+              }
+            </div>
+          }
+
+          <!-- Add Service button -->
+          <ion-item button (click)="openAddService(cat.id)" class="add-service-btn">
+            <ion-icon name="add-outline" slot="start"></ion-icon>
+            <ion-label>Add Service</ion-label>
+          </ion-item>
+        </div>
+      </ion-accordion>
+    }
+  </ion-accordion-group>
+
+  @if (!isLoading() && catalog().length === 0) {
+    <div class="ion-text-center ion-padding">
+      <p>No categories. Tap + to add one.</p>
+    </div>
+  }
+</ion-content>
+
+<!-- Category Modal -->
+<ion-modal [isOpen]="showCategoryModal()" (didDismiss)="showCategoryModal.set(false)">
+  <ng-template>
+    <ion-header>
+      <ion-toolbar>
+        <ion-title>{{ editingCategory() ? 'Edit Category' : 'New Category' }}</ion-title>
+        <ion-buttons slot="end">
+          <ion-button (click)="showCategoryModal.set(false)">Cancel</ion-button>
+        </ion-buttons>
+      </ion-toolbar>
+    </ion-header>
+    <ion-content class="ion-padding">
+      <ion-list>
+        <ion-item>
+          <ion-label position="stacked">Name *</ion-label>
+          <ion-input
+            [value]="getCategoryField('name')"
+            (ionInput)="setCategoryField('name', $any($event.detail.value))"
+            placeholder="Category name">
+          </ion-input>
+        </ion-item>
+        <ion-item>
+          <ion-label position="stacked">Description</ion-label>
+          <ion-textarea
+            [value]="getCategoryField('description')"
+            (ionInput)="setCategoryField('description', $any($event.detail.value))"
+            placeholder="Description">
+          </ion-textarea>
+        </ion-item>
+        <ion-item>
+          <ion-label position="stacked">Icon URL</ion-label>
+          <ion-input
+            [value]="getCategoryField('icon_url')"
+            (ionInput)="setCategoryField('icon_url', $any($event.detail.value))"
+            placeholder="https://...">
+          </ion-input>
+        </ion-item>
+        <ion-item>
+          <ion-label position="stacked">Sort Order</ion-label>
+          <ion-input
+            type="number"
+            [value]="getCategoryField('sort_order')"
+            (ionInput)="setCategoryField('sort_order', +$any($event.detail.value))">
+          </ion-input>
+        </ion-item>
+        <ion-item>
+          <ion-label>Active</ion-label>
+          <ion-toggle
+            [checked]="getCategoryField('is_active')"
+            (ionChange)="setCategoryField('is_active', $event.detail.checked)"
+            slot="end">
+          </ion-toggle>
+        </ion-item>
+      </ion-list>
+      <ion-button expand="block" (click)="saveCategory()" [disabled]="isSaving()">
+        {{ isSaving() ? 'Saving...' : 'Save' }}
+      </ion-button>
+    </ion-content>
+  </ng-template>
+</ion-modal>
+
+<!-- Service Modal -->
+<ion-modal [isOpen]="showServiceModal()" (didDismiss)="showServiceModal.set(false)">
+  <ng-template>
+    <ion-header>
+      <ion-toolbar>
+        <ion-title>{{ editingService() ? 'Edit Service' : 'New Service' }}</ion-title>
+        <ion-buttons slot="end">
+          <ion-button (click)="showServiceModal.set(false)">Cancel</ion-button>
+        </ion-buttons>
+      </ion-toolbar>
+    </ion-header>
+    <ion-content class="ion-padding">
+      <ion-list>
+        <ion-item>
+          <ion-label position="stacked">Name *</ion-label>
+          <ion-input
+            [value]="getServiceField('name')"
+            (ionInput)="setServiceField('name', $any($event.detail.value))"
+            placeholder="Service name">
+          </ion-input>
+        </ion-item>
+        <ion-item>
+          <ion-label position="stacked">Description</ion-label>
+          <ion-textarea
+            [value]="getServiceField('description')"
+            (ionInput)="setServiceField('description', $any($event.detail.value))"
+            placeholder="Description">
+          </ion-textarea>
+        </ion-item>
+        <ion-item>
+          <ion-label position="stacked">Sort Order</ion-label>
+          <ion-input
+            type="number"
+            [value]="getServiceField('sort_order')"
+            (ionInput)="setServiceField('sort_order', +$any($event.detail.value))">
+          </ion-input>
+        </ion-item>
+        <ion-item>
+          <ion-label>Active</ion-label>
+          <ion-toggle
+            [checked]="getServiceField('is_active')"
+            (ionChange)="setServiceField('is_active', $event.detail.checked)"
+            slot="end">
+          </ion-toggle>
+        </ion-item>
+      </ion-list>
+      <ion-button expand="block" (click)="saveService()" [disabled]="isSaving()">
+        {{ isSaving() ? 'Saving...' : 'Save' }}
+      </ion-button>
+    </ion-content>
+  </ng-template>
+</ion-modal>
+
+<!-- Variant Modal -->
+<ion-modal [isOpen]="showVariantModal()" (didDismiss)="showVariantModal.set(false)">
+  <ng-template>
+    <ion-header>
+      <ion-toolbar>
+        <ion-title>{{ editingVariant() ? 'Edit Variant' : 'New Variant' }}</ion-title>
+        <ion-buttons slot="end">
+          <ion-button (click)="showVariantModal.set(false)">Cancel</ion-button>
+        </ion-buttons>
+      </ion-toolbar>
+    </ion-header>
+    <ion-content class="ion-padding">
+      <ion-list>
+        <ion-item>
+          <ion-label position="stacked">Name *</ion-label>
+          <ion-input
+            [value]="getVariantField('name')"
+            (ionInput)="setVariantField('name', $any($event.detail.value))"
+            placeholder="Variant name">
+          </ion-input>
+        </ion-item>
+        <ion-item>
+          <ion-label position="stacked">Day Price Min (₱)</ion-label>
+          <ion-input
+            type="number"
+            [value]="getVariantField('price_min')"
+            (ionInput)="setVariantField('price_min', +$any($event.detail.value))">
+          </ion-input>
+        </ion-item>
+        <ion-item>
+          <ion-label position="stacked">Day Price Max (₱)</ion-label>
+          <ion-input
+            type="number"
+            [value]="getVariantField('price_max')"
+            (ionInput)="setVariantField('price_max', +$any($event.detail.value))">
+          </ion-input>
+        </ion-item>
+        <ion-item>
+          <ion-label position="stacked">After5 Price Min (₱)</ion-label>
+          <ion-input
+            type="number"
+            [value]="getVariantField('price_after5_min')"
+            (ionInput)="setVariantField('price_after5_min', +$any($event.detail.value))">
+          </ion-input>
+        </ion-item>
+        <ion-item>
+          <ion-label position="stacked">After5 Price Max (₱)</ion-label>
+          <ion-input
+            type="number"
+            [value]="getVariantField('price_after5_max')"
+            (ionInput)="setVariantField('price_after5_max', +$any($event.detail.value))">
+          </ion-input>
+        </ion-item>
+        <ion-item>
+          <ion-label position="stacked">Duration (minutes)</ion-label>
+          <ion-input
+            type="number"
+            [value]="getVariantField('duration_minutes')"
+            (ionInput)="setVariantField('duration_minutes', +$any($event.detail.value))">
+          </ion-input>
+        </ion-item>
+        <ion-item>
+          <ion-label position="stacked">Commission Rate (e.g. 0.15)</ion-label>
+          <ion-input
+            type="number"
+            [value]="getVariantField('commission_rate')"
+            (ionInput)="setVariantField('commission_rate', +$any($event.detail.value))">
+          </ion-input>
+        </ion-item>
+        <ion-item>
+          <ion-label position="stacked">VAT Rate (e.g. 0.12)</ion-label>
+          <ion-input
+            type="number"
+            [value]="getVariantField('vat_rate')"
+            (ionInput)="setVariantField('vat_rate', +$any($event.detail.value))">
+          </ion-input>
+        </ion-item>
+        <ion-item>
+          <ion-label>Active</ion-label>
+          <ion-toggle
+            [checked]="getVariantField('is_active')"
+            (ionChange)="setVariantField('is_active', $event.detail.checked)"
+            slot="end">
+          </ion-toggle>
+        </ion-item>
+      </ion-list>
+      <ion-button expand="block" (click)="saveVariant()" [disabled]="isSaving()">
+        {{ isSaving() ? 'Saving...' : 'Save' }}
+      </ion-button>
+    </ion-content>
+  </ng-template>
+</ion-modal>

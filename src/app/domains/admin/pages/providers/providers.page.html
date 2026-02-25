@@ -1,0 +1,73 @@
+<ion-header>
+  <ion-toolbar>
+    <ion-title>Providers</ion-title>
+  </ion-toolbar>
+  <ion-toolbar>
+    <ion-searchbar
+      placeholder="Search providers"
+      debounce="400"
+      (ionInput)="onSearchChange($event)">
+    </ion-searchbar>
+  </ion-toolbar>
+  <ion-toolbar>
+    <ion-segment value="" (ionChange)="onStatusFilter($event)">
+      <ion-segment-button value=""><ion-label>All</ion-label></ion-segment-button>
+      <ion-segment-button value="pending"><ion-label>Pending</ion-label></ion-segment-button>
+      <ion-segment-button value="verified"><ion-label>Verified</ion-label></ion-segment-button>
+      <ion-segment-button value="suspended"><ion-label>Suspended</ion-label></ion-segment-button>
+    </ion-segment>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content>
+  <ion-refresher slot="fixed" (ionRefresh)="onRefresh($event)">
+    <ion-refresher-content></ion-refresher-content>
+  </ion-refresher>
+
+  @if (isLoading() && providers().length === 0) {
+    <div class="ion-text-center ion-padding">
+      <ion-spinner></ion-spinner>
+    </div>
+  }
+
+  <ion-list>
+    @for (provider of providers(); track provider.id) {
+      <ion-item>
+        <ion-avatar slot="start">
+          <ion-icon name="person-outline" style="font-size:32px;margin:8px"></ion-icon>
+        </ion-avatar>
+        <ion-label>
+          <h2>{{ provider.profile?.full_name || 'Unknown' }}</h2>
+          <p>{{ provider.profile?.email }}</p>
+          <p>
+            <ion-badge [color]="getVerificationColor(provider.verification_status)">
+              {{ provider.verification_status }}
+            </ion-badge>
+            <ion-badge [color]="getStatusColor(provider.status)" style="margin-left:4px">
+              {{ provider.status }}
+            </ion-badge>
+            @if (!provider.profile?.activated) {
+              <ion-badge color="warning" style="margin-left:4px">inactive</ion-badge>
+            }
+          </p>
+          <p>
+            <ion-icon name="star-outline" size="small"></ion-icon>
+            {{ provider.rating_avg | number:'1.1-1' }} ({{ provider.rating_count }} reviews)
+          </p>
+        </ion-label>
+        <ion-button fill="clear" slot="end" (click)="openActions(provider)">
+          <ion-icon slot="icon-only" name="ellipsis-horizontal-outline"></ion-icon>
+        </ion-button>
+      </ion-item>
+    }
+    @if (!isLoading() && providers().length === 0) {
+      <ion-item>
+        <ion-label class="ion-text-center">No providers found</ion-label>
+      </ion-item>
+    }
+  </ion-list>
+
+  <ion-infinite-scroll [disabled]="!hasMore" (ionInfinite)="onInfiniteScroll($event)">
+    <ion-infinite-scroll-content loadingText="Loading more..."></ion-infinite-scroll-content>
+  </ion-infinite-scroll>
+</ion-content>

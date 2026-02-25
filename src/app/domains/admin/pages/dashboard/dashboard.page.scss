@@ -1,45 +1,120 @@
-ion-content {
-  --padding-start: 16px;
-  --padding-end: 16px;
-  --padding-top: 16px;
-  --padding-bottom: 16px;
-}
-
-h2 {
-  color: var(--ion-color-primary);
-  margin-bottom: 8px;
-}
-
-p {
-  color: var(--ion-color-medium);
-  margin-bottom: 24px;
-}
-
-ion-card {
-  margin-bottom: 16px;
-
-  ion-card-title {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-
-    ion-icon {
-      color: var(--ion-color-primary);
-    }
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
   }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.dashboard-container {
+  padding: 16px;
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+.section {
+  margin-bottom: 24px;
+  animation: fadeIn 0.3s ease;
+}
+
+.section-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+  padding: 0 4px;
+}
+
+.section-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--ion-color-dark);
+  margin: 0;
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+}
+
+@media (min-width: 400px) {
+  .stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+// Bookings by status card
+.status-card {
+  --background: var(--ion-card-background, var(--ion-background-color));
+  margin: 0;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
 
   ion-card-content {
-    h3 {
-      margin: 0 0 4px 0;
-      font-size: 2rem;
-      font-weight: 700;
+    padding: 16px;
+  }
+}
+
+.status-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--ion-color-light);
+
+  &:last-child {
+    border-bottom: none;
+  }
+}
+
+.status-label {
+  color: var(--ion-color-dark);
+  font-size: 14px;
+}
+
+.status-count {
+  color: var(--ion-color-primary);
+  font-size: 14px;
+}
+
+// Upcoming & recent bookings list
+.bookings-list {
+  background: transparent;
+
+  ion-item {
+    --background: var(--ion-card-background, var(--ion-background-color));
+    border-radius: 12px;
+    margin-bottom: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+
+    h2 {
+      font-size: 16px;
+      font-weight: 600;
       color: var(--ion-color-dark);
+      margin: 0 0 4px 0;
     }
 
     p {
-      margin: 0;
-      font-size: 0.9rem;
-      color: var(--ion-color-success);
+      font-size: 13px;
+      color: var(--ion-color-medium);
+      margin: 0 0 2px 0;
+    }
+
+    ion-note {
+      font-weight: 600;
+      color: var(--ion-color-primary);
     }
   }
+}
+
+.empty-message {
+  color: var(--ion-color-medium);
+  font-size: 14px;
+  text-align: center;
+  padding: 24px 16px;
+  margin: 0;
 }

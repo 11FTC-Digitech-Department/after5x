@@ -1,0 +1,11 @@
+{
+  "/supabase/**": {
+    "target": "http://127.0.0.1:54321",
+    "secure": false,
+    "changeOrigin": true,
+    "pathRewrite": {
+      "^/supabase": ""
+    },
+    "logLevel": "debug"
+  }
+}

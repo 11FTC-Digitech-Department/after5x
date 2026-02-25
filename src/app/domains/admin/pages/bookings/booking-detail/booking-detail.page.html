@@ -1,0 +1,246 @@
+<ion-header>
+  <ion-toolbar>
+    <ion-buttons slot="start">
+      <ion-back-button defaultHref="/a/bookings"></ion-back-button>
+    </ion-buttons>
+    <ion-title>Booking Detail</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content>
+  @if (isLoading()) {
+    <div class="ion-text-center ion-padding">
+      <ion-spinner></ion-spinner>
+    </div>
+  }
+
+  @if (!isLoading() && booking(); as b) {
+    <!-- Status Header -->
+    <ion-card>
+      <ion-card-content>
+        <div class="ion-text-center">
+          <ion-badge [color]="getStatusColor(b.status)" style="font-size:1em;padding:8px 16px">
+            {{ b.status | titlecase }}
+          </ion-badge>
+          <p style="margin-top:8px">
+            <small>Created {{ b.created_at | date:'medium' }}</small>
+          </p>
+          @if (b.cancellation_reason) {
+            <p><strong>Reason:</strong> {{ b.cancellation_reason }}</p>
+          }
+        </div>
+      </ion-card-content>
+    </ion-card>
+
+    <!-- Customer Info -->
+    <ion-card>
+      <ion-card-header>
+        <ion-card-title>
+          <ion-icon name="person-outline"></ion-icon> Customer
+        </ion-card-title>
+      </ion-card-header>
+      <ion-card-content>
+        @if (b.customer) {
+          <ion-list lines="none">
+            <ion-item>
+              <ion-label>
+                <h3>{{ b.customer.full_name }}</h3>
+                <p>{{ b.customer.email }}</p>
+                @if (b.customer.phone_number) {
+                  <p>{{ b.customer.phone_number }}</p>
+                }
+              </ion-label>
+            </ion-item>
+          </ion-list>
+        } @else {
+          <p>No customer info</p>
+        }
+      </ion-card-content>
+    </ion-card>
+
+    <!-- Provider Info -->
+    <ion-card>
+      <ion-card-header>
+        <ion-card-title>
+          <ion-icon name="person-outline"></ion-icon> Provider
+        </ion-card-title>
+      </ion-card-header>
+      <ion-card-content>
+        @if (b.provider) {
+          <ion-list lines="none">
+            <ion-item>
+              <ion-label>
+                <h3>{{ b.provider.full_name }}</h3>
+              </ion-label>
+            </ion-item>
+          </ion-list>
+        } @else {
+          <p>No provider assigned</p>
+        }
+      </ion-card-content>
+    </ion-card>
+
+    <!-- Address / Scheduling -->
+    <ion-card>
+      <ion-card-header>
+        <ion-card-title>
+          <ion-icon name="location-outline"></ion-icon> Service Details
+        </ion-card-title>
+      </ion-card-header>
+      <ion-card-content>
+        <ion-list lines="none">
+          @if (b.scheduled_for) {
+            <ion-item>
+              <ion-label>
+                <h3>Scheduled For</h3>
+                <p>{{ b.scheduled_for | date:'medium' }}</p>
+              </ion-label>
+            </ion-item>
+          }
+          @if (b.address_snapshot?.address) {
+            <ion-item>
+              <ion-label>
+                <h3>Address</h3>
+                <p>{{ b.address_snapshot.address }}</p>
+              </ion-label>
+            </ion-item>
+          }
+          @if (b.address_snapshot?.contact_person) {
+            <ion-item>
+              <ion-label>
+                <h3>Contact</h3>
+                <p>{{ b.address_snapshot.contact_person }}</p>
+                @if (b.address_snapshot.contact_phone) {
+                  <p>{{ b.address_snapshot.contact_phone }}</p>
+                }
+              </ion-label>
+            </ion-item>
+          }
+          @if (b.address_snapshot?.description) {
+            <ion-item>
+              <ion-label>
+                <h3>Description</h3>
+                <p>{{ b.address_snapshot.description }}</p>
+              </ion-label>
+            </ion-item>
+          }
+        </ion-list>
+      </ion-card-content>
+    </ion-card>
+
+    <!-- Service Items -->
+    @if (b.booking_items?.length) {
+      <ion-card>
+        <ion-card-header>
+          <ion-card-title>Service Items</ion-card-title>
+        </ion-card-header>
+        <ion-card-content>
+          <ion-list lines="none">
+            @for (item of b.booking_items; track item.id) {
+              <ion-item>
+                <ion-label>
+                  <h3>{{ item.variant_name || item.service_variants?.name }}</h3>
+                  <p>{{ item.service_variants?.services?.name }}</p>
+                  <p>Base: ₱{{ item.base_price | number:'1.0-0' }}</p>
+                </ion-label>
+              </ion-item>
+            }
+          </ion-list>
+        </ion-card-content>
+      </ion-card>
+    }
+
+    <!-- Financial Summary -->
+    <ion-card>
+      <ion-card-header>
+        <ion-card-title>Financials</ion-card-title>
+      </ion-card-header>
+      <ion-card-content>
+        <ion-list lines="none">
+          @if (b.base_service_fee != null) {
+            <ion-item>
+              <ion-label>Base Service</ion-label>
+              <ion-note slot="end">₱{{ b.base_service_fee | number:'1.0-0' }}</ion-note>
+            </ion-item>
+          }
+          @if (b.urgent_fee) {
+            <ion-item>
+              <ion-label>Urgent Fee</ion-label>
+              <ion-note slot="end">₱{{ b.urgent_fee | number:'1.0-0' }}</ion-note>
+            </ion-item>
+          }
+          @if (b.total_transport_fees) {
+            <ion-item>
+              <ion-label>Transport</ion-label>
+              <ion-note slot="end">₱{{ b.total_transport_fees | number:'1.0-0' }}</ion-note>
+            </ion-item>
+          }
+          @if (b.body_camera_fee) {
+            <ion-item>
+              <ion-label>Body Camera</ion-label>
+              <ion-note slot="end">₱{{ b.body_camera_fee | number:'1.0-0' }}</ion-note>
+            </ion-item>
+          }
+          <ion-item>
+            <ion-label><strong>Grand Total</strong></ion-label>
+            <ion-note slot="end"><strong>₱{{ b.grand_total | number:'1.0-0' }}</strong></ion-note>
+          </ion-item>
+          @if (b.platform_fee != null) {
+            <ion-item>
+              <ion-label>Platform Fee</ion-label>
+              <ion-note slot="end">₱{{ b.platform_fee | number:'1.0-0' }}</ion-note>
+            </ion-item>
+          }
+          @if (b.provider_earnings != null) {
+            <ion-item>
+              <ion-label>Provider Earnings</ion-label>
+              <ion-note slot="end">₱{{ b.provider_earnings | number:'1.0-0' }}</ion-note>
+            </ion-item>
+          }
+        </ion-list>
+      </ion-card-content>
+    </ion-card>
+
+    <!-- Timeline -->
+    @if (b.booking_timeline?.length) {
+      <ion-card>
+        <ion-card-header>
+          <ion-card-title>
+            <ion-icon name="time-outline"></ion-icon> Timeline
+          </ion-card-title>
+        </ion-card-header>
+        <ion-card-content>
+          <ion-list lines="none">
+            @for (entry of b.booking_timeline; track entry.id) {
+              <ion-item>
+                <ion-label>
+                  <h3>{{ entry.title }}</h3>
+                  @if (entry.description) {
+                    <p>{{ entry.description }}</p>
+                  }
+                  <p><small>{{ entry.created_at | date:'short' }}</small></p>
+                </ion-label>
+              </ion-item>
+            }
+          </ion-list>
+        </ion-card-content>
+      </ion-card>
+    }
+  }
+
+  @if (!isLoading() && !booking()) {
+    <div class="ion-text-center ion-padding">
+      <p>Booking not found.</p>
+    </div>
+  }
+</ion-content>
+
+<ion-footer>
+  @if (!isLoading() && booking()) {
+    <ion-toolbar>
+      <ion-button expand="block" (click)="openStatusChange()">
+        Change Status
+      </ion-button>
+    </ion-toolbar>
+  }
+</ion-footer>

@@ -1,63 +1,123 @@
-<ion-header>
+<ion-header class="ion-no-border">
   <ion-toolbar>
     <ion-title>Admin Dashboard</ion-title>
   </ion-toolbar>
 </ion-header>
 
-<ion-content>
-  <ion-grid>
-    <ion-row>
-      <ion-col size="12">
-        <h2>Welcome to Admin Panel</h2>
-        <p>Manage users, view analytics, and configure system settings.</p>
-      </ion-col>
-    </ion-row>
+<ion-content [fullscreen]="true">
+  <ion-refresher slot="fixed" (ionRefresh)="onRefresh($event)">
+    <ion-refresher-content></ion-refresher-content>
+  </ion-refresher>
 
-    <ion-row>
-      <ion-col size="12" size-md="4">
-        <ion-card>
-          <ion-card-header>
-            <ion-card-title>
-              <ion-icon name="people-outline" slot="start"></ion-icon>
-              Total Users
-            </ion-card-title>
-          </ion-card-header>
-          <ion-card-content>
-            <h3>1,234</h3>
-            <p>+12% from last month</p>
-          </ion-card-content>
-        </ion-card>
-      </ion-col>
+  @if (isLoading() && !stats()) {
+    <div class="ion-text-center ion-padding">
+      <ion-spinner></ion-spinner>
+    </div>
+  }
 
-      <ion-col size="12" size-md="4">
-        <ion-card>
-          <ion-card-header>
-            <ion-card-title>
-              <ion-icon name="business-outline" slot="start"></ion-icon>
-              Active Providers
-            </ion-card-title>
-          </ion-card-header>
-          <ion-card-content>
-            <h3>89</h3>
-            <p>+5% from last month</p>
-          </ion-card-content>
-        </ion-card>
-      </ion-col>
+  @if (stats(); as s) {
+    <div class="dashboard-container">
+      <!-- Section 1: Platform overview -->
+      <div class="section">
+        <div class="section-header">
+          <h2 class="section-title">Platform overview</h2>
+        </div>
+        <div class="stats-grid">
+          <app-stats-card
+            icon="people-outline"
+            [value]="s.totalUsers"
+            label="Users"
+            color="primary"
+            [loading]="isLoading()"
+            [clickable]="true"
+            (cardClick)="goToUsers()"
+          ></app-stats-card>
+          <app-stats-card
+            icon="business-outline"
+            [value]="s.totalProviders"
+            label="Providers"
+            [subtitle]="s.pendingProviders > 0 ? s.pendingProviders + ' pending' : undefined"
+            color="secondary"
+            [loading]="isLoading()"
+            [clickable]="true"
+            (cardClick)="goToProviders()"
+          ></app-stats-card>
+          <app-stats-card
+            icon="calendar-outline"
+            [value]="s.totalBookings"
+            label="Bookings"
+            color="tertiary"
+            [loading]="isLoading()"
+            [clickable]="true"
+            (cardClick)="goToBookings()"
+          ></app-stats-card>
+          <app-stats-card
+            icon="time-outline"
+            [value]="s.activeBookings"
+            label="Active"
+            subtitle="In progress"
+            color="success"
+            [loading]="isLoading()"
+            [clickable]="true"
+            (cardClick)="goToBookings()"
+          ></app-stats-card>
+        </div>
+      </div>
 
-      <ion-col size="12" size-md="4">
-        <ion-card>
-          <ion-card-header>
-            <ion-card-title>
-              <ion-icon name="stats-chart-outline" slot="start"></ion-icon>
-              Total Bookings
-            </ion-card-title>
-          </ion-card-header>
-          <ion-card-content>
-            <h3>5,678</h3>
-            <p>+18% from last month</p>
-          </ion-card-content>
-        </ion-card>
-      </ion-col>
-    </ion-row>
-  </ion-grid>
+      <!-- Section 2: Bookings by status -->
+      @if (s.bookingsByStatus.length > 0) {
+        <div class="section">
+          <div class="section-header">
+            <h2 class="section-title">Bookings by status</h2>
+          </div>
+          <ion-card class="status-card">
+            <ion-card-content>
+              @for (item of sortedBookingsByStatus(); track item.status) {
+                <div class="status-row">
+                  <span class="status-label">{{ item.status | titlecase }}</span>
+                  <strong class="status-count">{{ item.count }}</strong>
+                </div>
+              }
+            </ion-card-content>
+          </ion-card>
+        </div>
+      }
+
+      <!-- Section 3: Upcoming & recent bookings -->
+      <div class="section">
+        <div class="section-header">
+          <h2 class="section-title">Upcoming &amp; recent bookings</h2>
+        </div>
+        @if (isBookingsLoading() && dashboardBookings().length === 0) {
+          <div class="ion-text-center ion-padding">
+            <ion-spinner></ion-spinner>
+          </div>
+        }
+        @if (!isBookingsLoading() && dashboardBookings().length === 0) {
+          <p class="empty-message">No upcoming or recent bookings in the last 7 days.</p>
+        }
+        @if (dashboardBookings().length > 0) {
+          <ion-list class="bookings-list">
+            @for (booking of dashboardBookings(); track booking.id) {
+              <ion-item [routerLink]="['/a/bookings', booking.id]" detail>
+                <ion-label>
+                  <h2>{{ booking.customer?.full_name || 'Unknown Customer' }}</h2>
+                  <p>Provider: {{ booking.provider?.full_name || 'Not assigned' }}</p>
+                  <p>{{ booking.scheduled_for | date:'medium' }}</p>
+                  <p>
+                    <ion-badge [color]="getStatusColor(booking.status)">{{ booking.status | titlecase }}</ion-badge>
+                  </p>
+                </ion-label>
+                <ion-note slot="end">
+                  @if (booking.grand_total != null) {
+                    ₱{{ booking.grand_total | number:'1.0-0' }}
+                  }
+                </ion-note>
+              </ion-item>
+            }
+          </ion-list>
+        }
+      </div>
+    </div>
+  }
 </ion-content>

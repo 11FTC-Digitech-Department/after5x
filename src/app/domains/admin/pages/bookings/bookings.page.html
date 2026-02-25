@@ -1,0 +1,53 @@
+<ion-header>
+  <ion-toolbar>
+    <ion-title>Bookings</ion-title>
+  </ion-toolbar>
+  <ion-toolbar>
+    <ion-segment value="" (ionChange)="onStatusFilter($event)">
+      <ion-segment-button value=""><ion-label>All</ion-label></ion-segment-button>
+      <ion-segment-button value="finding_provider"><ion-label>Finding</ion-label></ion-segment-button>
+      <ion-segment-button value="in_progress"><ion-label>Active</ion-label></ion-segment-button>
+      <ion-segment-button value="completed"><ion-label>Done</ion-label></ion-segment-button>
+      <ion-segment-button value="cancelled"><ion-label>Cancelled</ion-label></ion-segment-button>
+    </ion-segment>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content>
+  <ion-refresher slot="fixed" (ionRefresh)="onRefresh($event)">
+    <ion-refresher-content></ion-refresher-content>
+  </ion-refresher>
+
+  @if (isLoading() && bookings().length === 0) {
+    <div class="ion-text-center ion-padding">
+      <ion-spinner></ion-spinner>
+    </div>
+  }
+
+  <ion-list>
+    @for (booking of bookings(); track booking.id) {
+      <ion-item [routerLink]="['/a/bookings', booking.id]" detail>
+        <ion-label>
+          <h2>{{ booking.customer?.full_name || 'Unknown Customer' }}</h2>
+          <p>Provider: {{ booking.provider?.full_name || 'Not assigned' }}</p>
+          <p>{{ booking.scheduled_for | date:'medium' }}</p>
+          <ion-badge [color]="getStatusColor(booking.status)">{{ booking.status | titlecase }}</ion-badge>
+        </ion-label>
+        <ion-note slot="end">
+          @if (booking.grand_total) {
+            ₱{{ booking.grand_total | number:'1.0-0' }}
+          }
+        </ion-note>
+      </ion-item>
+    }
+    @if (!isLoading() && bookings().length === 0) {
+      <ion-item>
+        <ion-label class="ion-text-center">No bookings found</ion-label>
+      </ion-item>
+    }
+  </ion-list>
+
+  <ion-infinite-scroll [disabled]="!hasMore" (ionInfinite)="onInfiniteScroll($event)">
+    <ion-infinite-scroll-content loadingText="Loading more..."></ion-infinite-scroll-content>
+  </ion-infinite-scroll>
+</ion-content>
