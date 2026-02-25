@@ -8,6 +8,7 @@ import {
   InvoiceStatus
 } from '../models/payment.model';
 import { RealtimeChannel } from '@supabase/supabase-js';
+import { environment } from '../../../environments/environment';
 
 @Injectable({
   providedIn: 'root'
@@ -43,6 +44,49 @@ export class PaymentService {
     }
 
     return response.data as CreateInvoiceResponse;
+  }
+
+  /**
+   * Redeem a voucher code for a booking
+   */
+  async redeemVoucher(bookingId: string, code: string): Promise<{ success: boolean; voucher_code: string; voucher_amount: number; grand_total_before: number; grand_total_after: number; }> {
+    const session = await this.supabaseService.client.auth.getSession();
+    if (!session.data.session) {
+      throw new Error('Not authenticated');
+    }
+
+    const response = await this.supabaseService.client.functions.invoke('redeem-voucher', {
+      body: { bookingId, code },
+      headers: environment.production ? undefined : { 'x-debug': '1' }
+    });
+
+    if (response.error) {
+      const debug = (response.data as any)?.debug;
+      const message = response.error.message || 'Invalid voucher code';
+      throw new Error(debug ? `${message} [debug:${debug}]` : message);
+    }
+
+    return response.data as { success: boolean; voucher_code: string; voucher_amount: number; grand_total_before: number; grand_total_after: number; };
+  }
+
+  async removeVoucher(bookingId: string): Promise<{ success: boolean; booking_id: string; grand_total_before: number; grand_total_after: number; }> {
+    const session = await this.supabaseService.client.auth.getSession();
+    if (!session.data.session) {
+      throw new Error('Not authenticated');
+    }
+
+    const response = await this.supabaseService.client.functions.invoke('remove-voucher', {
+      body: { bookingId },
+      headers: environment.production ? undefined : { 'x-debug': '1' }
+    });
+
+    if (response.error) {
+      const debug = (response.data as any)?.debug;
+      const message = response.error.message || 'Unable to remove voucher';
+      throw new Error(debug ? `${message} [debug:${debug}]` : message);
+    }
+
+    return response.data as { success: boolean; booking_id: string; grand_total_before: number; grand_total_after: number; };
   }
 
   /**

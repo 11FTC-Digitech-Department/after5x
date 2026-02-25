@@ -104,6 +104,7 @@ serve(async (req) => {
         customer_id,
         status,
         grand_total,
+        grand_total_after_voucher,
         address_snapshot,
         customers (
           id,
@@ -194,7 +195,7 @@ serve(async (req) => {
       reference_id: referenceId,
       session_type: 'PAY',
       mode: 'PAYMENT_LINK',
-      amount: booking.grand_total,
+      amount: booking.grand_total_after_voucher ?? booking.grand_total,
       currency: 'PHP',
       country: 'PH',
       // Use email for notifications without creating a formal customer record

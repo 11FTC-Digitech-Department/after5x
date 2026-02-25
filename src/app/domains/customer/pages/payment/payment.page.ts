@@ -20,6 +20,9 @@ import {
   IonSkeletonText,
   IonRefresher,
   IonRefresherContent,
+  IonItem,
+  IonLabel,
+  IonInput,
   ToastController,
   AlertController,
   RefresherCustomEvent
@@ -37,7 +40,9 @@ import {
   openOutline,
   shieldCheckmarkOutline,
   arrowBack,
-  arrowBackOutline
+  arrowBackOutline,
+  pricetagOutline,
+  trashOutline
 } from 'ionicons/icons';
 import { Browser, BrowserOpenOptions } from '@capacitor/browser';
 import { App } from '@capacitor/app';
@@ -108,6 +113,9 @@ const PAYMENT_STATUS_CONFIG: Record<InvoiceStatus | 'NONE', { label: string; col
     IonSkeletonText,
     IonRefresher,
     IonRefresherContent,
+    IonItem,
+    IonLabel,
+    IonInput,
     PaymentSuccessModalComponent
   ]
 })
@@ -130,6 +138,9 @@ export class PaymentPage implements OnInit, OnDestroy {
   isProcessing = signal(false);
   processingType = signal<'initiating' | 'verifying'>('verifying');
   error = signal<string | null>(null);
+  voucherCode = signal('');
+  isApplyingVoucher = signal(false);
+  isRemovingVoucher = signal(false);
 
   // Success modal state
   showSuccessModal = signal(false);
@@ -167,6 +178,29 @@ export class PaymentPage implements OnInit, OnDestroy {
     return status?.invoiceStatus === 'PENDING' && status?.invoiceUrl;
   });
 
+  voucherApplied = computed(() => {
+    return !!this.booking()?.voucher_code;
+  });
+
+  getVoucherSummary(): string | null {
+    const booking = this.booking();
+    if (!booking || !booking.voucher_discount_type) return null;
+    if (booking.voucher_discount_type === 'percent' && booking.voucher_percent_off) {
+      let summary = `${booking.voucher_percent_off}% off`;
+      if (booking.voucher_max_discount) {
+        summary += ` (up to ${this.formatPrice(booking.voucher_max_discount)})`;
+      }
+      return summary;
+    }
+    return null;
+  }
+
+  displayTotal = computed(() => {
+    const booking = this.booking();
+    if (!booking) return 0;
+    return booking.grand_total_after_voucher ?? booking.grand_total ?? 0;
+  });
+
   isPaid = computed(() => {
     const status = this.paymentStatus();
     return status?.invoiceStatus === 'PAID' ||
@@ -187,7 +221,9 @@ export class PaymentPage implements OnInit, OnDestroy {
       openOutline,
       shieldCheckmarkOutline,
       arrowBack,
-      arrowBackOutline
+      arrowBackOutline,
+      pricetagOutline,
+      trashOutline
     });
   }
 
@@ -427,6 +463,57 @@ export class PaymentPage implements OnInit, OnDestroy {
       await this.loadData(bookingId);
     }
     event.target.complete();
+  }
+
+  async applyVoucher() {
+    const bookingId = this.booking()?.id;
+    const code = this.voucherCode().trim();
+    if (!bookingId || !code) {
+      await this.showToast('Enter a voucher code', 'warning');
+      return;
+    }
+
+    if (this.voucherApplied()) {
+      await this.showToast('Voucher already applied', 'warning');
+      return;
+    }
+
+    this.isApplyingVoucher.set(true);
+    try {
+      await this.paymentService.redeemVoucher(bookingId, code);
+      this.voucherCode.set('');
+      await this.loadData(bookingId);
+      await this.showToast('Voucher applied', 'success');
+    } catch (err: any) {
+      console.error('[Voucher] Redeem failed', {
+        bookingId,
+        code,
+        message: err?.message ?? err
+      });
+      await this.showToast('Invalid voucher code', 'danger');
+    } finally {
+      this.isApplyingVoucher.set(false);
+    }
+  }
+
+  async removeVoucher() {
+    const bookingId = this.booking()?.id;
+    if (!bookingId || !this.voucherApplied()) return;
+
+    this.isRemovingVoucher.set(true);
+    try {
+      await this.paymentService.removeVoucher(bookingId);
+      await this.loadData(bookingId);
+      await this.showToast('Voucher removed', 'success');
+    } catch (err: any) {
+      console.error('[Voucher] Remove failed', {
+        bookingId,
+        message: err?.message ?? err
+      });
+      await this.showToast('Unable to remove voucher', 'danger');
+    } finally {
+      this.isRemovingVoucher.set(false);
+    }
   }
 
   async initiatePayment() {

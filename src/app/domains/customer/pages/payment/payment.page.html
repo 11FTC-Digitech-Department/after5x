@@ -69,12 +69,77 @@
       <p class="status-message">{{ statusConfig()?.message }}</p>
     </div>
 
+    <!-- Voucher Card -->
+    <ion-card class="voucher-card">
+      <ion-card-header>
+        <ion-card-title>
+          <ion-icon name="pricetag-outline"></ion-icon>
+          Voucher
+        </ion-card-title>
+      </ion-card-header>
+      <ion-card-content>
+        @if (voucherApplied()) {
+          <div class="voucher-applied">
+            <div>
+              <span class="voucher-label">Applied</span>
+              @if (getVoucherSummary()) {
+                <span class="voucher-summary">{{ getVoucherSummary() }}</span>
+              }
+            </div>
+            <span class="voucher-code">
+              <ion-icon name="pricetag-outline"></ion-icon>
+              {{ booking()?.voucher_code }}
+            </span>
+          </div>
+          <ion-button
+            expand="block"
+            fill="outline"
+            color="medium"
+            class="remove-voucher-btn"
+            [disabled]="isRemovingVoucher()"
+            (click)="removeVoucher()"
+          >
+            @if (isRemovingVoucher()) {
+              <ion-spinner name="crescent" slot="start"></ion-spinner>
+              Removing...
+            } @else {
+              <ion-icon name="trash-outline" slot="start"></ion-icon>
+              Remove Voucher
+            }
+          </ion-button>
+        } @else {
+          <ion-item lines="none" class="voucher-input">
+            <ion-label position="stacked">Enter voucher code</ion-label>
+            <ion-input
+              [value]="voucherCode()"
+              (ionInput)="voucherCode.set(($event.detail.value || '').toUpperCase())"
+              placeholder="e.g. AFTER5SAVE"
+              autocapitalize="characters"
+            ></ion-input>
+          </ion-item>
+          <ion-button
+            expand="block"
+            color="primary"
+            [disabled]="isApplyingVoucher() || isRemovingVoucher() || !voucherCode().trim()"
+            (click)="applyVoucher()"
+          >
+            @if (isApplyingVoucher()) {
+              <ion-spinner name="crescent" slot="start"></ion-spinner>
+              Applying...
+            } @else {
+              Apply Voucher
+            }
+          </ion-button>
+        }
+      </ion-card-content>
+    </ion-card>
+
     <!-- Amount Card -->
     <ion-card class="amount-card">
       <ion-card-content>
         <div class="amount-display">
           <span class="amount-label">Total Amount</span>
-          <span class="amount-value">{{ formatPrice(booking()?.grand_total) }}</span>
+          <span class="amount-value">{{ formatPrice(displayTotal()) }}</span>
         </div>
         <div class="booking-info">
           <span class="service-name">{{ getServiceName() }}</span>
@@ -114,9 +179,29 @@
             <span class="price-value">{{ formatPrice(booking()?.total_vat_amount || 0) }}</span>
           </div>
         }
+        @if (booking()?.voucher_amount) {
+          <div class="price-row discount">
+            <span class="price-label">
+              Voucher
+              @if (booking()?.voucher_code) {
+                <span class="voucher-code-inline">({{ booking()?.voucher_code }})</span>
+              }
+              @if (getVoucherSummary()) {
+                <span class="voucher-summary-inline">{{ getVoucherSummary() }}</span>
+              }
+            </span>
+            <span class="price-value">-{{ formatPrice(booking()?.voucher_amount || 0) }}</span>
+          </div>
+        }
+        @if (booking()?.grand_total_before_voucher) {
+          <div class="price-row total before-voucher">
+            <span class="price-label">Original Total</span>
+            <span class="price-value">{{ formatPrice(booking()?.grand_total_before_voucher || 0) }}</span>
+          </div>
+        }
         <div class="price-row total">
-          <span class="price-label">Total</span>
-          <span class="price-value">{{ formatPrice(booking()?.grand_total || 0) }}</span>
+          <span class="price-label">{{ booking()?.voucher_amount ? 'Total After Voucher' : 'Total' }}</span>
+          <span class="price-value">{{ formatPrice(displayTotal()) }}</span>
         </div>
       </ion-card-content>
     </ion-card>
@@ -214,7 +299,7 @@
       } @else if (canPay()) {
         <ion-button expand="block" color="primary" (click)="initiatePayment()">
           <ion-icon name="card-outline" slot="start"></ion-icon>
-          {{ canRetryPayment() ? 'Retry Payment' : 'Pay Now' }} - {{ formatPrice(booking()?.grand_total) }}
+          {{ canRetryPayment() ? 'Retry Payment' : 'Pay Now' }} - {{ formatPrice(displayTotal()) }}
         </ion-button>
       } @else if (hasPendingInvoice()) {
         <div class="footer-buttons">

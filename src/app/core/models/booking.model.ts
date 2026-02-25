@@ -231,6 +231,13 @@ export interface CustomerBooking {
   total_materials_amount: number | null;
   total_vat_amount: number | null;
   grand_total: number | null;
+  grand_total_before_voucher: number | null;
+  grand_total_after_voucher: number | null;
+  voucher_code: string | null;
+  voucher_amount: number | null;
+  voucher_discount_type: 'amount' | 'percent' | null;
+  voucher_percent_off: number | null;
+  voucher_max_discount: number | null;
   platform_fee: number | null;
   provider_earnings: number | null;
   body_camera_fee: number | null;
