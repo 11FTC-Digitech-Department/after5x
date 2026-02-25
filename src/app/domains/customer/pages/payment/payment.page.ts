@@ -304,10 +304,7 @@ export class PaymentPage implements OnInit, OnDestroy {
 
     try {
       // Load booking and payment status in parallel
-      const [booking, status] = await Promise.all([
-        this.bookingService.getBookingById(bookingId),
-        this.paymentService.getPaymentStatus(bookingId)
-      ]);
+      const { booking, status } = await this.fetchPaymentPageData(bookingId);
 
       if (!booking) {
         this.error.set('Booking not found');
@@ -330,6 +327,15 @@ export class PaymentPage implements OnInit, OnDestroy {
     } finally {
       this.isLoading.set(false);
     }
+  }
+
+  private async fetchPaymentPageData(bookingId: string): Promise<{ booking: CustomerBooking | null; status: PaymentStatus }> {
+    const [booking, status] = await Promise.all([
+      this.bookingService.getBookingById(bookingId),
+      this.paymentService.getPaymentStatus(bookingId)
+    ]);
+
+    return { booking, status };
   }
 
   private setupRealTimeSubscription(bookingId: string) {
@@ -482,7 +488,11 @@ export class PaymentPage implements OnInit, OnDestroy {
     try {
       await this.paymentService.redeemVoucher(bookingId, code);
       this.voucherCode.set('');
-      await this.loadData(bookingId);
+      const { booking, status } = await this.fetchPaymentPageData(bookingId);
+      if (booking) {
+        this.booking.set(booking);
+      }
+      this.paymentStatus.set(status);
       await this.showToast('Voucher applied', 'success');
     } catch (err: any) {
       console.error('[Voucher] Redeem failed', {
@@ -503,7 +513,11 @@ export class PaymentPage implements OnInit, OnDestroy {
     this.isRemovingVoucher.set(true);
     try {
       await this.paymentService.removeVoucher(bookingId);
-      await this.loadData(bookingId);
+      const { booking, status } = await this.fetchPaymentPageData(bookingId);
+      if (booking) {
+        this.booking.set(booking);
+      }
+      this.paymentStatus.set(status);
       await this.showToast('Voucher removed', 'success');
     } catch (err: any) {
       console.error('[Voucher] Remove failed', {
