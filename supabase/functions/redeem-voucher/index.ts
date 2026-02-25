@@ -11,6 +11,30 @@ interface RedeemVoucherRequest {
   code: string
 }
 
+function normalizeErrorCode(message: string | undefined): string {
+  const value = (message || '').toUpperCase()
+  if (value.includes('MULTIPLE_REDEMPTION_ATTEMPT')) return 'MULTIPLE_REDEMPTION_ATTEMPT'
+  if (value.includes('VOUCHER_EXPIRED')) return 'VOUCHER_EXPIRED'
+  if (value.includes('USAGE_LIMIT_REACHED')) return 'USAGE_LIMIT_REACHED'
+  if (value.includes('ALREADY_REDEEMED')) return 'ALREADY_REDEEMED'
+  return 'INVALID_VOUCHER'
+}
+
+function getMessageForCode(code: string): string {
+  switch (code) {
+    case 'MULTIPLE_REDEMPTION_ATTEMPT':
+      return 'This voucher can only be used once per account.'
+    case 'VOUCHER_EXPIRED':
+      return 'This voucher has expired and can no longer be used.'
+    case 'USAGE_LIMIT_REACHED':
+      return 'This voucher is no longer available.'
+    case 'ALREADY_REDEEMED':
+      return 'You have already used this voucher.'
+    default:
+      return 'Invalid voucher code.'
+  }
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
@@ -57,7 +81,7 @@ serve(async (req) => {
 
     if (!bookingId || !code) {
       return new Response(
-        JSON.stringify({ error: 'Invalid voucher code', ...(debugEnabled ? { debug: 'missing_booking_or_code' } : {}) }),
+        JSON.stringify({ error: 'Invalid voucher code.', errorCode: 'INVALID_VOUCHER', ...(debugEnabled ? { debug: 'missing_booking_or_code' } : {}) }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
@@ -68,11 +92,16 @@ serve(async (req) => {
     })
 
     if (error || !data || data.length === 0) {
+      const errorCode = normalizeErrorCode(error?.message)
       if (debugEnabled) {
         console.error('[redeem-voucher] RPC error:', error?.message)
       }
       return new Response(
-        JSON.stringify({ error: 'Invalid voucher code', ...(debugEnabled ? { debug: error?.message || 'rpc_failed' } : {}) }),
+        JSON.stringify({
+          error: getMessageForCode(errorCode),
+          errorCode,
+          ...(debugEnabled ? { debug: error?.message || 'rpc_failed' } : {})
+        }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
@@ -84,11 +113,16 @@ serve(async (req) => {
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
   } catch (error: any) {
+    const errorCode = normalizeErrorCode(error?.message)
     if (debugEnabled) {
       console.error('[redeem-voucher] Unexpected error:', error?.message || error)
     }
     return new Response(
-      JSON.stringify({ error: 'Invalid voucher code', ...(debugEnabled ? { debug: error?.message || 'unexpected_error' } : {}) }),
+      JSON.stringify({
+        error: getMessageForCode(errorCode),
+        errorCode,
+        ...(debugEnabled ? { debug: error?.message || 'unexpected_error' } : {})
+      }),
       { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
   }

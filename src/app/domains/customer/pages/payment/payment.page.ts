@@ -48,7 +48,7 @@ import { Browser, BrowserOpenOptions } from '@capacitor/browser';
 import { App } from '@capacitor/app';
 
 import { BookingService } from '@core/services/booking.service';
-import { PaymentService } from '@core/services/payment.service';
+import { PaymentService, VoucherError } from '@core/services/payment.service';
 import { PaymentContextService } from '@core/services/payment-context.service';
 import { CustomerBooking, BookingStatus } from '@core/models/booking.model';
 import { PaymentStatus, InvoiceStatus } from '@core/models/payment.model';
@@ -493,16 +493,39 @@ export class PaymentPage implements OnInit, OnDestroy {
         this.booking.set(booking);
       }
       this.paymentStatus.set(status);
-      await this.showToast('Voucher applied', 'success');
+      await this.showToast('Voucher Applied Successfully. Your voucher has been applied successfully.', 'success');
     } catch (err: any) {
       console.error('[Voucher] Redeem failed', {
         bookingId,
         code,
         message: err?.message ?? err
       });
-      await this.showToast('Invalid voucher code', 'danger');
+      await this.showToast(this.getVoucherErrorMessage(err), 'danger');
     } finally {
       this.isApplyingVoucher.set(false);
+    }
+  }
+
+  private getVoucherErrorMessage(err: any): string {
+    const code = err instanceof VoucherError ? err.code : undefined;
+    switch (code) {
+      case 'MULTIPLE_REDEMPTION_ATTEMPT':
+        return 'This voucher can only be used once per account.';
+      case 'VOUCHER_EXPIRED':
+        return 'This voucher has expired and can no longer be used.';
+      case 'USAGE_LIMIT_REACHED':
+        return 'This voucher is no longer available.';
+      case 'ALREADY_REDEEMED':
+        return 'You have already used this voucher.';
+      case 'NETWORK_ERROR':
+        return 'We are having trouble connecting. Please check your internet connection and try again.';
+      default: {
+        const message = `${err?.message || ''}`.toLowerCase();
+        if (message.includes('failed to fetch') || message.includes('network')) {
+          return 'We are having trouble connecting. Please check your internet connection and try again.';
+        }
+        return 'Invalid voucher code.';
+      }
     }
   }
 

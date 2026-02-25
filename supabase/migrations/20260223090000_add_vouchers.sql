@@ -221,7 +221,7 @@ BEGIN
 
   IF v_booking.voucher_id IS NOT NULL OR v_booking.grand_total_after_voucher IS NOT NULL THEN
     PERFORM public.log_voucher_attempt(v_booking.voucher_id, p_booking_id, auth.uid(), v_booking.voucher_code, 'failed', 'already_redeemed', NULL);
-    RAISE EXCEPTION 'INVALID_VOUCHER';
+    RAISE EXCEPTION 'ALREADY_REDEEMED';
   END IF;
 
   SELECT * INTO v_voucher
@@ -236,7 +236,7 @@ BEGIN
 
   IF v_voucher.status <> 'active' THEN
     PERFORM public.log_voucher_attempt(v_voucher.id, p_booking_id, auth.uid(), v_code, 'failed', 'inactive', v_voucher.status::TEXT);
-    RAISE EXCEPTION 'INVALID_VOUCHER';
+    RAISE EXCEPTION 'USAGE_LIMIT_REACHED';
   END IF;
 
   IF v_voucher.valid_from IS NOT NULL AND v_now < v_voucher.valid_from THEN
@@ -246,7 +246,7 @@ BEGIN
 
   IF v_voucher.valid_to IS NOT NULL AND v_now > v_voucher.valid_to THEN
     PERFORM public.log_voucher_attempt(v_voucher.id, p_booking_id, auth.uid(), v_code, 'failed', 'expired', NULL);
-    RAISE EXCEPTION 'INVALID_VOUCHER';
+    RAISE EXCEPTION 'VOUCHER_EXPIRED';
   END IF;
 
   IF v_voucher.min_grand_total IS NOT NULL AND v_booking_total < v_voucher.min_grand_total THEN
@@ -273,7 +273,7 @@ BEGIN
 
   IF v_voucher.max_redemptions IS NOT NULL AND v_redemption_count >= v_voucher.max_redemptions THEN
     PERFORM public.log_voucher_attempt(v_voucher.id, p_booking_id, auth.uid(), v_code, 'failed', 'max_redemptions_reached', NULL);
-    RAISE EXCEPTION 'INVALID_VOUCHER';
+    RAISE EXCEPTION 'USAGE_LIMIT_REACHED';
   END IF;
 
   SELECT COUNT(*) INTO v_user_redemption_count
@@ -284,7 +284,7 @@ BEGIN
 
   IF v_voucher.per_user_limit IS NOT NULL AND v_user_redemption_count >= v_voucher.per_user_limit THEN
     PERFORM public.log_voucher_attempt(v_voucher.id, p_booking_id, auth.uid(), v_code, 'failed', 'per_user_limit', NULL);
-    RAISE EXCEPTION 'INVALID_VOUCHER';
+    RAISE EXCEPTION 'MULTIPLE_REDEMPTION_ATTEMPT';
   END IF;
 
   IF v_voucher.discount_type = 'percent' THEN

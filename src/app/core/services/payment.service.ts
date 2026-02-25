@@ -10,6 +10,13 @@ import {
 import { RealtimeChannel } from '@supabase/supabase-js';
 import { environment } from '../../../environments/environment';
 
+export class VoucherError extends Error {
+  constructor(message: string, public code: string = 'INVALID_VOUCHER') {
+    super(message);
+    this.name = 'VoucherError';
+  }
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -61,9 +68,13 @@ export class PaymentService {
     });
 
     if (response.error) {
-      const debug = (response.data as any)?.debug;
-      const message = response.error.message || 'Invalid voucher code';
-      throw new Error(debug ? `${message} [debug:${debug}]` : message);
+      const payload = response.data as any;
+      const debug = payload?.debug;
+      const errorCode = payload?.errorCode || (
+        response.error.message?.toLowerCase().includes('failed to fetch') ? 'NETWORK_ERROR' : 'INVALID_VOUCHER'
+      );
+      const message = payload?.error || response.error.message || 'Invalid voucher code.';
+      throw new VoucherError(debug ? `${message} [debug:${debug}]` : message, errorCode);
     }
 
     return response.data as { success: boolean; voucher_code: string; voucher_amount: number; grand_total_before: number; grand_total_after: number; };
