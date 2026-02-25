@@ -40,6 +40,7 @@ serve(async (req) => {
   try {
     // Get environment variables
     const supabaseUrl = Deno.env.get('SUPABASE_URL')
+    const publicBaseUrl = Deno.env.get('PUBLIC_BASE_URL') || supabaseUrl
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
     const xenditSecretKey = Deno.env.get('XENDIT_SECRET_KEY')
     const appUrl = Deno.env.get('APP_URL') || 'http://localhost:8100'
@@ -191,6 +192,21 @@ serve(async (req) => {
     const givenNames = nameParts[0] || 'Customer'
     const surname = nameParts.length > 1 ? nameParts.slice(1).join(' ') : '-'
 
+    const successReturnUrl = `${publicBaseUrl}/functions/v1/payment-redirect?booking=${bookingId}&status=success`
+    const cancelReturnUrl = `${publicBaseUrl}/functions/v1/payment-redirect?booking=${bookingId}&status=failed`
+    const returnUrlDebug = {
+      supabaseUrl,
+      publicBaseUrl,
+      appUrl,
+      successReturnUrl,
+      cancelReturnUrl,
+      publicBaseUrlIsHttps: publicBaseUrl.startsWith('https://'),
+      supabaseUrlIsHttps: supabaseUrl.startsWith('https://'),
+      successReturnUrlIsHttps: successReturnUrl.startsWith('https://'),
+      cancelReturnUrlIsHttps: cancelReturnUrl.startsWith('https://'),
+    }
+    console.log('Xendit return URL debug:', returnUrlDebug)
+
     const xenditPayload: Record<string, any> = {
       reference_id: referenceId,
       session_type: 'PAY',
@@ -203,8 +219,8 @@ serve(async (req) => {
       expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
       description: `Payment for Service Booking #${bookingId.slice(-6).toUpperCase()}`,
       // Use HTTPS redirect URL that will redirect to app deeplink
-      success_return_url: `${supabaseUrl}/functions/v1/payment-redirect?booking=${bookingId}&status=success`,
-      cancel_return_url: `${supabaseUrl}/functions/v1/payment-redirect?booking=${bookingId}&status=failed`,
+      success_return_url: successReturnUrl,
+      cancel_return_url: cancelReturnUrl,
       // Channel codes available for Payment Sessions API
       allowed_payment_channels: [
         'CARDS',        // Visa, Mastercard, JCB
@@ -235,7 +251,7 @@ serve(async (req) => {
 
     if (!xenditResponse.ok) {
       const errorData = await xenditResponse.json()
-      console.error('Xendit API error:', errorData)
+      console.error('Xendit API error:', { errorData, returnUrlDebug })
       return new Response(
         JSON.stringify({ error: 'Failed to create payment invoice', details: errorData }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
