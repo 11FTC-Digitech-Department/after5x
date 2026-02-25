@@ -286,15 +286,26 @@ ion-content {
 
     .promo-description {
       font-size: 14px;
-      margin-bottom: 16px;
+      margin-bottom: 12px;
       opacity: 0.9;
     }
 
-    .promo-btn {
-      --background: white;
-      --color: var(--ion-color-primary);
+    .voucher-box {
+      display: inline-flex;
       align-self: flex-start;
-      font-weight: 600;
+      background: rgba(255, 255, 255, 0.92);
+      color: var(--ion-color-primary);
+      padding: 8px 12px;
+      border-radius: 8px;
+      letter-spacing: 0.04em;
+      font-size: 14px;
+      margin-bottom: 10px;
+    }
+
+    .promo-note {
+      font-size: 12px;
+      margin: 0;
+      opacity: 0.85;
     }
   }
 }
