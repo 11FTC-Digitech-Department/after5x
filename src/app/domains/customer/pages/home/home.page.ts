@@ -25,6 +25,7 @@ import {
 import { AddressService } from '@core/supabase/address.service';
 import { SessionService } from '@core/auth/session';
 import { NotificationService } from '@core/services/notification.service';
+import { SupabaseService } from '@core/supabase/supabase';
 
 interface ServiceCategory {
   id: string;
@@ -42,6 +43,16 @@ interface PopularService {
   image: string;
   /** Category slug for catalog navigation (e.g. aircon, locksmithing, automotive) */
   categorySlug: string;
+}
+
+interface HomeOffer {
+  id: string;
+  title: string;
+  description: string;
+  badge_text: string | null;
+  image_url: string | null;
+  voucher_code: string | null;
+  note: string | null;
 }
 
 @Component({
@@ -78,6 +89,7 @@ export class HomePage implements OnInit {
   private router = inject(Router);
   private sessionService = inject(SessionService);
   private notificationService = inject(NotificationService);
+  private supabaseService = inject(SupabaseService);
 
   // Track if initial data load happened (prevents duplicate loads from effect)
   private dataLoaded = signal(false);
@@ -133,6 +145,8 @@ export class HomePage implements OnInit {
     }
   ];
 
+  offers = signal<HomeOffer[]>([]);
+
   constructor() {
     // Reactive effect: load data when profile becomes available
     // This handles the case where profile loads after ngOnInit
@@ -153,6 +167,8 @@ export class HomePage implements OnInit {
     if (this.sessionService.profile()?.id) {
       await this.loadDefaultAddress();
     }
+
+    await this.loadOffers();
   }
 
   async loadDefaultAddress() {
@@ -176,6 +192,37 @@ export class HomePage implements OnInit {
     } catch (error) {
       console.error('Error loading default address:', error);
       this.currentLocation.set('Select your location');
+    }
+  }
+
+  async loadOffers() {
+    try {
+      const now = new Date();
+      const client = this.supabaseService.client as any;
+      const { data, error } = await client
+        .from('offers')
+        .select('id, title, description, badge_text, image_url, voucher_code, note, sort_order, created_at, starts_at, ends_at')
+        .eq('status', 'active')
+        .in('target_role', ['customer', 'all'])
+        .order('sort_order', { ascending: true })
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error('Failed to load offers:', error);
+        return;
+      }
+
+      const filtered = (data || []).filter((offer: any) => {
+        const startsAt = offer.starts_at ? new Date(offer.starts_at) : null;
+        const endsAt = offer.ends_at ? new Date(offer.ends_at) : null;
+        const started = !startsAt || startsAt <= now;
+        const notEnded = !endsAt || endsAt >= now;
+        return started && notEnded;
+      });
+
+      this.offers.set(filtered as unknown as HomeOffer[]);
+    } catch (err) {
+      console.error('Failed to load offers:', err);
     }
   }
 

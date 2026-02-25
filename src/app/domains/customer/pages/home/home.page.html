@@ -112,20 +112,32 @@
               </ion-label>
             </ion-list-header>
           </ion-list>
-          <ion-card class="promo-card">
-            <img src="assets/splash/main-splash.png" alt="After5 Launch Voucher" class="promo-image" />
-            <ion-card-content class="promo-content">
-              <ion-badge class="promo-badge">Launch Offer</ion-badge>
-              <h4 class="promo-title">PHP 100 Off Your First Booking</h4>
-              <p class="promo-description">
-                Welcome to After5. Use this voucher code at checkout to get PHP 100 off your first booking.
-              </p>
-              <div class="voucher-box">
-                <strong>AFTER5LAUNCH</strong>
-              </div>
-              <p class="promo-note">For new users only. Limited-time promo.</p>
-            </ion-card-content>
-          </ion-card>
+          @if (offers().length > 0) {
+            @for (offer of offers(); track offer.id) {
+              <ion-card class="promo-card">
+                <img [src]="offer.image_url || 'assets/splash/main-splash.png'" alt="Offer Banner" class="promo-image" />
+                <ion-card-content class="promo-content">
+                  <ion-badge class="promo-badge">{{ offer.badge_text || 'Special Offer' }}</ion-badge>
+                  <h4 class="promo-title">{{ offer.title }}</h4>
+                  <p class="promo-description">{{ offer.description }}</p>
+                  @if (offer.voucher_code) {
+                    <div class="voucher-box">
+                      <strong>{{ offer.voucher_code }}</strong>
+                    </div>
+                  }
+                  @if (offer.note) {
+                    <p class="promo-note">{{ offer.note }}</p>
+                  }
+                </ion-card-content>
+              </ion-card>
+            }
+          } @else {
+            <ion-card class="promo-empty-card">
+              <ion-card-content>
+                <p>No active offers right now. Check back soon.</p>
+              </ion-card-content>
+            </ion-card>
+          }
         </div>
       </ion-col>
     </ion-row>
