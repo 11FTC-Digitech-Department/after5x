@@ -1,0 +1,68 @@
+<ion-header>
+  <ion-toolbar>
+    <ion-title>Booking Management</ion-title>
+  </ion-toolbar>
+  <ion-toolbar>
+    <ion-segment [value]="statusFilter()" (ionChange)="onStatusChange($event)" [scrollable]="true">
+      <ion-segment-button value="">All</ion-segment-button>
+      <ion-segment-button value="finding_provider">Finding</ion-segment-button>
+      <ion-segment-button value="confirmed">Confirmed</ion-segment-button>
+      <ion-segment-button value="in_progress">In Progress</ion-segment-button>
+      <ion-segment-button value="paid">Paid</ion-segment-button>
+      <ion-segment-button value="cancelled">Cancelled</ion-segment-button>
+    </ion-segment>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content>
+  <ion-refresher slot="fixed" (ionRefresh)="handleRefresh($event)">
+    <ion-refresher-content></ion-refresher-content>
+  </ion-refresher>
+
+  @if (loading()) {
+    <div class="loading-container">
+      <ion-spinner name="crescent"></ion-spinner>
+    </div>
+  } @else {
+    <p class="result-count">{{ totalCount() }} bookings</p>
+
+    <ion-list>
+      @for (booking of bookings(); track booking.id) {
+        <ion-item>
+          <ion-label>
+            <h2>
+              {{ booking.customer?.full_name || 'Unknown Customer' }}
+              @if (booking.provider?.profile?.full_name) {
+                <span class="arrow">&rarr;</span> {{ booking.provider?.profile?.full_name }}
+              }
+            </h2>
+            <p class="booking-services">
+              @for (item of booking.booking_items || []; track item.variant_name) {
+                <ion-chip size="small">{{ item.variant_name }}</ion-chip>
+              }
+            </p>
+            <p class="booking-meta">
+              <ion-icon name="calendar-outline"></ion-icon>
+              {{ formatDate(booking.scheduled_for) }}
+              &middot;
+              <ion-icon name="cash-outline"></ion-icon>
+              {{ formatCurrency(booking.grand_total || 0) }}
+            </p>
+          </ion-label>
+          <ion-badge slot="end" [color]="getStatusColor(booking.status)">
+            {{ booking.status.replace('_', ' ') }}
+          </ion-badge>
+        </ion-item>
+      } @empty {
+        <div class="empty-state">
+          <ion-icon name="calendar-outline"></ion-icon>
+          <p>No bookings found</p>
+        </div>
+      }
+    </ion-list>
+
+    <ion-infinite-scroll (ionInfinite)="loadMore($event)">
+      <ion-infinite-scroll-content loadingSpinner="crescent"></ion-infinite-scroll-content>
+    </ion-infinite-scroll>
+  }
+</ion-content>

@@ -1,4 +1,5 @@
 import { Component, OnInit, inject, signal } from '@angular/core';
+import { devError } from '../../../../../core/utils/logger';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
@@ -113,7 +114,7 @@ export class ServiceSettingsPage implements OnInit {
         };
       }
     } catch (error) {
-      console.error('Error loading settings:', error);
+      devError('Error loading settings:', error);
       await this.showToast('An unexpected error occurred', 'danger');
     } finally {
       this.isLoading.set(false);
@@ -158,7 +159,7 @@ export class ServiceSettingsPage implements OnInit {
         'success'
       );
     } catch (error) {
-      console.error('Error updating availability:', error);
+      devError('Error updating availability:', error);
       this.isAvailable.set(!this.isAvailable());
       await this.showToast('Failed to update availability', 'danger');
     } finally {
@@ -202,7 +203,7 @@ export class ServiceSettingsPage implements OnInit {
       this.originalValues.serviceRadius = this.serviceRadius();
       await this.showToast('Service radius updated', 'success');
     } catch (error) {
-      console.error('Error updating radius:', error);
+      devError('Error updating radius:', error);
       await this.showToast('Failed to update radius', 'danger');
     } finally {
       this.isSaving.set(false);

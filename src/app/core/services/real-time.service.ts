@@ -2,6 +2,7 @@ import { Injectable, inject, signal, computed } from '@angular/core';
 import { SupabaseService } from '../supabase/supabase';
 import { RealtimeChannel, RealtimePostgresChangesPayload, REALTIME_SUBSCRIBE_STATES } from '@supabase/supabase-js';
 import { BookingCallbacks, BookingTimelineEntry } from '../models/booking.model';
+import { devLog, devError, devWarn } from '../utils/logger';
 
 export type ConnectionState = 'connected' | 'connecting' | 'disconnected' | 'error';
 
@@ -74,12 +75,12 @@ export class RealTimeService {
 
   private log(message: string, ...args: any[]): void {
     if (this._debugMode()) {
-      console.log(`[RealTimeService] ${message}`, ...args);
+      devLog(`[RealTimeService] ${message}`, ...args);
     }
   }
 
   private logError(message: string, ...args: any[]): void {
-    console.error(`[RealTimeService] ${message}`, ...args);
+    devError(`[RealTimeService] ${message}`, ...args);
   }
 
   private handleSubscriptionStatus(
@@ -278,7 +279,7 @@ export class RealTimeService {
 
           // Warn if old record is missing (indicates REPLICA IDENTITY issue)
           if (!payload.old || Object.keys(payload.old).length === 0) {
-            console.warn(
+            devWarn(
               '[RealTimeService] UPDATE event missing old record data. ' +
               'This may indicate REPLICA IDENTITY FULL is not set on the bookings table. ' +
               'Run migration: ALTER TABLE public.bookings REPLICA IDENTITY FULL;'
@@ -594,7 +595,7 @@ export class RealTimeService {
       .insert(gpsLog);
 
     if (error) {
-      console.error('Failed to broadcast provider location:', error);
+      devError('Failed to broadcast provider location:', error);
     }
   }
 

@@ -5,59 +5,145 @@
 </ion-header>
 
 <ion-content>
-  <ion-grid>
-    <ion-row>
-      <ion-col size="12">
-        <h2>Welcome to Admin Panel</h2>
-        <p>Manage users, view analytics, and configure system settings.</p>
-      </ion-col>
-    </ion-row>
+  <ion-refresher slot="fixed" (ionRefresh)="handleRefresh($event)">
+    <ion-refresher-content></ion-refresher-content>
+  </ion-refresher>
 
-    <ion-row>
-      <ion-col size="12" size-md="4">
-        <ion-card>
-          <ion-card-header>
-            <ion-card-title>
-              <ion-icon name="people-outline" slot="start"></ion-icon>
-              Total Users
-            </ion-card-title>
-          </ion-card-header>
-          <ion-card-content>
-            <h3>1,234</h3>
-            <p>+12% from last month</p>
-          </ion-card-content>
-        </ion-card>
-      </ion-col>
+  @if (loading()) {
+    <div class="loading-container">
+      <ion-spinner name="crescent"></ion-spinner>
+      <p>Loading dashboard...</p>
+    </div>
+  } @else if (error()) {
+    <div class="error-container">
+      <ion-icon name="alert-circle-outline" color="danger"></ion-icon>
+      <p>{{ error() }}</p>
+    </div>
+  } @else {
+    <ion-grid>
+      <ion-row>
+        <ion-col size="12">
+          <h2>Overview</h2>
+        </ion-col>
+      </ion-row>
 
-      <ion-col size="12" size-md="4">
-        <ion-card>
-          <ion-card-header>
-            <ion-card-title>
-              <ion-icon name="business-outline" slot="start"></ion-icon>
-              Active Providers
-            </ion-card-title>
-          </ion-card-header>
-          <ion-card-content>
-            <h3>89</h3>
-            <p>+5% from last month</p>
-          </ion-card-content>
-        </ion-card>
-      </ion-col>
+      <ion-row>
+        <ion-col size="6" size-md="4">
+          <ion-card>
+            <ion-card-header>
+              <ion-card-title>
+                <ion-icon name="people-outline"></ion-icon>
+                Users
+              </ion-card-title>
+            </ion-card-header>
+            <ion-card-content>
+              <h3>{{ stats()?.totalUsers | number }}</h3>
+              <p class="stat-detail">{{ stats()?.totalCustomers | number }} customers</p>
+            </ion-card-content>
+          </ion-card>
+        </ion-col>
 
-      <ion-col size="12" size-md="4">
-        <ion-card>
-          <ion-card-header>
-            <ion-card-title>
-              <ion-icon name="stats-chart-outline" slot="start"></ion-icon>
-              Total Bookings
-            </ion-card-title>
-          </ion-card-header>
-          <ion-card-content>
-            <h3>5,678</h3>
-            <p>+18% from last month</p>
-          </ion-card-content>
-        </ion-card>
-      </ion-col>
-    </ion-row>
-  </ion-grid>
+        <ion-col size="6" size-md="4">
+          <ion-card>
+            <ion-card-header>
+              <ion-card-title>
+                <ion-icon name="business-outline"></ion-icon>
+                Providers
+              </ion-card-title>
+            </ion-card-header>
+            <ion-card-content>
+              <h3>{{ stats()?.totalProviders | number }}</h3>
+              @if (stats()?.pendingProviderApplications) {
+                <p class="stat-pending">{{ stats()?.pendingProviderApplications }} pending</p>
+              }
+            </ion-card-content>
+          </ion-card>
+        </ion-col>
+
+        <ion-col size="6" size-md="4">
+          <ion-card>
+            <ion-card-header>
+              <ion-card-title>
+                <ion-icon name="stats-chart-outline"></ion-icon>
+                Bookings
+              </ion-card-title>
+            </ion-card-header>
+            <ion-card-content>
+              <h3>{{ stats()?.totalBookings | number }}</h3>
+              <p class="stat-active">{{ stats()?.activeBookings | number }} active</p>
+            </ion-card-content>
+          </ion-card>
+        </ion-col>
+
+        <ion-col size="6" size-md="4">
+          <ion-card>
+            <ion-card-header>
+              <ion-card-title>
+                <ion-icon name="cash-outline"></ion-icon>
+                Revenue
+              </ion-card-title>
+            </ion-card-header>
+            <ion-card-content>
+              <h3>{{ formatCurrency(financials()?.totalRevenue ?? 0) }}</h3>
+              <p class="stat-detail">from paid bookings</p>
+            </ion-card-content>
+          </ion-card>
+        </ion-col>
+
+        <ion-col size="6" size-md="4">
+          <ion-card>
+            <ion-card-header>
+              <ion-card-title>
+                <ion-icon name="wallet-outline"></ion-icon>
+                Platform Fees
+              </ion-card-title>
+            </ion-card-header>
+            <ion-card-content>
+              <h3>{{ formatCurrency(financials()?.totalPlatformFees ?? 0) }}</h3>
+              <p class="stat-detail">total collected</p>
+            </ion-card-content>
+          </ion-card>
+        </ion-col>
+
+        <ion-col size="6" size-md="4">
+          <ion-card>
+            <ion-card-header>
+              <ion-card-title>
+                <ion-icon name="checkmark-circle-outline"></ion-icon>
+                Provider Payouts
+              </ion-card-title>
+            </ion-card-header>
+            <ion-card-content>
+              <h3>{{ formatCurrency(financials()?.totalProviderEarnings ?? 0) }}</h3>
+              <p class="stat-detail">total earned</p>
+            </ion-card-content>
+          </ion-card>
+        </ion-col>
+      </ion-row>
+
+      @if (financials()?.bookingsByStatus) {
+        <ion-row>
+          <ion-col size="12">
+            <h2>Bookings by Status</h2>
+          </ion-col>
+        </ion-row>
+        <ion-row>
+          <ion-col size="12">
+            <ion-card>
+              <ion-card-content>
+                <div class="status-grid">
+                  @for (entry of financials()?.bookingsByStatus | keyvalue; track entry.key) {
+                    <div class="status-item">
+                      <span class="status-label">{{ entry.key }}</span>
+                      <ion-badge [color]="getStatusColor(entry.key)">{{ entry.value }}</ion-badge>
+                    </div>
+                  }
+                </div>
+              </ion-card-content>
+            </ion-card>
+          </ion-col>
+        </ion-row>
+      }
+    </ion-grid>
+  }
 </ion-content>

@@ -6,6 +6,7 @@ import { GoogleMap } from '@capacitor/google-maps';
 import { environment } from 'src/environments/environment';
 import { GoogleMapsService } from '@core/services/google-maps.service';
 import { GeocodeResult } from '@core/models/address.model';
+import { devLog, devWarn, devError } from '@core/utils/logger';
 
 export interface MapCamera {
   lat: number;
@@ -65,7 +66,7 @@ export class MapComponent implements OnInit, OnDestroy, AfterViewInit {
         await this.mapInstance()?.destroy();
         this.mapInstance.set(null);
       } catch (error) {
-        console.error('Error destroying map:', error);
+        devError('Error destroying map:', error);
       }
     }
   }
@@ -103,7 +104,7 @@ export class MapComponent implements OnInit, OnDestroy, AfterViewInit {
         },
       }));
 
-      console.log('Map initialized with dimensions:', element.getBoundingClientRect());
+      devLog('Map initialized with dimensions:', element.getBoundingClientRect());
       
       // Add initial marker if provided
       const initialMarkerPos = this.initialMarker();
@@ -140,7 +141,7 @@ export class MapComponent implements OnInit, OnDestroy, AfterViewInit {
             this.locationSelected.emit(geocodeResult);
           }
         } catch (error) {
-          console.error('Error reverse geocoding location:', error);
+          devError('Error reverse geocoding location:', error);
         }
 
         // Center the camera on the clicked position
@@ -151,7 +152,7 @@ export class MapComponent implements OnInit, OnDestroy, AfterViewInit {
       });
 
     } catch (error) {
-      console.error('Error initializing map:', error);
+      devError('Error initializing map:', error);
       this.hasError.set(true);
       this.errorMessage.set(error instanceof Error ? error.message : 'Failed to initialize map');
       this.mapReady.emit();
@@ -190,7 +191,7 @@ export class MapComponent implements OnInit, OnDestroy, AfterViewInit {
       // Fallback timeout to prevent infinite wait
       setTimeout(() => {
         observer.disconnect();
-        console.warn('Map element dimension timeout - proceeding anyway');
+        devWarn('Map element dimension timeout - proceeding anyway');
         resolve();
       }, 2000);
     });

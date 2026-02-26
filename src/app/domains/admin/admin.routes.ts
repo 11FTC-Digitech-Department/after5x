@@ -11,6 +11,22 @@ export const ADMIN_ROUTES: Routes = [
         loadComponent: () => import('./pages/dashboard/dashboard.page').then(m => m.DashboardPage),
       },
       {
+        path: 'users',
+        loadComponent: () => import('./pages/users/users.page').then(m => m.UsersPage),
+      },
+      {
+        path: 'providers',
+        loadComponent: () => import('./pages/providers/providers.page').then(m => m.ProvidersPage),
+      },
+      {
+        path: 'bookings',
+        loadComponent: () => import('./pages/bookings/bookings.page').then(m => m.BookingsPage),
+      },
+      {
+        path: 'services',
+        loadComponent: () => import('./pages/services/services.page').then(m => m.ServicesPage),
+      },
+      {
         path: '',
         redirectTo: '/a/dashboard',
         pathMatch: 'full',

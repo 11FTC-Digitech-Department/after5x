@@ -1,4 +1,5 @@
 import { Component, OnInit, signal, inject, ViewChild, AfterViewChecked, ChangeDetectorRef } from '@angular/core';
+import { devWarn, devError } from '../../../../core/utils/logger';
 import { CommonModule } from '@angular/common';
 import { Router, ActivatedRoute } from '@angular/router';
 import {
@@ -161,7 +162,7 @@ export class LoginPage implements OnInit, AfterViewChecked {
       this.isExpertsApp.set(isExperts);
       this.appType.set(isExperts ? 'experts' : 'customer');
     } catch (error) {
-      console.warn('Could not get app info:', error);
+      devWarn('Could not get app info:', error);
       // Fallback to package.json version
       this.appVersion.set('0.0.1');
       this.buildNumber.set('1');
@@ -228,7 +229,7 @@ export class LoginPage implements OnInit, AfterViewChecked {
         await this.showToast(result.error || 'Login failed', 'danger');
       }
     } catch (error) {
-      console.error('Login error:', error);
+      devError('Login error:', error);
       await this.showToast('An unexpected error occurred', 'danger');
     } finally {
       this.isLoginLoading.set(false);
@@ -304,7 +305,7 @@ export class LoginPage implements OnInit, AfterViewChecked {
         }, 100);
       }
     } catch (error) {
-      console.error('Signup error:', error);
+      devError('Signup error:', error);
       await this.showToast('An unexpected error occurred', 'danger');
       // Clear signup flag on error
       setTimeout(() => {
@@ -358,7 +359,7 @@ export class LoginPage implements OnInit, AfterViewChecked {
         await this.showToast(result.error || 'Biometric login failed', 'danger');
       }
     } catch (error) {
-      console.error('Biometric login error:', error);
+      devError('Biometric login error:', error);
       await this.showToast('An unexpected error occurred', 'danger');
     } finally {
       this.isBiometricLoading.set(false);
@@ -386,7 +387,7 @@ export class LoginPage implements OnInit, AfterViewChecked {
       // On success for mobile, the browser opens and auth state change handles the rest
       // On success for web, the page redirects to the OAuth provider
     } catch (error) {
-      console.error(`${provider} login error:`, error);
+      devError(`${provider} login error:`, error);
       await this.showToast('An unexpected error occurred', 'danger');
     } finally {
       loadingSignal.set(false);

@@ -1,4 +1,5 @@
 import { Component, OnInit, OnDestroy, inject, signal, computed, effect } from '@angular/core';
+import { devError } from '../../../../core/utils/logger';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import {
@@ -153,7 +154,7 @@ export class NotificationsPage implements OnInit, OnDestroy {
       const notifications = await this.notificationService.getUserNotifications(100);
       this.notifications.set(notifications as Notification[]);
     } catch (error) {
-      console.error('Failed to load notifications:', error);
+      devError('Failed to load notifications:', error);
       await this.showToast('Failed to load notifications', 'danger');
     } finally {
       this.isLoading.set(false);
@@ -202,7 +203,7 @@ export class NotificationsPage implements OnInit, OnDestroy {
         list.map(n => n.id === notification.id ? { ...n, read: true } : n)
       );
     } catch (error) {
-      console.error('Failed to mark notification as read:', error);
+      devError('Failed to mark notification as read:', error);
     }
   }
 
@@ -224,7 +225,7 @@ export class NotificationsPage implements OnInit, OnDestroy {
 
       await this.showToast('All notifications marked as read', 'success');
     } catch (error) {
-      console.error('Failed to mark all as read:', error);
+      devError('Failed to mark all as read:', error);
       await this.showToast('Failed to mark notifications as read', 'danger');
     }
   }

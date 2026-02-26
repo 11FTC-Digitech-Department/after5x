@@ -1,4 +1,5 @@
 import { Component, inject, signal, OnInit, OnDestroy, effect } from '@angular/core';
+import { devError } from '../../../../core/utils/logger';
 import { ViewWillEnter } from '@ionic/angular';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -183,14 +184,14 @@ export class AddressSelectorPage implements ViewWillEnter, OnInit, OnDestroy {
       ]) as any;
 
       if (result.error) {
-        console.error('Error loading user addresses:', result.error);
+        devError('Error loading user addresses:', result.error);
         this.userAddresses.set([]);
       } else {
         this.userAddresses.set(result.data || []);
       }
       this.hasLoaded.set(true);
     } catch (error) {
-      console.error('Unexpected error loading user addresses:', error);
+      devError('Unexpected error loading user addresses:', error);
       this.userAddresses.set([]);
       this.hasLoaded.set(true);
     } finally {
@@ -265,7 +266,7 @@ export class AddressSelectorPage implements ViewWillEnter, OnInit, OnDestroy {
         this.showMap.set(true);
       }
     } catch (error) {
-      console.error('Error getting current location:', error);
+      devError('Error getting current location:', error);
       this.locationError.set('Failed to get your location. Please try again or select manually.');
     } finally {
       this.isGettingLocation.set(false);
@@ -310,7 +311,7 @@ export class AddressSelectorPage implements ViewWillEnter, OnInit, OnDestroy {
 
       this.searchResults.set(results || []);
     } catch (error) {
-      console.error('Error searching places:', error);
+      devError('Error searching places:', error);
       this.searchResults.set([]);
     } finally {
       this.isSearching.set(false);
@@ -341,7 +342,7 @@ export class AddressSelectorPage implements ViewWillEnter, OnInit, OnDestroy {
         this.locationError.set('Unable to get location details. Please try again.');
       }
     } catch (error) {
-      console.error('Error getting place details:', error);
+      devError('Error getting place details:', error);
       this.locationError.set('Failed to get location details. Please try again.');
     } finally {
       this.isSelectingPlace.set(false);

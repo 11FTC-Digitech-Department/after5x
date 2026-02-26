@@ -1,6 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { SupabaseService } from './supabase';
 import { UserAddress, CreateAddressRequest, UpdateAddressRequest } from '../models/address.model';
+import { devLog } from '../utils/logger';
 import { PostgrestError } from '@supabase/supabase-js';
 
 @Injectable({
@@ -36,7 +37,7 @@ export class AddressService {
         const lng = address.longitude;
         const isValid = this.isValidCoordinate(lat, lng);
 
-        console.log('[AddressService] Mapping address:', {
+        devLog('[AddressService] Mapping address:', {
           id: address.id,
           label: address.label,
           latitude: lat,

@@ -1,4 +1,5 @@
 import { Component, OnInit, inject, signal } from '@angular/core';
+import { devError } from '../../../../../core/utils/logger';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
@@ -100,7 +101,7 @@ export class EditProfilePage implements OnInit {
         };
       }
     } catch (error) {
-      console.error('Error loading profile:', error);
+      devError('Error loading profile:', error);
       await this.showToast('An unexpected error occurred', 'danger');
     } finally {
       this.isLoading.set(false);
@@ -172,7 +173,7 @@ export class EditProfilePage implements OnInit {
 
       await this.showToast('Profile photo updated', 'success');
     } catch (error) {
-      console.error('Error uploading avatar:', error);
+      devError('Error uploading avatar:', error);
       await this.showToast('Failed to upload photo', 'danger');
     } finally {
       this.isUploadingAvatar.set(false);
@@ -193,7 +194,7 @@ export class EditProfilePage implements OnInit {
       this.avatarUrl.set(undefined);
       await this.showToast('Profile photo removed', 'success');
     } catch (error) {
-      console.error('Error removing avatar:', error);
+      devError('Error removing avatar:', error);
       await this.showToast('Failed to remove photo', 'danger');
     } finally {
       this.isUploadingAvatar.set(false);
@@ -227,7 +228,7 @@ export class EditProfilePage implements OnInit {
       await this.showToast('Profile updated successfully', 'success');
       this.goBack();
     } catch (error) {
-      console.error('Error saving profile:', error);
+      devError('Error saving profile:', error);
       await this.showToast('Failed to save profile', 'danger');
     } finally {
       this.isSaving.set(false);

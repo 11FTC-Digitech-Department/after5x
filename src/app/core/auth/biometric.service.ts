@@ -1,6 +1,7 @@
 import { Injectable, inject, signal } from '@angular/core';
 import { NativeBiometric, BiometryType } from 'capacitor-native-biometric';
 import { Platform } from '@ionic/angular';
+import { devLog, devError } from '../utils/logger';
 import { Preferences } from '@capacitor/preferences';
 import { SupabaseService } from '../supabase/supabase';
 import { AUTH_CONFIG } from './auth.config';
@@ -47,7 +48,7 @@ export class BiometricService {
    */
   private async initialize() {
     if (!this.platform.is('capacitor')) {
-      console.log('BiometricService: Not running on Capacitor, biometrics unavailable');
+      devLog('BiometricService: Not running on Capacitor, biometrics unavailable');
       this._isInitialized.set(true);
       return;
     }
@@ -60,12 +61,12 @@ export class BiometricService {
       if (capability.isAvailable) {
         const enabled = await this.getBiometricEnabledSetting();
         this._isBiometricEnabled.set(enabled);
-        console.log('BiometricService: Initialized -', this.getBiometryTypeName(), enabled ? 'enabled' : 'disabled');
+        devLog('BiometricService: Initialized -', this.getBiometryTypeName(), enabled ? 'enabled' : 'disabled');
       } else {
-        console.log('BiometricService: Biometrics not available -', capability.errorMessage);
+        devLog('BiometricService: Biometrics not available -', capability.errorMessage);
       }
     } catch (error) {
-      console.error('BiometricService: Initialization failed:', error);
+      devError('BiometricService: Initialization failed:', error);
     } finally {
       this._isInitialized.set(true);
     }
@@ -87,7 +88,7 @@ export class BiometricService {
         errorMessage: result.errorCode ? `Error code: ${result.errorCode}` : undefined
       };
     } catch (error: any) {
-      console.error('BiometricService: Capability check failed:', error);
+      devError('BiometricService: Capability check failed:', error);
       return {
         isAvailable: false,
         biometryType: BiometryType.NONE,
@@ -128,11 +129,11 @@ export class BiometricService {
       });
 
       this._isBiometricEnabled.set(true);
-      console.log('BiometricService: Biometric enabled successfully');
+      devLog('BiometricService: Biometric enabled successfully');
       return { success: true };
 
     } catch (error: any) {
-      console.error('BiometricService: Enable failed:', error);
+      devError('BiometricService: Enable failed:', error);
       return {
         success: false,
         error: this.getBiometricErrorMessage(error)
@@ -157,11 +158,11 @@ export class BiometricService {
       });
 
       this._isBiometricEnabled.set(false);
-      console.log('BiometricService: Biometric disabled successfully');
+      devLog('BiometricService: Biometric disabled successfully');
       return { success: true };
 
     } catch (error: any) {
-      console.error('BiometricService: Disable failed:', error);
+      devError('BiometricService: Disable failed:', error);
       return { success: false, error: error.message };
     }
   }
@@ -204,7 +205,7 @@ export class BiometricService {
       });
 
       if (error || !data.session) {
-        console.error('BiometricService: Session refresh failed:', error);
+        devError('BiometricService: Session refresh failed:', error);
         // Token is invalid/expired, disable biometric
         await this.disableBiometric();
         return {
@@ -222,11 +223,11 @@ export class BiometricService {
         });
       }
 
-      console.log('BiometricService: Authentication successful');
+      devLog('BiometricService: Authentication successful');
       return { success: true };
 
     } catch (error: any) {
-      console.error('BiometricService: Authentication failed:', error);
+      devError('BiometricService: Authentication failed:', error);
       return {
         success: false,
         error: this.getBiometricErrorMessage(error)

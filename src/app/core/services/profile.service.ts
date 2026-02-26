@@ -1,5 +1,6 @@
 import { Injectable, inject } from '@angular/core';
 import { SupabaseService } from '../supabase/supabase';
+import { devError } from '../utils/logger';
 import { SessionService, UserProfile } from '../auth/session';
 import { Camera, CameraResultType, CameraSource } from '@capacitor/camera';
 
@@ -80,13 +81,13 @@ export class ProfileService {
         .single();
 
       if (error) {
-        console.error('Error fetching extended profile:', error);
+        devError('Error fetching extended profile:', error);
         return { error: error.message };
       }
 
       return { data: data as ExtendedProfile };
     } catch (err: any) {
-      console.error('Unexpected error fetching profile:', err);
+      devError('Unexpected error fetching profile:', err);
       return { error: err.message || 'Failed to fetch profile' };
     }
   }
@@ -109,13 +110,13 @@ export class ProfileService {
         .single();
 
       if (error) {
-        console.error('Error fetching provider profile:', error);
+        devError('Error fetching provider profile:', error);
         return { error: error.message };
       }
 
       return { data: data as ProviderProfile };
     } catch (err: any) {
-      console.error('Unexpected error fetching provider profile:', err);
+      devError('Unexpected error fetching provider profile:', err);
       return { error: err.message || 'Failed to fetch provider profile' };
     }
   }
@@ -137,7 +138,7 @@ export class ProfileService {
         .eq('provider_id', id);
 
       if (error) {
-        console.error('Error fetching provider reviews:', error);
+        devError('Error fetching provider reviews:', error);
         return { error: error.message };
       }
 
@@ -149,7 +150,7 @@ export class ProfileService {
 
       return { data: { rating: Math.round(rating * 10) / 10, totalReviews } };
     } catch (err: any) {
-      console.error('Unexpected error fetching provider rating:', err);
+      devError('Unexpected error fetching provider rating:', err);
       return { error: err.message || 'Failed to fetch provider rating' };
     }
   }
@@ -179,13 +180,13 @@ export class ProfileService {
         if (error.code === '23505' && String(error.message || '').includes('phone_number')) {
           return { error: 'This phone number is already registered to another account.' };
         }
-        console.error('Error updating profile:', error);
+        devError('Error updating profile:', error);
         return { error: error.message };
       }
 
       return { data: data as ExtendedProfile };
     } catch (err: any) {
-      console.error('Unexpected error updating profile:', err);
+      devError('Unexpected error updating profile:', err);
       return { error: err.message || 'Failed to update profile' };
     }
   }
@@ -212,13 +213,13 @@ export class ProfileService {
         .single();
 
       if (error) {
-        console.error('Error updating provider profile:', error);
+        devError('Error updating provider profile:', error);
         return { error: error.message };
       }
 
       return { data: data as ProviderProfile };
     } catch (err: any) {
-      console.error('Unexpected error updating provider profile:', err);
+      devError('Unexpected error updating provider profile:', err);
       return { error: err.message || 'Failed to update provider profile' };
     }
   }
@@ -273,7 +274,7 @@ export class ProfileService {
         });
 
       if (uploadError) {
-        console.error('Error uploading avatar:', uploadError);
+        devError('Error uploading avatar:', uploadError);
         return { error: uploadError.message };
       }
 
@@ -293,7 +294,7 @@ export class ProfileService {
 
       return { data: avatarUrl };
     } catch (err: any) {
-      console.error('Error in pickAndUploadAvatar:', err);
+      devError('Error in pickAndUploadAvatar:', err);
       if (err.message?.includes('User cancelled')) {
         return { error: 'cancelled' };
       }
@@ -318,7 +319,7 @@ export class ProfileService {
         .list(userId);
 
       if (listError) {
-        console.error('Error listing avatar files:', listError);
+        devError('Error listing avatar files:', listError);
       }
 
       // Delete all avatar files for this user
@@ -334,7 +335,7 @@ export class ProfileService {
 
       return {};
     } catch (err: any) {
-      console.error('Error deleting avatar:', err);
+      devError('Error deleting avatar:', err);
       return { error: err.message || 'Failed to delete avatar' };
     }
   }

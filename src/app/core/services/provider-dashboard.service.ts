@@ -1,5 +1,6 @@
 import { Injectable, inject } from '@angular/core';
 import { SupabaseService } from '../supabase/supabase';
+import { devError } from '../utils/logger';
 import { ProviderBooking } from './provider-booking.service';
 import { BookingStatus } from '../models/booking.model';
 
@@ -66,7 +67,7 @@ export class ProviderDashboardService {
       .eq('provider_id', providerId);
 
     if (error) {
-      console.error('Failed to fetch dashboard stats:', error);
+      devError('Failed to fetch dashboard stats:', error);
       return {
         pendingJobsCount: 0,
         activeJobsCount: 0,
@@ -192,7 +193,7 @@ export class ProviderDashboardService {
       .order('scheduled_for', { ascending: true });
 
     if (error) {
-      console.error('Failed to fetch today jobs:', error);
+      devError('Failed to fetch today jobs:', error);
       return [];
     }
 
@@ -240,7 +241,7 @@ export class ProviderDashboardService {
       .order('scheduled_for', { ascending: true });
 
     if (error) {
-      console.error('Failed to fetch upcoming jobs:', error);
+      devError('Failed to fetch upcoming jobs:', error);
       return [];
     }
 
@@ -279,7 +280,7 @@ export class ProviderDashboardService {
       .order('created_at', { ascending: true });
 
     if (error) {
-      console.error('Failed to fetch pending jobs:', error);
+      devError('Failed to fetch pending jobs:', error);
       return [];
     }
 
@@ -322,7 +323,7 @@ export class ProviderDashboardService {
       .order('scheduled_for', { ascending: true });
 
     if (error) {
-      console.error('Failed to fetch calendar jobs:', error);
+      devError('Failed to fetch calendar jobs:', error);
       return [];
     }
 
@@ -454,7 +455,7 @@ export class ProviderDashboardService {
       .eq('id', providerId);
 
     if (error) {
-      console.error('Failed to update provider status:', error);
+      devError('Failed to update provider status:', error);
       throw new Error('Failed to update availability status');
     }
   }

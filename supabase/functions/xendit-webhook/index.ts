@@ -153,7 +153,7 @@ serve(async (req) => {
 
     // Parse webhook payload - could be v3 payment event, v3 session event, or v2 invoice
     const rawWebhook = await req.json()
-    console.log('Received webhook:', JSON.stringify(rawWebhook, null, 2))
+    console.log('Received webhook:', rawWebhook.event || rawWebhook.status || 'unknown', 'id:', rawWebhook.id || rawWebhook.data?.payment_id || 'N/A')
 
     let xenditId: string
     let isPaid: boolean

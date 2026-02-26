@@ -1,4 +1,5 @@
 import { Component, OnInit, OnDestroy, inject, signal } from '@angular/core';
+import { devError } from '../../../../core/utils/logger';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, ActivatedRoute } from '@angular/router';
@@ -125,7 +126,7 @@ export class VerifyOtpPage implements OnInit, OnDestroy {
         }
       }
     } catch (error) {
-      console.error('OTP verification error:', error);
+      devError('OTP verification error:', error);
       await this.showToast('An unexpected error occurred', 'danger');
     } finally {
       this.isVerifying.set(false);
@@ -161,7 +162,7 @@ export class VerifyOtpPage implements OnInit, OnDestroy {
         await this.showToast(result.error || 'Failed to resend code', 'danger');
       }
     } catch (error) {
-      console.error('Resend OTP error:', error);
+      devError('Resend OTP error:', error);
       await this.showToast('An unexpected error occurred', 'danger');
     } finally {
       this.isResending.set(false);

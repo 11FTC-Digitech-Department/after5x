@@ -3,6 +3,7 @@ import { SupabaseService } from '../supabase/supabase';
 import { SessionService } from '../auth/session';
 import { RealTimeService } from './real-time.service';
 import { NotificationChannel, NotificationType, NotificationPayload } from '../models/booking.model';
+import { devLog, devError } from '../utils/logger';
 
 @Injectable({
   providedIn: 'root'
@@ -66,13 +67,13 @@ export class NotificationService {
       const notificationPromises = notifications.map(notification =>
         this.sendNotification(notification, recipients)
       );
-      await Promise.all(notificationPromises.map(p => p.catch(e => console.error('Notification failed:', e))));
+      await Promise.all(notificationPromises.map(p => p.catch(e => devError('Notification failed:', e))));
 
     // Log notification events
     await this.logNotificationEvents(bookingId, type, recipients);
 
     } catch (error) {
-      console.error('Notification failed:', error);
+      devError('Notification failed:', error);
       // Don't throw - notifications shouldn't break the booking flow
     }
   }
@@ -208,7 +209,7 @@ export class NotificationService {
         break;
 
       default:
-        console.error('Unknown notification type:', type);
+        devError('Unknown notification type:', type);
         // Create a fallback notification to prevent null type errors
         notifications.push({
           type: NotificationType.BOOKING_CREATED, // Fallback type
@@ -245,7 +246,7 @@ export class NotificationService {
             break;
         }
       } catch (error) {
-        console.error(`Failed to send ${channel} notification:`, error);
+        devError(`Failed to send ${channel} notification:`, error);
       }
     }
   }
@@ -253,7 +254,7 @@ export class NotificationService {
   private async sendPushNotification(recipients: string[], notification: NotificationPayload): Promise<void> {
     // For now, log the push notification
     // In production, integrate with FCM, OneSignal, or similar service
-    console.log('Sending push notification:', {
+    devLog('Sending push notification:', {
       recipients,
       title: notification.title,
       message: notification.message,
@@ -275,13 +276,13 @@ export class NotificationService {
       .not('phone_number', 'is', null);
 
     if (error || !profiles) {
-      console.error('Failed to get phone numbers:', error);
+      devError('Failed to get phone numbers:', error);
       return;
     }
 
     // For now, log SMS notifications
     // In production, integrate with Twilio, AWS SNS, or similar service
-    console.log('Sending SMS notifications:', {
+    devLog('Sending SMS notifications:', {
       phoneNumbers: profiles.map(p => p.phone_number),
       message: notification.message
     });
@@ -297,13 +298,13 @@ export class NotificationService {
       .in('id', recipients);
 
     if (error || !profiles) {
-      console.error('Failed to get email addresses:', error);
+      devError('Failed to get email addresses:', error);
       return;
     }
 
     // For now, log email notifications
     // In production, integrate with SendGrid, AWS SES, or similar service
-    console.log('Sending email notifications:', {
+    devLog('Sending email notifications:', {
       recipients,
       subject: notification.title,
       message: notification.message,
@@ -331,7 +332,7 @@ export class NotificationService {
       .insert(notificationRecords);
 
     if (error) {
-      console.error('Failed to create in-app notifications:', error);
+      devError('Failed to create in-app notifications:', error);
     }
   }
 
@@ -355,7 +356,7 @@ export class NotificationService {
       .insert(logRecords);
 
     if (error) {
-      console.error('Failed to log notification events:', error);
+      devError('Failed to log notification events:', error);
     }
   }
 
@@ -404,7 +405,7 @@ export class NotificationService {
       .eq('user_id', user.id);
 
     if (error) {
-      console.error('Failed to mark notification as read:', error);
+      devError('Failed to mark notification as read:', error);
     }
   }
 
@@ -422,7 +423,7 @@ export class NotificationService {
       .limit(limit);
 
     if (error) {
-      console.error('Failed to get user notifications:', error);
+      devError('Failed to get user notifications:', error);
       return [];
     }
 

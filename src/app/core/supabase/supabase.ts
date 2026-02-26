@@ -4,6 +4,7 @@ import { Capacitor, CapacitorHttp } from '@capacitor/core';
 import { ConfigService, SupabaseConfig } from '../config/config.service';
 import { Database } from './database.types';
 import { CapacitorStorageAdapter } from '../storage/capacitor-storage.adapter';
+import { devLog, devError } from '../utils/logger';
 
 export interface AuthResult {
   success: boolean;
@@ -50,7 +51,7 @@ export class SupabaseService {
       : undefined;
 
     if (isNgrokUrl) {
-      console.log('SupabaseService: ngrok mode', {
+      devLog('SupabaseService: ngrok mode', {
         url: config.url,
         capacitorPlatform,
         nativeFetchOverride: !!globalOptions,
@@ -414,7 +415,7 @@ export class SupabaseService {
       const { data } = await this._client.auth.getSession();
       return data.session;
     } catch (error) {
-      console.error('Error getting current session:', error);
+      devError('Error getting current session:', error);
       return null;
     }
   }
@@ -425,13 +426,13 @@ export class SupabaseService {
       const { data } = await this._client.auth.getUser();
       return data.user;
     } catch (error) {
-      console.error('Error getting current user:', error);
+      devError('Error getting current user:', error);
       return null;
     }
   }
 
   private handleAuthError(error: any): AuthResult {
-    console.error('Auth error:', error);
+    devError('Auth error:', error);
 
     let errorMessage = 'An unexpected error occurred. Please try again.';
 

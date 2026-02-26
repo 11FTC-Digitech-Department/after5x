@@ -1,4 +1,5 @@
 import { Component, inject } from '@angular/core';
+import { devError } from '../../../../../core/utils/logger';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import {
@@ -65,7 +66,7 @@ export class AboutPage {
     try {
       await Browser.open({ url });
     } catch (error) {
-      console.error('Error opening link:', error);
+      devError('Error opening link:', error);
       window.open(url, '_blank');
     }
   }

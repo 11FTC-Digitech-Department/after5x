@@ -1,6 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { Router } from '@angular/router';
 import { CapacitorStorageAdapter } from '../storage/capacitor-storage.adapter';
+import { devLog, devWarn, devError } from '../utils/logger';
 
 export interface NavigationState {
   returnUrl: string;
@@ -40,9 +41,9 @@ export class AuthFlowService {
       await this.storage.setItem(this.RETURN_URL_KEY, url);
       await this.storage.setItem(this.REDIRECT_REASON_KEY, reason);
       await this.storage.setItem(this.TIMESTAMP_KEY, Date.now().toString());
-      console.log(`AuthFlowService: Preserved navigation state - URL: ${url}, Reason: ${reason}`);
+      devLog(`AuthFlowService: Preserved navigation state - URL: ${url}, Reason: ${reason}`);
     } catch (error) {
-      console.error('AuthFlowService: Failed to preserve navigation state:', error);
+      devError('AuthFlowService: Failed to preserve navigation state:', error);
     }
   }
 
@@ -72,10 +73,10 @@ export class AuthFlowService {
       // Clear stored state after consumption
       await this.clearNavigationState();
 
-      console.log(`AuthFlowService: Consumed navigation state - URL: ${url}, Reason: ${reason}`);
+      devLog(`AuthFlowService: Consumed navigation state - URL: ${url}, Reason: ${reason}`);
       return result;
     } catch (error) {
-      console.error('AuthFlowService: Failed to consume navigation state:', error);
+      devError('AuthFlowService: Failed to consume navigation state:', error);
       return null;
     }
   }
@@ -88,7 +89,7 @@ export class AuthFlowService {
       const url = await this.storage.getItem(this.RETURN_URL_KEY);
       return !!url;
     } catch (error) {
-      console.error('AuthFlowService: Failed to check navigation state:', error);
+      devError('AuthFlowService: Failed to check navigation state:', error);
       return false;
     }
   }
@@ -103,9 +104,9 @@ export class AuthFlowService {
         this.storage.removeItem(this.REDIRECT_REASON_KEY),
         this.storage.removeItem(this.TIMESTAMP_KEY),
       ]);
-      console.log('AuthFlowService: Cleared navigation state');
+      devLog('AuthFlowService: Cleared navigation state');
     } catch (error) {
-      console.error('AuthFlowService: Failed to clear navigation state:', error);
+      devError('AuthFlowService: Failed to clear navigation state:', error);
     }
   }
 
@@ -118,18 +119,18 @@ export class AuthFlowService {
   async navigateAfterAuthentication(userRole?: string, skipIfSignupInProgress?: boolean): Promise<void> {
     // Skip navigation if signup is in progress (flag passed from SessionService)
     if (skipIfSignupInProgress) {
-      console.log('AuthFlowService: Signup in progress - skipping navigation');
+      devLog('AuthFlowService: Signup in progress - skipping navigation');
       return;
     }
 
     const state = await this.consumeNavigationState();
 
     if (state?.url && this.isValidReturnUrl(state.url)) {
-      console.log(`AuthFlowService: Redirecting to preserved URL: ${state.url}`);
+      devLog(`AuthFlowService: Redirecting to preserved URL: ${state.url}`);
       await this.router.navigateByUrl(state.url);
     } else {
       // Fallback to role-based routing
-      console.log('AuthFlowService: No valid preserved URL, using role-based routing');
+      devLog('AuthFlowService: No valid preserved URL, using role-based routing');
       await this.navigateToRoleDefault(userRole);
     }
   }
@@ -154,7 +155,7 @@ export class AuthFlowService {
         defaultRoute = '/c'; // Default to customer
     }
 
-    console.log(`AuthFlowService: Navigating to role default: ${defaultRoute}`);
+    devLog(`AuthFlowService: Navigating to role default: ${defaultRoute}`);
     await this.router.navigate([defaultRoute]);
   }
 
@@ -187,20 +188,20 @@ export class AuthFlowService {
 
       // Only allow same-origin URLs
       if (urlObj.origin !== window.location.origin) {
-        console.warn('AuthFlowService: Rejecting external URL:', url);
+        devWarn('AuthFlowService: Rejecting external URL:', url);
         return false;
       }
 
       // Prevent redirecting to auth routes (would cause loops)
       if (urlObj.pathname.startsWith('/auth/')) {
-        console.warn('AuthFlowService: Rejecting auth route URL:', url);
+        devWarn('AuthFlowService: Rejecting auth route URL:', url);
         return false;
       }
 
       // Basic validation passed
       return true;
     } catch (error) {
-      console.error('AuthFlowService: Invalid URL format:', url, error);
+      devError('AuthFlowService: Invalid URL format:', url, error);
       return false;
     }
   }
@@ -209,7 +210,7 @@ export class AuthFlowService {
    * Handle authentication-required redirects with state preservation.
    */
   async handleAuthRequired(currentUrl: string, reason: AuthRedirectReason = 'authentication_required'): Promise<void> {
-    console.log(`AuthFlowService: Handling auth required - Current URL: ${currentUrl}, Reason: ${reason}`);
+    devLog(`AuthFlowService: Handling auth required - Current URL: ${currentUrl}, Reason: ${reason}`);
 
     // Preserve current state
     await this.preserveNavigationState(currentUrl, reason);

@@ -1,4 +1,5 @@
 import { Component, OnInit, inject, signal } from '@angular/core';
+import { devError } from '../../../../core/utils/logger';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import {
@@ -95,7 +96,7 @@ export class CategoriesPage implements OnInit {
         this.categories.set([]);
       }
     } catch (error) {
-      console.error('Error loading service categories:', error);
+      devError('Error loading service categories:', error);
       this.loadError.set('Failed to load services. Please try again later.');
     } finally {
       this.isLoading.set(false);

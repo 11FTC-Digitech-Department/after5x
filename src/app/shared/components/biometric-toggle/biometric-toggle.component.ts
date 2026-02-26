@@ -1,4 +1,5 @@
 import { Component, inject } from '@angular/core';
+import { devError } from '../../../core/utils/logger';
 import { CommonModule } from '@angular/common';
 import {
   IonItem,
@@ -111,7 +112,7 @@ export class BiometricToggleComponent {
         }
       }
     } catch (error) {
-      console.error('BiometricToggle: Error:', error);
+      devError('BiometricToggle: Error:', error);
       // Revert toggle
       (event.target as HTMLIonToggleElement).checked = !enabled;
       await this.showToast('An error occurred', 'danger');

@@ -1,5 +1,6 @@
 import { bootstrapApplication } from '@angular/platform-browser';
-import { provideAppInitializer, inject, enableProdMode } from '@angular/core';
+import { provideAppInitializer, inject, enableProdMode, ErrorHandler } from '@angular/core';
+import { provideHttpClient, withInterceptors } from '@angular/common/http';
 import { RouteReuseStrategy, provideRouter, withPreloading, PreloadAllModules } from '@angular/router';
 import { IonicRouteStrategy, provideIonicAngular } from '@ionic/angular/standalone';
 
@@ -9,9 +10,12 @@ import { ConfigService } from './app/core/config/config.service';
 import { initializeConfig } from './app/core/config/config.initializer';
 import { SupabaseService } from './app/core/supabase/supabase';
 import { SessionService } from './app/core/auth/session';
+import { GlobalErrorHandler } from './app/core/errors/global-error-handler';
+import { httpErrorInterceptor } from './app/core/errors/http-error.interceptor';
 
 import { defineCustomElements } from '@ionic/pwa-elements/loader';
 import { environment } from './environments/environment';
+import { devLog } from './app/core/utils/logger';
 
 defineCustomElements(window);
 if (environment.production) {
@@ -20,8 +24,10 @@ if (environment.production) {
 
 bootstrapApplication(AppComponent, {
   providers: [
+    { provide: ErrorHandler, useClass: GlobalErrorHandler },
     { provide: RouteReuseStrategy, useClass: IonicRouteStrategy },
     provideIonicAngular(),
+    provideHttpClient(withInterceptors([httpErrorInterceptor])),
     provideRouter(routes, withPreloading(PreloadAllModules)),
     provideAppInitializer(() => {
       const configService = inject(ConfigService);
@@ -39,7 +45,7 @@ bootstrapApplication(AppComponent, {
         waited += checkIntervalMs;
       }
 
-      console.log('Session initialized:', {
+      devLog('Session initialized:', {
         isAuthenticated: sessionService.isAuthenticated(),
         waitedMs: waited
       });

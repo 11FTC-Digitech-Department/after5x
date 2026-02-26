@@ -1,4 +1,5 @@
 import { Component, OnInit, inject, signal, effect } from '@angular/core';
+import { devError } from '../../../../core/utils/logger';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
@@ -158,7 +159,7 @@ export class ProfilePage implements OnInit {
         this.totalReviews.set(ratingResult.data.totalReviews);
       }
     } catch (error) {
-      console.error('Error loading profile:', error);
+      devError('Error loading profile:', error);
       await this.showToast('An unexpected error occurred', 'danger');
     } finally {
       this.isLoading.set(false);
@@ -231,7 +232,7 @@ export class ProfilePage implements OnInit {
 
       await this.showToast('Profile photo updated', 'success');
     } catch (error) {
-      console.error('Error uploading avatar:', error);
+      devError('Error uploading avatar:', error);
       await this.showToast('Failed to upload photo', 'danger');
     } finally {
       this.isUploadingAvatar.set(false);
@@ -279,7 +280,7 @@ export class ProfilePage implements OnInit {
 
       await this.showToast('Profile photo removed', 'success');
     } catch (error) {
-      console.error('Error removing avatar:', error);
+      devError('Error removing avatar:', error);
       await this.showToast('Failed to remove photo', 'danger');
     } finally {
       this.isUploadingAvatar.set(false);
@@ -326,7 +327,7 @@ export class ProfilePage implements OnInit {
     try {
       await this.sessionService.signOut();
     } catch (error) {
-      console.error('Logout failed:', error);
+      devError('Logout failed:', error);
       await this.showToast('Logout failed. Please try again.', 'danger');
     } finally {
       this.isLoggingOut.set(false);

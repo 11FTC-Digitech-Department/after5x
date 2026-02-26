@@ -1,5 +1,6 @@
 import { Injectable, inject } from '@angular/core';
 import { SupabaseService } from '../supabase/supabase';
+import { devError } from '../utils/logger';
 import { ProviderInfo, ProviderMatchCriteria, ProviderWithScore, ProviderAssignmentError } from '../models/booking.model';
 
 @Injectable({
@@ -67,7 +68,7 @@ export class ProviderMatcherService {
       if (error instanceof ProviderAssignmentError) {
         throw error;
       }
-      console.error('Provider matching failed:', error);
+      devError('Provider matching failed:', error);
       return null;
     }
   }
@@ -168,7 +169,7 @@ export class ProviderMatcherService {
         .single();
 
       if (providerError || !provider) {
-        console.error('Failed to get provider:', providerError);
+        devError('Failed to get provider:', providerError);
         return null;
       }
 
@@ -180,7 +181,7 @@ export class ProviderMatcherService {
         .single();
 
       if (profileError) {
-        console.error('Failed to get provider profile:', profileError);
+        devError('Failed to get provider profile:', profileError);
       }
 
       return {
@@ -198,7 +199,7 @@ export class ProviderMatcherService {
         currentStatus: (provider.status || 'offline') as any
       };
     } catch (error) {
-      console.error('Error in getProviderDetails:', error);
+      devError('Error in getProviderDetails:', error);
       return null;
     }
   }

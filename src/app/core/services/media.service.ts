@@ -1,5 +1,6 @@
 import { Injectable, inject } from '@angular/core';
 import { SupabaseService } from '../supabase/supabase';
+import { devError } from '../utils/logger';
 import { SessionService } from '../auth/session';
 import { MediaFile, UploadedMedia, MediaType, MediaContext, MediaUploadError } from '../models/booking.model';
 
@@ -127,7 +128,7 @@ export class MediaService {
       // using a service like Cloudinary, ImageKit, or a server-side function
       return imageUrl;
     } catch (error) {
-      console.error('Thumbnail generation failed:', error);
+      devError('Thumbnail generation failed:', error);
       return undefined;
     }
   }
@@ -168,7 +169,7 @@ export class MediaService {
         .remove(filePaths);
 
     } catch (error) {
-      console.error('Failed to cleanup uploaded files:', error);
+      devError('Failed to cleanup uploaded files:', error);
     }
   }
 
@@ -196,7 +197,7 @@ export class MediaService {
         .from(this.BUCKET_NAME)
         .remove([filePath]);
     } catch (storageError) {
-      console.error('Failed to delete from storage:', storageError);
+      devError('Failed to delete from storage:', storageError);
     }
 
     // Delete record

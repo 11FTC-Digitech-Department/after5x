@@ -186,7 +186,7 @@ serve(async (req) => {
     // Check both cases for header name (some proxies lowercase headers)
     const authHeader = req.headers.get('Authorization') || req.headers.get('authorization')
 
-    console.log('Auth header present:', !!authHeader)
+    // Auth header present check
 
     if (!authHeader) {
       // Log all headers for debugging (without sensitive values)
@@ -213,7 +213,7 @@ serve(async (req) => {
       )
     }
 
-    console.log('User authenticated:', user.id)
+    // User authenticated
 
     // Parse request body
     const { bookingId }: CheckStatusRequest = await req.json()
@@ -335,7 +335,7 @@ serve(async (req) => {
     }
 
     const xenditSession: XenditSessionResponse = await xenditResponse.json()
-    console.log('Xendit session response:', JSON.stringify(xenditSession, null, 2))
+    console.log('Xendit session response:', xenditSession.payment_session_id, 'status:', xenditSession.status)
 
     // If session is COMPLETED and has a payment_request_id, fetch the payment request details
     let paymentRequest: XenditPaymentRequestResponse | null = null

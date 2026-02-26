@@ -1,4 +1,5 @@
 import { Component, OnInit, OnDestroy, inject, signal, effect } from '@angular/core';
+import { devError } from '../../../core/utils/logger';
 import { CommonModule } from '@angular/common';
 import {
   IonTabs,
@@ -98,7 +99,7 @@ export class ProviderTabsPage implements OnInit, OnDestroy {
       const unreadCount = notifications.filter((n: any) => !n.read).length;
       this.unreadNotificationCount.set(unreadCount);
     } catch (error) {
-      console.error('Failed to load notification count:', error);
+      devError('Failed to load notification count:', error);
     }
   }
 
@@ -107,7 +108,7 @@ export class ProviderTabsPage implements OnInit, OnDestroy {
       const count = await this.chatService.refreshTotalUnreadCount();
       this.unreadChatCount.set(count);
     } catch (error) {
-      console.error('Failed to load chat count:', error);
+      devError('Failed to load chat count:', error);
     }
   }
 

@@ -1,5 +1,6 @@
 import { Injectable, inject } from '@angular/core';
 import { SupabaseService } from '../supabase/supabase';
+import { devError } from '../utils/logger';
 import { SessionService } from '../auth/session';
 import { BookingStatusService } from './booking-status.service';
 import { BookingStatus, CustomerBooking, BookingError } from '../models/booking.model';
@@ -228,7 +229,7 @@ export class ProviderBookingService {
       .single();
 
     if (error) {
-      console.error('Failed to fetch booking:', error);
+      devError('Failed to fetch booking:', error);
       return null;
     }
 

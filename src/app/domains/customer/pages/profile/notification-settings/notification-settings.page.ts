@@ -1,6 +1,7 @@
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { devLog, devError } from '../../../../../core/utils/logger';
 import { Router } from '@angular/router';
 import {
   IonContent,
@@ -165,7 +166,7 @@ export class NotificationSettingsPage implements OnInit {
         this.sections.set(updatedSections);
       }
     } catch (error) {
-      console.error('Error loading notification settings:', error);
+      devError('Error loading notification settings:', error);
     } finally {
       this.isLoading.set(false);
     }
@@ -182,7 +183,7 @@ export class NotificationSettingsPage implements OnInit {
 
       if (value) {
         const localSettings = JSON.parse(value);
-        console.log('Migrating local notification settings to server:', localSettings);
+        devLog('Migrating local notification settings to server:', localSettings);
 
         // Update server with local settings
         const success = await this.pushNotificationService.updatePreferences(localSettings);
@@ -190,11 +191,11 @@ export class NotificationSettingsPage implements OnInit {
         if (success) {
           // Remove local settings after successful migration
           await Preferences.remove({ key: this.STORAGE_KEY });
-          console.log('Local notification settings migrated successfully');
+          devLog('Local notification settings migrated successfully');
         }
       }
     } catch (error) {
-      console.error('Error migrating local settings:', error);
+      devError('Error migrating local settings:', error);
     }
 
     this.migrationComplete = true;
@@ -214,7 +215,7 @@ export class NotificationSettingsPage implements OnInit {
         throw new Error('Failed to update preference');
       }
     } catch (error) {
-      console.error('Error saving notification settings:', error);
+      devError('Error saving notification settings:', error);
       await this.showToast('Failed to save setting', 'danger');
       // Revert the change
       setting.enabled = !setting.enabled;

@@ -1,6 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { ToastController, AlertController } from '@ionic/angular/standalone';
 import { Router } from '@angular/router';
+import { devError } from '../utils/logger';
 
 export interface AuthErrorContext {
   provider?: string;
@@ -76,7 +77,7 @@ export class AuthErrorService {
     const message = this.getErrorMessage(errorKey, error);
     const recoveryActions = this.getRecoveryActions(errorKey, context);
 
-    console.error('AuthError:', { error, errorKey, context, message });
+    devError('AuthError:', { error, errorKey, context, message });
 
     if (recoveryActions.length > 0) {
       await this.showErrorAlert(message, recoveryActions);

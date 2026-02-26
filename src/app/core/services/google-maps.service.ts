@@ -1,5 +1,6 @@
 import { Injectable, inject } from '@angular/core';
 import { GoogleMap } from '@capacitor/google-maps';
+import { devError, devWarn } from '../utils/logger';
 import { Geolocation } from '@capacitor/geolocation';
 import { Platform } from '@ionic/angular';
 import { GooglePlaceResult, GeocodeResult } from '../models/address.model';
@@ -22,7 +23,7 @@ export class GoogleMapsService {
   ): Promise<GoogleMap | null> {
     try {
       if (!this.platform.is('capacitor')) {
-        console.warn('Google Maps is only supported in Capacitor apps');
+        devWarn('Google Maps is only supported in Capacitor apps');
         return null;
       }
 
@@ -42,7 +43,7 @@ export class GoogleMapsService {
 
       return newMap;
     } catch (error) {
-      console.error('Error creating map:', error);
+      devError('Error creating map:', error);
       return null;
     }
   }
@@ -56,7 +57,7 @@ export class GoogleMapsService {
         await mapInstance.destroy();
       }
     } catch (error) {
-      console.error('Error destroying map:', error);
+      devError('Error destroying map:', error);
     }
   }
 
@@ -71,7 +72,7 @@ export class GoogleMapsService {
   ): Promise<string | null> {
     try {
       if (!mapInstance) {
-        console.error('Map instance not provided');
+        devError('Map instance not provided');
         return null;
       }
 
@@ -83,7 +84,7 @@ export class GoogleMapsService {
 
       return markerId;
     } catch (error) {
-      console.error('Error adding marker:', error);
+      devError('Error adding marker:', error);
       return null;
     }
   }
@@ -97,7 +98,7 @@ export class GoogleMapsService {
 
       await mapInstance.removeMarker(markerId);
     } catch (error) {
-      console.error('Error removing marker:', error);
+      devError('Error removing marker:', error);
     }
   }
 
@@ -113,7 +114,7 @@ export class GoogleMapsService {
         zoom,
       });
     } catch (error) {
-      console.error('Error moving camera:', error);
+      devError('Error moving camera:', error);
     }
   }
 
@@ -127,7 +128,7 @@ export class GoogleMapsService {
       if (permissions.location === 'denied' || permissions.location === 'prompt') {
         const requestResult = await Geolocation.requestPermissions();
         if (requestResult.location !== 'granted') {
-          console.error('Location permission denied');
+          devError('Location permission denied');
           return null;
         }
       }
@@ -142,7 +143,7 @@ export class GoogleMapsService {
         lng: coordinates.coords.longitude,
       };
     } catch (error) {
-      console.error('Error getting current position:', error);
+      devError('Error getting current position:', error);
       return null;
     }
   }
@@ -171,7 +172,7 @@ export class GoogleMapsService {
 
       return null;
     } catch (error) {
-      console.error('Error reverse geocoding:', error);
+      devError('Error reverse geocoding:', error);
       return null;
     }
   }
@@ -202,7 +203,7 @@ export class GoogleMapsService {
 
       return [];
     } catch (error) {
-      console.error('Error searching places:', error);
+      devError('Error searching places:', error);
       return [];
     }
   }
@@ -213,7 +214,7 @@ export class GoogleMapsService {
   async getPlaceDetails(placeId: string): Promise<GeocodeResult | null> {
     // Check if running in Capacitor (where Google APIs work)
     if (!this.platform.is('capacitor')) {
-      console.warn('Place details API is only available in Capacitor apps due to CORS restrictions');
+      devWarn('Place details API is only available in Capacitor apps due to CORS restrictions');
       // Return mock result for development
       return {
         lat: 14.5995,
@@ -241,7 +242,7 @@ export class GoogleMapsService {
 
       return null;
     } catch (error) {
-      console.error('Error getting place details:', error);
+      devError('Error getting place details:', error);
       return null;
     }
   }

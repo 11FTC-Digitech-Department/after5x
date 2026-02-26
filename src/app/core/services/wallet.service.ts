@@ -1,6 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { SupabaseService } from '../supabase/supabase';
 import { SessionService } from '../auth/session';
+import { devLog, devError, devWarn } from '../utils/logger';
 import {
   WalletBalance,
   WalletTransaction,
@@ -37,7 +38,7 @@ export class WalletService {
     }) as { data: WalletData[] | null; error: any };
 
     if (error) {
-      console.error('Failed to get wallet:', error);
+      devError('Failed to get wallet:', error);
       throw new Error('Failed to retrieve wallet information');
     }
 
@@ -83,7 +84,7 @@ export class WalletService {
     }) as { data: WalletTransactionRow[] | null; error: any };
 
     if (error) {
-      console.error('Failed to get transactions:', error);
+      devError('Failed to get transactions:', error);
       throw new Error('Failed to retrieve transaction history');
     }
 
@@ -109,7 +110,7 @@ export class WalletService {
     const profile = this.sessionService.profile();
 
     if (!profile || profile.role !== 'provider') {
-      console.warn('Cannot subscribe to wallet: user is not a provider');
+      devWarn('Cannot subscribe to wallet: user is not a provider');
       return () => {};
     }
 
@@ -127,12 +128,12 @@ export class WalletService {
           filter: `owner_id=eq.${profile.id}`
         },
         async () => {
-          console.log('[Wallet] Wallet update received');
+          devLog('[Wallet] Wallet update received');
           try {
             const balance = await this.getWalletBalance();
             callback(balance);
           } catch (error) {
-            console.error('[Wallet] Error fetching balance:', error);
+            devError('[Wallet] Error fetching balance:', error);
           }
         }
       )
@@ -146,17 +147,17 @@ export class WalletService {
         async (payload) => {
           // Check if this transaction belongs to the provider's wallet
           const transaction = payload.new as any;
-          console.log('[Wallet] New transaction:', transaction);
+          devLog('[Wallet] New transaction:', transaction);
           try {
             const balance = await this.getWalletBalance();
             callback(balance);
           } catch (error) {
-            console.error('[Wallet] Error fetching balance:', error);
+            devError('[Wallet] Error fetching balance:', error);
           }
         }
       )
       .subscribe((status) => {
-        console.log('[Wallet] Subscription status:', status);
+        devLog('[Wallet] Subscription status:', status);
       });
 
     this.walletChannel = channel;

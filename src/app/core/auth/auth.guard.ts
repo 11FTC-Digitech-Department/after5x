@@ -1,4 +1,5 @@
 import { Injectable, inject } from '@angular/core';
+import { devWarn } from '../utils/logger';
 import { Router } from '@angular/router';
 import { SessionService } from './session';
 import { AuthFlowService } from './auth-flow.service';
@@ -39,7 +40,7 @@ export class AuthGuard {
     }
 
     // If still not authenticated, redirect to login with state preservation
-    console.warn('AuthGuard: Authentication not available, redirecting to login');
+    devWarn('AuthGuard: Authentication not available, redirecting to login');
     const currentUrl = this.router.url;
     await this.authFlowService.handleAuthRequired(currentUrl, 'authentication_required');
     return false;
@@ -69,7 +70,7 @@ export class AuthGuard {
     }
 
     // If still not fully authenticated, redirect to login with state preservation
-    console.warn('AuthGuard: Full authentication not available, redirecting to login');
+    devWarn('AuthGuard: Full authentication not available, redirecting to login');
     const currentUrl = this.router.url;
     await this.authFlowService.handleAuthRequired(currentUrl, 'authentication_required');
     return false;

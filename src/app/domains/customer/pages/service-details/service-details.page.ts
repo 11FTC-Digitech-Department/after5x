@@ -43,6 +43,7 @@ import {
   Review
 } from '@core/services/service.service';
 import { RealTimeService } from '@core/services/real-time.service';
+import { devLog, devError } from '../../../../core/utils/logger';
 
 @Component({
   selector: 'app-service-details',
@@ -228,7 +229,7 @@ export class ServiceDetailsPage implements OnInit, OnDestroy {
         }
       }
     } catch (error) {
-      console.error('Error loading service data:', error);
+      devError('Error loading service data:', error);
       if (requestToken === this.baseRequestToken && !this.serviceData()) {
         this.baseLoadError.set('Unable to load service details.');
       }
@@ -274,7 +275,7 @@ export class ServiceDetailsPage implements OnInit, OnDestroy {
       this.providerServices.set(otherServices || []);
       this.loadedProviderServicesForProviderId.set(providerId);
     } catch (error) {
-      console.error('Error loading provider services:', error);
+      devError('Error loading provider services:', error);
       if (requestToken === this.providerServicesRequestToken) {
         this.providerServices.set([]);
         this.providerServicesError.set('Unable to load other services right now.');
@@ -317,7 +318,7 @@ export class ServiceDetailsPage implements OnInit, OnDestroy {
       this.providerReviews.set(reviews || []);
       this.loadedReviewsForProviderId.set(providerId);
     } catch (error) {
-      console.error('Error loading provider reviews:', error);
+      devError('Error loading provider reviews:', error);
       if (requestToken === this.reviewsRequestToken) {
         this.providerReviews.set([]);
         this.reviewsError.set('Unable to load reviews right now.');
@@ -482,7 +483,7 @@ export class ServiceDetailsPage implements OnInit, OnDestroy {
   }
 
   async addReview(rating: number, comment: string) {
-    console.log('Adding review:', { rating, comment, providerId: this.selectedProvider()?.providerId });
+    devLog('Adding review:', { rating, comment, providerId: this.selectedProvider()?.providerId });
   }
 
   async doRefresh(event: RefresherCustomEvent) {
@@ -503,7 +504,7 @@ export class ServiceDetailsPage implements OnInit, OnDestroy {
 
       await this.loadServiceData(serviceVariantId, { forceRefresh: true });
     } catch (error) {
-      console.error('Error refreshing provider list:', error);
+      devError('Error refreshing provider list:', error);
     } finally {
       event.target.complete();
     }

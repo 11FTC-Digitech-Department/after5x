@@ -1,0 +1,67 @@
+<ion-header>
+  <ion-toolbar>
+    <ion-title>User Management</ion-title>
+  </ion-toolbar>
+  <ion-toolbar>
+    <ion-searchbar
+      placeholder="Search by name or email..."
+      [debounce]="500"
+      (ionInput)="onSearch($event)">
+    </ion-searchbar>
+  </ion-toolbar>
+  <ion-toolbar>
+    <ion-segment [value]="roleFilter()" (ionChange)="onRoleChange($event)">
+      <ion-segment-button value="">All</ion-segment-button>
+      <ion-segment-button value="customer">Customers</ion-segment-button>
+      <ion-segment-button value="provider">Providers</ion-segment-button>
+      <ion-segment-button value="admin">Admins</ion-segment-button>
+    </ion-segment>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content>
+  <ion-refresher slot="fixed" (ionRefresh)="handleRefresh($event)">
+    <ion-refresher-content></ion-refresher-content>
+  </ion-refresher>
+
+  @if (loading()) {
+    <div class="loading-container">
+      <ion-spinner name="crescent"></ion-spinner>
+    </div>
+  } @else {
+    <p class="result-count">{{ totalCount() }} users found</p>
+
+    <ion-list>
+      @for (user of users(); track user.id) {
+        <ion-item>
+          <ion-avatar slot="start">
+            @if (user.avatar_url) {
+              <img [src]="user.avatar_url" [alt]="user.full_name" />
+            } @else {
+              <div class="avatar-placeholder">{{ getInitials(user.full_name) }}</div>
+            }
+          </ion-avatar>
+          <ion-label>
+            <h2>{{ user.full_name || 'No name' }}</h2>
+            <p>{{ user.email }}</p>
+            @if (user.phone_number) {
+              <p>{{ user.phone_number }}</p>
+            }
+          </ion-label>
+          <ion-badge slot="end" [color]="getRoleBadgeColor(user.role)">
+            {{ user.role }}
+          </ion-badge>
+        </ion-item>
+      } @empty {
+        <div class="empty-state">
+          <ion-icon name="person-outline"></ion-icon>
+          <p>No users found</p>
+        </div>
+      }
+    </ion-list>
+
+    <ion-infinite-scroll (ionInfinite)="loadMore($event)">
+      <ion-infinite-scroll-content loadingSpinner="crescent"></ion-infinite-scroll-content>
+    </ion-infinite-scroll>
+  }
+</ion-content>

@@ -1,0 +1,76 @@
+<ion-header>
+  <ion-toolbar>
+    <ion-title>Provider Management</ion-title>
+  </ion-toolbar>
+  <ion-toolbar>
+    <ion-segment [value]="statusFilter()" (ionChange)="onStatusChange($event)">
+      <ion-segment-button value="">All</ion-segment-button>
+      <ion-segment-button value="pending">Pending</ion-segment-button>
+      <ion-segment-button value="verified">Verified</ion-segment-button>
+      <ion-segment-button value="rejected">Rejected</ion-segment-button>
+    </ion-segment>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content>
+  <ion-refresher slot="fixed" (ionRefresh)="handleRefresh($event)">
+    <ion-refresher-content></ion-refresher-content>
+  </ion-refresher>
+
+  @if (loading()) {
+    <div class="loading-container">
+      <ion-spinner name="crescent"></ion-spinner>
+    </div>
+  } @else {
+    <p class="result-count">{{ totalCount() }} providers</p>
+
+    <ion-list>
+      @for (provider of providers(); track provider.id) {
+        <ion-item>
+          <ion-avatar slot="start">
+            @if (provider.profile?.avatar_url) {
+              <img [src]="provider.profile?.avatar_url" [alt]="provider.profile?.full_name" />
+            } @else {
+              <div class="avatar-placeholder">{{ getInitials(provider.profile?.full_name || '') }}</div>
+            }
+          </ion-avatar>
+          <ion-label>
+            <h2>{{ provider.profile?.full_name || 'Unknown' }}</h2>
+            <p>{{ provider.profile?.email }}</p>
+            <p class="provider-stats">
+              <ion-icon name="star-outline"></ion-icon>
+              {{ provider.rating_avg | number:'1.1-1' }} ({{ provider.rating_count }})
+              &middot; {{ provider.years_of_experience }}yr
+              &middot;
+              <ion-badge [color]="getStatusColor(provider.status)" class="inline-badge">{{ provider.status }}</ion-badge>
+            </p>
+          </ion-label>
+          <div slot="end" class="end-slot">
+            <ion-badge [color]="getVerificationColor(provider.verification_status)">
+              {{ provider.verification_status }}
+            </ion-badge>
+            @if (provider.verification_status === 'pending') {
+              <div class="action-buttons">
+                <ion-button size="small" color="success" fill="clear" (click)="updateVerification(provider, 'verified')">
+                  <ion-icon name="checkmark-circle-outline" slot="icon-only"></ion-icon>
+                </ion-button>
+                <ion-button size="small" color="danger" fill="clear" (click)="updateVerification(provider, 'rejected')">
+                  <ion-icon name="close-circle-outline" slot="icon-only"></ion-icon>
+                </ion-button>
+              </div>
+            }
+          </div>
+        </ion-item>
+      } @empty {
+        <div class="empty-state">
+          <ion-icon name="person-outline"></ion-icon>
+          <p>No providers found</p>
+        </div>
+      }
+    </ion-list>
+
+    <ion-infinite-scroll (ionInfinite)="loadMore($event)">
+      <ion-infinite-scroll-content loadingSpinner="crescent"></ion-infinite-scroll-content>
+    </ion-infinite-scroll>
+  }
+</ion-content>

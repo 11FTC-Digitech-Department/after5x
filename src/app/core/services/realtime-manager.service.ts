@@ -1,6 +1,7 @@
 import { Injectable, inject, signal, computed, OnDestroy, effect } from '@angular/core';
 import { RealTimeService, ConnectionState } from './real-time.service';
 import { PollingFallbackService } from './polling-fallback.service';
+import { devLog, devError } from '../utils/logger';
 import { AuthEventsService } from '../auth/auth-events.service';
 import { BookingCallbacks, BookingTimelineEntry } from '../models/booking.model';
 
@@ -94,12 +95,12 @@ export class RealtimeManagerService implements OnDestroy {
 
   private log(message: string, ...args: any[]): void {
     if (this._debugMode()) {
-      console.log(`[RealtimeManager] ${message}`, ...args);
+      devLog(`[RealtimeManager] ${message}`, ...args);
     }
   }
 
   private logError(message: string, ...args: any[]): void {
-    console.error(`[RealtimeManager] ${message}`, ...args);
+    devError(`[RealtimeManager] ${message}`, ...args);
   }
 
   /**

@@ -1,6 +1,7 @@
 import { inject } from '@angular/core';
 import { ActivatedRouteSnapshot, CanActivateFn, Router, UrlTree } from '@angular/router';
 import { SessionService } from '../auth/session';
+import { devWarn } from '../utils/logger';
 
 /**
  * Helper to check role and return appropriate navigation result
@@ -15,7 +16,7 @@ function checkRoleAndProceed(
 
   // Role-based protection (e.g., Provider accessing Customer pages)
   if (requiredRole && userRole !== requiredRole) {
-    console.warn(`authGuard: Role mismatch - required: ${requiredRole}, actual: ${userRole}`);
+    devWarn(`authGuard: Role mismatch - required: ${requiredRole}, actual: ${userRole}`);
     // Redirect to their correct home
     if (userRole === 'customer') return router.createUrlTree(['/c/home']);
     if (userRole === 'provider') return router.createUrlTree(['/p/dashboard']);
@@ -56,10 +57,10 @@ export const authGuard: CanActivateFn = async (route, state) => {
   // Fallback: allow session-only auth if profile load failed
   // This prevents blocking the user if only the profile fetch timed out
   if (sessionService.isAuthenticated()) {
-    console.warn('authGuard: Proceeding with session-only auth (profile not loaded)');
+    devWarn('authGuard: Proceeding with session-only auth (profile not loaded)');
     return checkRoleAndProceed(sessionService, router, route);
   }
 
-  console.warn('authGuard: Not authenticated after wait, redirecting to auth');
+  devWarn('authGuard: Not authenticated after wait, redirecting to auth');
   return router.createUrlTree(['/auth/welcome']);
 };

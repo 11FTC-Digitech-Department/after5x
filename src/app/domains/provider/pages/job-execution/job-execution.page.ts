@@ -56,6 +56,7 @@ import { ProviderBookingService, ProviderBooking } from '@core/services/provider
 import { RealTimeService } from '@core/services/real-time.service';
 import { ChatService } from '@core/services/chat.service';
 import { BookingStatus, BookingTimelineRow } from '@core/models/booking.model';
+import { devLog, devError } from '../../../../core/utils/logger';
 
 // Status display configuration
 const STATUS_CONFIG: Record<string, { label: string; color: string; icon: string; message: string }> = {
@@ -348,7 +349,7 @@ export class JobExecutionPage implements OnInit, OnDestroy {
         this.router.navigate(['/p/schedule']);
       }
     } catch (error) {
-      console.error('Failed to load booking:', error);
+      devError('Failed to load booking:', error);
       await this.showToast('Failed to load job details', 'danger');
     } finally {
       this.isLoading.set(false);
@@ -424,7 +425,7 @@ export class JobExecutionPage implements OnInit, OnDestroy {
       await this.showToast('Job accepted!', 'success');
       await this.loadBooking(booking.id);
     } catch (error) {
-      console.error('Failed to accept job:', error);
+      devError('Failed to accept job:', error);
       await this.showToast('Failed to accept job', 'danger');
     } finally {
       this.isExecutingAction.set(false);
@@ -460,7 +461,7 @@ export class JobExecutionPage implements OnInit, OnDestroy {
               await this.showToast('Job rejected', 'warning');
               this.router.navigate(['/p/schedule']);
             } catch (error) {
-              console.error('Failed to reject job:', error);
+              devError('Failed to reject job:', error);
               await this.showToast('Failed to reject job', 'danger');
             } finally {
               this.isExecutingAction.set(false);
@@ -483,7 +484,7 @@ export class JobExecutionPage implements OnInit, OnDestroy {
       await this.showToast('Travel started. GPS tracking enabled.', 'tertiary');
       await this.loadBooking(booking.id);
     } catch (error) {
-      console.error('Failed to start travel:', error);
+      devError('Failed to start travel:', error);
       await this.showToast('Failed to start travel', 'danger');
     } finally {
       this.isExecutingAction.set(false);
@@ -501,7 +502,7 @@ export class JobExecutionPage implements OnInit, OnDestroy {
       await this.showToast('Marked as arrived', 'success');
       await this.loadBooking(booking.id);
     } catch (error) {
-      console.error('Failed to mark arrived:', error);
+      devError('Failed to mark arrived:', error);
       await this.showToast('Failed to mark arrived', 'danger');
     } finally {
       this.isExecutingAction.set(false);
@@ -518,7 +519,7 @@ export class JobExecutionPage implements OnInit, OnDestroy {
       await this.showToast('Work started', 'secondary');
       await this.loadBooking(booking.id);
     } catch (error) {
-      console.error('Failed to start work:', error);
+      devError('Failed to start work:', error);
       await this.showToast('Failed to start work', 'danger');
     } finally {
       this.isExecutingAction.set(false);
@@ -546,7 +547,7 @@ export class JobExecutionPage implements OnInit, OnDestroy {
               await this.showToast('Work completed! Awaiting payment.', 'success');
               await this.loadBooking(booking.id);
             } catch (error) {
-              console.error('Failed to complete work:', error);
+              devError('Failed to complete work:', error);
               await this.showToast('Failed to complete work', 'danger');
             } finally {
               this.isExecutingAction.set(false);
@@ -589,7 +590,7 @@ export class JobExecutionPage implements OnInit, OnDestroy {
         },
         async (position: Position | null, err?: any) => {
           if (err) {
-            console.error('Location watch error:', err);
+            devError('Location watch error:', err);
             return;
           }
 
@@ -608,15 +609,15 @@ export class JobExecutionPage implements OnInit, OnDestroy {
                 }
               );
             } catch (error) {
-              console.error('Failed to broadcast location:', error);
+              devError('Failed to broadcast location:', error);
             }
           }
         }
       );
 
-      console.log('Location tracking started, watchId:', this.locationWatchId);
+      devLog('Location tracking started, watchId:', this.locationWatchId);
     } catch (error) {
-      console.error('Failed to start location tracking:', error);
+      devError('Failed to start location tracking:', error);
       await this.showToast('Failed to start GPS tracking', 'warning');
     }
   }
@@ -625,9 +626,9 @@ export class JobExecutionPage implements OnInit, OnDestroy {
     if (this.locationWatchId) {
       try {
         await Geolocation.clearWatch({ id: this.locationWatchId });
-        console.log('Location tracking stopped');
+        devLog('Location tracking stopped');
       } catch (error) {
-        console.error('Failed to stop location tracking:', error);
+        devError('Failed to stop location tracking:', error);
       }
       this.locationWatchId = null;
     }
@@ -657,7 +658,7 @@ export class JobExecutionPage implements OnInit, OnDestroy {
       const count = await this.chatService.getUnreadCount(bookingId);
       this.unreadChatCount.set(count);
     } catch (error) {
-      console.error('[JobExecution] Failed to load unread chat count:', error);
+      devError('[JobExecution] Failed to load unread chat count:', error);
     }
   }
 
