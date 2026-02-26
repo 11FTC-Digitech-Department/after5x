@@ -131,14 +131,28 @@ export class SupabaseService {
       responseHeaders.set(key, Array.isArray(value) ? value.join(', ') : String(value));
     }
 
-    const responseBody = typeof response.data === 'string'
-      ? response.data
-      : JSON.stringify(response.data ?? null);
+    const hasNullBodyStatus =
+      (response.status >= 100 && response.status < 200) ||
+      response.status === 204 ||
+      response.status === 205 ||
+      response.status === 304;
 
-    return new Response(responseBody, {
+    const responseInit: ResponseInit = {
       status: response.status,
       headers: responseHeaders,
-    });
+    };
+
+    if (method === 'HEAD' || hasNullBodyStatus) {
+      return new Response(null, responseInit);
+    }
+
+    const responseBody = response.data == null
+      ? null
+      : (typeof response.data === 'string'
+        ? response.data
+        : JSON.stringify(response.data));
+
+    return new Response(responseBody, responseInit);
   }
 
   get client(): SupabaseClient<Database> {
