@@ -24,6 +24,8 @@ import {
 import { SessionService } from '@core/auth/session';
 import { NotificationService } from '@core/services/notification.service';
 import { ChatService } from '@core/services/chat.service';
+import { PromotionStoryService } from '@core/services/promotion-story.service';
+import { PromotionStoryModalComponent } from '@shared/components/promotion-story-modal/promotion-story-modal.component';
 
 @Component({
   selector: 'app-customer-tabs',
@@ -38,14 +40,16 @@ import { ChatService } from '@core/services/chat.service';
     IonLabel,
     IonBadge,
     CommonModule,
-    FormsModule
-  ]
+    FormsModule,
+    PromotionStoryModalComponent,
+  ],
 })
 export class CustomerTabsPage implements OnInit, OnDestroy {
   private sessionService = inject(SessionService);
   private notificationService = inject(NotificationService);
   private chatService = inject(ChatService);
   private toastController = inject(ToastController);
+  private promotionStoryService = inject(PromotionStoryService);
 
   /** Unread count from NotificationService (single source of truth). */
   unreadCount = this.notificationService.unreadCount;
@@ -75,6 +79,9 @@ export class CustomerTabsPage implements OnInit, OnDestroy {
         this.notificationService.refreshUnreadCount();
         this.loadUnreadChatCount();
         this.setupRealTimeSubscription();
+        if (profile.role === 'customer') {
+          this.promotionStoryService.tryShowModal();
+        }
       }
     });
   }
@@ -86,6 +93,9 @@ export class CustomerTabsPage implements OnInit, OnDestroy {
       await this.notificationService.refreshUnreadCount();
       await this.loadUnreadChatCount();
       this.setupRealTimeSubscription();
+      if (profile.role === 'customer') {
+        await this.promotionStoryService.tryShowModal();
+      }
     }
   }
 

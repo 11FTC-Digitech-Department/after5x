@@ -114,19 +114,34 @@
           </ion-list>
           @if (offers().length > 0) {
             @for (offer of offers(); track offer.id) {
-              <ion-card class="promo-card">
-                <img [src]="offer.image_url || 'assets/splash/main-splash.png'" alt="Offer Banner" class="promo-image" />
-                <ion-card-content class="promo-content">
-                  <ion-badge class="promo-badge">{{ offer.badge_text || 'Special Offer' }}</ion-badge>
-                  <h4 class="promo-title">{{ offer.title }}</h4>
-                  <p class="promo-description">{{ offer.description }}</p>
-                  @if (offer.voucher_code) {
-                    <div class="voucher-box">
-                      <strong>{{ offer.voucher_code }}</strong>
+              <ion-card class="promo-card promo-card-voucher">
+                <!-- Top: Gradient section with discount hero -->
+                <div class="promo-card-header">
+                  <div class="promo-header-content">
+                    @if (offer.image_url) {
+                      <img [src]="offer.image_url" alt="Offer" class="promo-header-icon" />
+                    }
+                    <div class="promo-header-text">
+                      @if (offer.discount_label) {
+                        <span class="promo-discount-label">{{ offer.discount_label }}</span>
+                      } @else {
+                        <span class="promo-discount-label">{{ offer.title }}</span>
+                      }
+                      @if (offer.discount_condition) {
+                        <span class="promo-discount-condition">{{ offer.discount_condition }}</span>
+                      }
                     </div>
+                  </div>
+                  <div class="promo-header-waves"></div>
+                </div>
+                <!-- Bottom: White section with description and voucher -->
+                <ion-card-content class="promo-card-body">
+                  <p class="promo-body-description">{{ offer.description }}</p>
+                  @if (offer.voucher_code) {
+                    <div class="voucher-code-btn">{{ offer.voucher_code }}</div>
                   }
                   @if (offer.note) {
-                    <p class="promo-note">{{ offer.note }}</p>
+                    <p class="promo-body-note">{{ offer.note }}</p>
                   }
                 </ion-card-content>
               </ion-card>
