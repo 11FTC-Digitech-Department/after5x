@@ -507,13 +507,13 @@ ion-content {
   }
 }
 
-// Gas Amount Section (Fuel Delivery only) - matches VariantSelector/Towing pattern
+// Gas Amount Section (Fuel Delivery only) - aligned with description ion-item
 .gas-amount-section {
   margin-bottom: 20px;
-  padding-bottom: 16px;
+  padding: 0 16px 16px;
   border-bottom: 1px solid #e9ecef;
 
-  .gas-selector-item {
+  .gas-display-item {
     --padding-start: 0;
     --inner-padding-end: 0;
     --background: transparent;
@@ -526,15 +526,9 @@ ion-content {
       margin-bottom: 4px;
     }
 
-    ion-select {
-      --padding-start: 12px;
-      --padding-end: 12px;
-      --padding-top: 10px;
-      --padding-bottom: 10px;
-      border: 1px solid var(--ion-color-light-shade);
-      border-radius: 8px;
-      width: 100%;
-      max-width: 100%;
+    .gas-amount-value {
+      font-weight: 600;
+      font-size: 16px;
     }
   }
 

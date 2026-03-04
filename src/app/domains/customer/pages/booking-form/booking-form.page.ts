@@ -503,12 +503,6 @@ export class BookingFormPage implements OnInit {
     { value: 'other', label: 'Other', icon: 'construct' }
   ];
 
-  gasAmountOptions = [
-    { value: 500, label: '₱500' },
-    { value: 1000, label: '₱1,000' },
-    { value: 1500, label: '₱1,500' }
-  ];
-
   isFuelDelivery = computed(() => this.selectedService()?.service?.name === 'Fuel Delivery');
 
   // Urgency levels
