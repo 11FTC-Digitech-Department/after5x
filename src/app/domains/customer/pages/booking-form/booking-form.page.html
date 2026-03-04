@@ -176,6 +176,24 @@
                   </div>
                 }
 
+                @if (isFuelDelivery()) {
+                  <div class="gas-amount-section">
+                    <ion-item lines="none" class="gas-selector-item">
+                      <ion-label position="stacked">Gas Amount</ion-label>
+                      <ion-select
+                        formControlName="gasAmountFee"
+                        placeholder="Select Gas Amount"
+                        interface="action-sheet"
+                        [interfaceOptions]="{ header: 'Gas Amount (paid in cash)' }">
+                        @for (option of gasAmountOptions; track option.value) {
+                          <ion-select-option [value]="option.value">{{ option.label }}</ion-select-option>
+                        }
+                      </ion-select>
+                    </ion-item>
+                    <ion-note class="gas-cash-note">This amount will be paid in cash to the provider when the service is completed. It is not added to your online payment.</ion-note>
+                  </div>
+                }
+
                 <ion-list>
                   <ion-item lines="none">
                     <ion-label position="stacked">Description *</ion-label>
@@ -637,6 +655,12 @@
                   <ion-text class="summary-value">{{ bookingForm.get('specialInstructions')?.value }}</ion-text>
                 </div>
               }
+              @if (isFuelDelivery() && bookingForm.get('gasAmountFee')?.value) {
+                <div class="summary-item">
+                  <ion-text class="summary-label">Gas (cash to provider):</ion-text>
+                  <ion-text class="summary-value">₱{{ bookingForm.get('gasAmountFee')?.value | number }} – paid in cash, not in online total</ion-text>
+                </div>
+              }
             </ion-card-content>
           </ion-card>
         </ion-col>
@@ -701,6 +725,9 @@
                 <ion-text class="price-label total-label">Total Amount</ion-text>
                 <ion-text class="price-value total-value">{{ formatPrice(priceBreakdown().total) }}</ion-text>
               </div>
+              @if (isFuelDelivery() && bookingForm.get('gasAmountFee')?.value) {
+                <ion-note class="gas-total-note">+ ₱{{ bookingForm.get('gasAmountFee')?.value | number }} gas paid in cash to provider at completion</ion-note>
+              }
             </ion-card-content>
           </ion-card>
         </ion-col>

@@ -73,6 +73,11 @@
                       <ion-badge color="primary">
                         {{ formatPriceRange(group.priceRange.min, group.priceRange.max) }}
                       </ion-badge>
+                      @if (hasDistinctAfter5Price(group)) {
+                        <ion-badge color="warning">
+                          {{ formatPriceRange(group.priceAfter5Range.min, group.priceAfter5Range.max) }} (after 5PM)
+                        </ion-badge>
+                      }
                       @if (group.hasMultipleVariants) {
                         <ion-badge color="medium" class="variant-count">
                           <ion-icon name="options-outline"></ion-icon>

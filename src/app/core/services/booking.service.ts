@@ -188,6 +188,7 @@ export class BookingService {
         body_camera_fee: variantPricing ? bodyCameraFee : 0,
         commission_rate: variantPricing ? variantPricing.commission_rate : 0,
         commission_amount: variantPricing ? commissionAmount : 0,
+        gas_amount_fee: data.gasAmountFee ?? null,
         created_at: new Date().toISOString()
       };
 

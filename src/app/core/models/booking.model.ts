@@ -40,6 +40,7 @@ export interface BookingSubmissionData {
   };
   mediaFiles: MediaFile[];
   specialInstructions?: string;
+  gasAmountFee?: number; // For Fuel Delivery: amount (PHP) paid in cash to provider
   serviceVariantId?: string; // For pre-selected services
   preSelectedProviderId?: string; // Provider selected from service details page
   bodyCameraRequested?: boolean; // Include variant body_camera_fee when true
@@ -241,6 +242,7 @@ export interface CustomerBooking {
   platform_fee: number | null;
   provider_earnings: number | null;
   body_camera_fee: number | null;
+  gas_amount_fee: number | null;
   provider_assigned_at: string | null;
   started_travel_at: string | null;
   arrived_at: string | null;

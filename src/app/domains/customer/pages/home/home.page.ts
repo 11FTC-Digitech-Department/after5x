@@ -111,7 +111,7 @@ export class HomePage implements OnInit {
     { id: '1', name: 'Locksmithing', slug: 'locksmithing', icon: 'key' },
     { id: '2', name: 'Aircon', slug: 'aircon', icon: 'snow' },
     { id: '3', name: 'Electrical', slug: 'electrical', icon: 'flash' },
-    { id: '4', name: 'Automotive', slug: 'automotive', icon: 'car' },
+    { id: '4', name: 'Roadside Assistance', slug: 'automotive', icon: 'car' },
     { id: '5', name: 'Plumbing', slug: 'plumbing', icon: 'water' }
   ];
 

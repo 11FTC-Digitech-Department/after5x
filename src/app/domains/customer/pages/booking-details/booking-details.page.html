@@ -200,6 +200,13 @@
           <span class="price-label">Total Amount</span>
           <span class="price-value">{{ formatPrice(booking()?.grand_total || 0) }}</span>
         </div>
+        @if (booking()?.gas_amount_fee) {
+          <div class="price-row gas-cash-row">
+            <span class="price-label">Gas (paid in cash to provider)</span>
+            <span class="price-value">{{ formatPrice(booking()!.gas_amount_fee) }}</span>
+          </div>
+          <ion-note class="gas-cash-note">Paid in cash when service is completed. Not included in total.</ion-note>
+        }
       </ion-card-content>
     </ion-card>
 

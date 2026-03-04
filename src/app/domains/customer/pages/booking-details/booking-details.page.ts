@@ -21,6 +21,7 @@ import {
   IonSkeletonText,
   IonRefresher,
   IonRefresherContent,
+  IonNote,
   ToastController,
   AlertController,
   RefresherCustomEvent
@@ -174,10 +175,11 @@ const CHAT_ALLOWED_STATUSES = [
     IonButton,
     IonAvatar,
     IonFooter,
-    IonSpinner,
-    IonSkeletonText,
-    IonRefresher,
-    IonRefresherContent
+  IonSpinner,
+  IonSkeletonText,
+  IonRefresher,
+  IonRefresherContent,
+  IonNote
   ]
 })
 export class BookingDetailsPage implements OnInit, OnDestroy {

@@ -126,6 +126,8 @@ export interface ServiceWithProviders extends ServiceVariant {
     name: string;
     icon_url?: string;
   };
+  /** Min/max from DB (e.g. gas_amount_fee range for Fuel Delivery) when variant has properties.gas_amount_fee */
+  priceRange?: { min: number; max: number };
 }
 
 export interface ProviderService {
@@ -351,6 +353,22 @@ export class ServiceService {
         return null;
       }
 
+      // For Fuel Delivery (gas_amount_fee): fetch sibling variants to compute price range from DB
+      let priceRange: { min: number; max: number } | undefined;
+      if (variantData.properties?.gas_amount_fee != null) {
+        const { data: siblingVariants } = await client
+          .from('service_variants')
+          .select('properties')
+          .eq('service_id', variantData.service_id)
+          .eq('is_active', true);
+        const amounts = (siblingVariants || [])
+          .map((v: any) => v.properties?.gas_amount_fee)
+          .filter((n: unknown) => typeof n === 'number') as number[];
+        if (amounts.length > 0) {
+          priceRange = { min: Math.min(...amounts), max: Math.max(...amounts) };
+        }
+      }
+
       // Get ONLINE/BUSY provider offerings for this service variant
       const { data: offeringsData, error: offeringError } = await client
         .from('provider_offerings')
@@ -382,6 +400,7 @@ export class ServiceService {
             name: variantData.service.service_categories?.name,
             icon_url: variantData.service.service_categories?.icon_url,
           },
+          ...(priceRange && { priceRange }),
         };
         this.setServiceWithProvidersCache(serviceVariantId, result);
         return result;
@@ -425,6 +444,7 @@ export class ServiceService {
           name: variantData.service.service_categories?.name,
           icon_url: variantData.service.service_categories?.icon_url,
         },
+        ...(priceRange && { priceRange }),
       };
       this.setServiceWithProvidersCache(serviceVariantId, result);
       return result;
@@ -729,11 +749,17 @@ export class ServiceService {
           const variants = variantsData || [];
           if (variants.length === 0) return null;
 
-          // Calculate price ranges
-          const prices = variants.map((v: any) => v.price_min);
-          const pricesMax = variants.map((v: any) => v.price_max);
-          const pricesAfter5 = variants.map((v: any) => v.price_after5_min);
-          const pricesAfter5Max = variants.map((v: any) => v.price_after5_max);
+          // For Fuel Delivery (gas_amount_fee in properties), use gas amount for price range
+          const allHaveGasAmount = variants.every((v: any) => v.properties?.gas_amount_fee != null);
+          const priceSrc = allHaveGasAmount
+            ? variants.map((v: any) => Number(v.properties.gas_amount_fee))
+            : variants.map((v: any) => v.price_min);
+          const priceSrcMax = allHaveGasAmount
+            ? variants.map((v: any) => Number(v.properties.gas_amount_fee))
+            : variants.map((v: any) => v.price_max);
+
+          const pricesAfter5 = variants.map((v: any) => v.price_after5_min ?? v.price_min);
+          const pricesAfter5Max = variants.map((v: any) => v.price_after5_max ?? v.price_max);
 
           return {
             service: {
@@ -742,8 +768,8 @@ export class ServiceService {
             } as Service,
             variants: variants as ServiceVariant[],
             priceRange: {
-              min: Math.min(...prices),
-              max: Math.max(...pricesMax)
+              min: Math.min(...priceSrc),
+              max: Math.max(...priceSrcMax)
             },
             priceAfter5Range: {
               min: Math.min(...pricesAfter5),

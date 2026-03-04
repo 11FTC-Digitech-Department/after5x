@@ -203,6 +203,13 @@
           <span class="price-label">{{ booking()?.voucher_amount ? 'Total After Voucher' : 'Total' }}</span>
           <span class="price-value">{{ formatPrice(displayTotal()) }}</span>
         </div>
+        @if (booking()?.gas_amount_fee) {
+          <div class="price-row gas-cash-row">
+            <span class="price-label">Gas (paid in cash to provider)</span>
+            <span class="price-value">{{ formatPrice(booking()!.gas_amount_fee) }}</span>
+          </div>
+          <ion-note class="gas-note">This amount is paid in cash when the service is completed. It is not included in the total above.</ion-note>
+        }
       </ion-card-content>
     </ion-card>
 

@@ -117,6 +117,10 @@ export class ServiceDetailsPage implements OnInit, OnDestroy {
   servicePrice = computed(() => {
     const data = this.serviceData();
     if (!data) return '';
+    if (data.priceRange) {
+      const { min, max } = data.priceRange;
+      return min === max ? `₱${min.toLocaleString()}` : `₱${min.toLocaleString()} - ₱${max.toLocaleString()}`;
+    }
     return `₱${data.price_min} - ₱${data.price_max}`;
   });
 

@@ -220,6 +220,20 @@
       </ion-card>
     }
 
+    @if (booking()?.gas_amount_fee) {
+      <ion-card class="cash-collect-card">
+        <ion-card-content>
+          <div class="cash-collect-content">
+            <ion-icon name="wallet-outline" color="warning"></ion-icon>
+            <div class="cash-collect-text">
+              <span class="cash-collect-label">Cash collect from customer</span>
+              <span class="cash-collect-value">{{ formatPrice(booking()!.gas_amount_fee) }}</span>
+            </div>
+          </div>
+        </ion-card-content>
+      </ion-card>
+    }
+
     <!-- Price Card (total only) -->
     <ion-card class="price-card">
       <ion-card-content>

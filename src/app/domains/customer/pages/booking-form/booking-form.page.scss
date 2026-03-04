@@ -507,6 +507,45 @@ ion-content {
   }
 }
 
+// Gas Amount Section (Fuel Delivery only) - matches VariantSelector/Towing pattern
+.gas-amount-section {
+  margin-bottom: 20px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #e9ecef;
+
+  .gas-selector-item {
+    --padding-start: 0;
+    --inner-padding-end: 0;
+    --background: transparent;
+    margin-bottom: 8px;
+
+    ion-label {
+      font-weight: 600;
+      font-size: 14px;
+      color: var(--ion-color-medium-shade);
+      margin-bottom: 4px;
+    }
+
+    ion-select {
+      --padding-start: 12px;
+      --padding-end: 12px;
+      --padding-top: 10px;
+      --padding-bottom: 10px;
+      border: 1px solid var(--ion-color-light-shade);
+      border-radius: 8px;
+      width: 100%;
+      max-width: 100%;
+    }
+  }
+
+  .gas-cash-note {
+    display: block;
+    font-size: 12px;
+    color: var(--ion-color-medium);
+    margin-top: 8px;
+  }
+}
+
 // Description Chips Section
 .description-chips-section {
   .chips-label {
@@ -1354,6 +1393,13 @@ ion-content {
   height: 1px;
   background: #e9ecef;
   margin: 8px 0;
+}
+
+.gas-total-note {
+  display: block;
+  font-size: 13px;
+  color: var(--ion-color-medium);
+  margin-top: 8px;
 }
 
 // Badge Animations
