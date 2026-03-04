@@ -23,6 +23,7 @@ import {
   IonItem,
   IonLabel,
   IonInput,
+  IonNote,
   ToastController,
   AlertController,
   RefresherCustomEvent
@@ -114,10 +115,11 @@ const PAYMENT_STATUS_CONFIG: Record<InvoiceStatus | 'NONE', { label: string; col
     IonSkeletonText,
     IonRefresher,
     IonRefresherContent,
-    IonItem,
-    IonLabel,
-    IonInput,
-    PaymentSuccessModalComponent
+  IonItem,
+  IonLabel,
+  IonInput,
+  IonNote,
+  PaymentSuccessModalComponent
   ]
 })
 export class PaymentPage implements OnInit, OnDestroy {

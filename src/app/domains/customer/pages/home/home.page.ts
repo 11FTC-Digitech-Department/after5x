@@ -54,6 +54,8 @@ interface HomeOffer {
   image_url: string | null;
   voucher_code: string | null;
   note: string | null;
+  discount_label: string | null;
+  discount_condition: string | null;
 }
 
 @Component({
@@ -109,7 +111,7 @@ export class HomePage implements OnInit {
     { id: '1', name: 'Locksmithing', slug: 'locksmithing', icon: 'key' },
     { id: '2', name: 'Aircon', slug: 'aircon', icon: 'snow' },
     { id: '3', name: 'Electrical', slug: 'electrical', icon: 'flash' },
-    { id: '4', name: 'Automotive', slug: 'automotive', icon: 'car' },
+    { id: '4', name: 'Roadside Assistance', slug: 'automotive', icon: 'car' },
     { id: '5', name: 'Plumbing', slug: 'plumbing', icon: 'water' }
   ];
 
@@ -202,7 +204,7 @@ export class HomePage implements OnInit {
       const client = this.supabaseService.client as any;
       const { data, error } = await client
         .from('offers')
-        .select('id, title, description, badge_text, image_url, voucher_code, note, sort_order, created_at, starts_at, ends_at')
+        .select('id, title, description, badge_text, image_url, voucher_code, note, discount_label, discount_condition, sort_order, created_at, starts_at, ends_at')
         .eq('status', 'active')
         .in('target_role', ['customer', 'all'])
         .order('sort_order', { ascending: true })

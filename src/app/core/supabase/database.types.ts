@@ -660,6 +660,7 @@ export type Database = {
           body_camera_fee: number | null
           commission_rate: number | null
           commission_amount: number | null
+          gas_amount_fee: number | null
           updated_at: string | null
         }
         Insert: {
@@ -701,6 +702,7 @@ export type Database = {
           body_camera_fee?: number | null
           commission_rate?: number | null
           commission_amount?: number | null
+          gas_amount_fee?: number | null
           updated_at?: string | null
         }
         Update: {
@@ -742,6 +744,7 @@ export type Database = {
           body_camera_fee?: number | null
           commission_rate?: number | null
           commission_amount?: number | null
+          gas_amount_fee?: number | null
           updated_at?: string | null
         }
         Relationships: [

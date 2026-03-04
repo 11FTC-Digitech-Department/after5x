@@ -449,6 +449,38 @@ ion-card {
   }
 }
 
+// Cash collect card (gas amount for Fuel Delivery)
+.cash-collect-card {
+  --background: var(--ion-color-warning-tint);
+
+  .cash-collect-content {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .cash-collect-text {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .cash-collect-label {
+    font-size: 13px;
+    color: var(--ion-color-medium-shade);
+  }
+
+  .cash-collect-value {
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--ion-color-warning-shade);
+  }
+
+  ion-icon {
+    font-size: 28px;
+  }
+}
+
 // Price card
 .price-card {
   .price-row {

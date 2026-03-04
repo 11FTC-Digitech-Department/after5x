@@ -33,7 +33,7 @@ const CATEGORY_DESCRIPTIONS: Record<string, string> = {
   locksmithing: 'Emergency and scheduled locksmith services for homes, offices, and vehicles.',
   aircon: 'Air conditioning installation, cleaning, and repair to keep your space comfortable.',
   electrical: 'Safe and reliable electrical troubleshooting, installation, and maintenance.',
-  automotive: 'On-demand automotive assistance including jumpstart, towing, and basic repairs.',
+  automotive: 'On-demand roadside assistance including jumpstart, towing, fuel delivery, and basic repairs.',
   plumbing: 'Leak repairs, pipe installation, and full-service plumbing solutions.',
 };
 

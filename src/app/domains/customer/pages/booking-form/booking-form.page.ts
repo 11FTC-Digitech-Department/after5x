@@ -161,6 +161,7 @@ export class BookingFormPage implements OnInit {
   // Reactive signals for pricing (so priceBreakdown computed re-runs when form changes)
   currentTimeslot = signal<string>('');
   bodyCameraRequestedSignal = signal<boolean>(false);
+  gasAmountFeeSignal = signal<number | null>(null);
 
   // Reactive date signal for timeslot availability
   selectedDate = signal<string>('');
@@ -457,6 +458,14 @@ export class BookingFormPage implements OnInit {
     const service = this.selectedService();
     if (!service) return '';
 
+    // Fuel Delivery: use selected gas amount (reactive to form changes)
+    if (this.isFuelDelivery()) {
+      const gas = this.gasAmountFeeSignal() ?? this.bookingForm?.get('gasAmountFee')?.value ?? service.properties?.['gas_amount_fee'];
+      if (typeof gas === 'number') {
+        return this.formatPrice(gas);
+      }
+    }
+
     const minPrice = service.price_min;
     const maxPrice = service.price_max;
 
@@ -489,10 +498,12 @@ export class BookingFormPage implements OnInit {
     { value: 'locksmithing', label: 'Locksmithing', icon: 'key' },
     { value: 'aircon', label: 'Air Conditioning', icon: 'snow' },
     { value: 'electrical', label: 'Electrical', icon: 'flash' },
-    { value: 'automotive', label: 'Automotive', icon: 'car' },
+    { value: 'automotive', label: 'Roadside Assistance', icon: 'car' },
     { value: 'plumbing', label: 'Plumbing', icon: 'water' },
     { value: 'other', label: 'Other', icon: 'construct' }
   ];
+
+  isFuelDelivery = computed(() => this.selectedService()?.service?.name === 'Fuel Delivery');
 
   // Urgency levels
   urgencyLevels = [
@@ -753,11 +764,18 @@ export class BookingFormPage implements OnInit {
     // Update current service type signal
     this.currentServiceType.set(mappedServiceType);
 
-    // Pre-populate form with service data
+    // Pre-populate form with service data; set gas from variant properties when Fuel Delivery
+    const gasFromVariant = serviceData.service?.name === 'Fuel Delivery'
+      ? (serviceData.properties?.['gas_amount_fee'] ?? null)
+      : null;
     this.bookingForm.patchValue({
       serviceType: mappedServiceType,
-      description: `Service requested: ${serviceData.name}\n\n${serviceData.description || ''}`
+      description: `Service requested: ${serviceData.name}\n\n${serviceData.description || ''}`,
+      gasAmountFee: gasFromVariant
     });
+    if (gasFromVariant != null && typeof gasFromVariant === 'number') {
+      this.gasAmountFeeSignal.set(gasFromVariant);
+    }
   }
 
   private initializeForm() {
@@ -776,7 +794,8 @@ export class BookingFormPage implements OnInit {
       latitude: [null],
       longitude: [null],
       specialInstructions: [''],
-      bodyCameraRequested: [false]
+      bodyCameraRequested: [false],
+      gasAmountFee: [null as number | null]
     });
 
     // Track form validity as a signal so canProceedToReview reacts to form changes
@@ -805,6 +824,21 @@ export class BookingFormPage implements OnInit {
     });
     this.bookingForm.get('bodyCameraRequested')?.valueChanges.subscribe(value => {
       this.bodyCameraRequestedSignal.set(value === true);
+    });
+
+    // Fuel Delivery: when gas amount changes, update description and price display
+    this.bookingForm.get('gasAmountFee')?.valueChanges.subscribe(amount => {
+      this.gasAmountFeeSignal.set(amount ?? null);
+      if (this.isFuelDelivery() && amount != null) {
+        const descCtrl = this.bookingForm.get('description');
+        const current = descCtrl?.value || '';
+        const tail = current.replace(/^Service requested: .+?\n\n?/s, '').trim();
+        const baseDesc = this.selectedService()?.description || '';
+        descCtrl?.patchValue(
+          `Service requested: ₱${Number(amount).toLocaleString()} gas\n\n${tail || baseDesc}`,
+          { emitEvent: false }
+        );
+      }
     });
 
     // Listen to date changes to update selectedDate signal and adjust timeslot if needed
@@ -1072,6 +1106,9 @@ export class BookingFormPage implements OnInit {
         },
         mediaFiles: this.mediaFiles(),
         specialInstructions: formValue.specialInstructions,
+        gasAmountFee: this.isFuelDelivery()
+          ? (formValue.gasAmountFee ?? this.selectedService()?.properties?.['gas_amount_fee'] ?? undefined)
+          : undefined,
         serviceVariantId: this.selectedService()?.id,
         preSelectedProviderId: providerIdFromSelectionContext,
         bodyCameraRequested: formValue.bodyCameraRequested === true

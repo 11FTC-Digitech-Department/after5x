@@ -1,0 +1,42 @@
+@if (isOpen() && offers().length > 0) {
+  <div class="story-overlay">
+    <!-- Top bar: progress segments + close -->
+    <div class="story-header">
+      <div class="story-progress">
+        @for (seg of progressSegments(); track seg.index) {
+          <button
+            type="button"
+            class="progress-segment"
+            [class.filled]="seg.filled"
+            [class.active]="seg.active"
+            (click)="onProgressClick(seg.index)"
+          ></button>
+        }
+      </div>
+      <button type="button" class="close-btn" (click)="onClose()" aria-label="Close">
+        <ion-icon name="close"></ion-icon>
+      </button>
+    </div>
+
+    <!-- Slides -->
+    <div
+      class="story-content"
+      (click)="onContentClick($event)"
+    >
+      <div
+        class="slides-track"
+        [style.transform]="'translateX(-' + currentIndex() * 100 + '%)'"
+      >
+        @for (offer of offers(); track offer.id) {
+          <div class="story-slide">
+            <img
+              [src]="offer.image_url"
+              [alt]="offer.title"
+              class="story-image"
+            />
+          </div>
+        }
+      </div>
+    </div>
+  </div>
+}

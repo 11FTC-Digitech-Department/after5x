@@ -176,6 +176,16 @@
                   </div>
                 }
 
+                @if (isFuelDelivery() && bookingForm.get('gasAmountFee')?.value) {
+                  <div class="gas-amount-section">
+                    <ion-item lines="none" class="gas-display-item">
+                      <ion-label position="stacked">Gas Amount</ion-label>
+                      <ion-note class="gas-amount-value">₱{{ bookingForm.get('gasAmountFee')?.value | number }}</ion-note>
+                    </ion-item>
+                    <ion-note class="gas-cash-note">Paid in cash.</ion-note>
+                  </div>
+                }
+
                 <ion-list>
                   <ion-item lines="none">
                     <ion-label position="stacked">Description *</ion-label>
@@ -637,6 +647,12 @@
                   <ion-text class="summary-value">{{ bookingForm.get('specialInstructions')?.value }}</ion-text>
                 </div>
               }
+              @if (isFuelDelivery() && bookingForm.get('gasAmountFee')?.value) {
+                <div class="summary-item">
+                  <ion-text class="summary-label">Gas:</ion-text>
+                  <ion-text class="summary-value">₱{{ bookingForm.get('gasAmountFee')?.value | number }} — Paid in cash.</ion-text>
+                </div>
+              }
             </ion-card-content>
           </ion-card>
         </ion-col>
@@ -701,6 +717,9 @@
                 <ion-text class="price-label total-label">Total Amount</ion-text>
                 <ion-text class="price-value total-value">{{ formatPrice(priceBreakdown().total) }}</ion-text>
               </div>
+              @if (isFuelDelivery() && bookingForm.get('gasAmountFee')?.value) {
+                <ion-note class="gas-total-note">+ ₱{{ bookingForm.get('gasAmountFee')?.value | number }} gas — Paid in cash.</ion-note>
+              }
             </ion-card-content>
           </ion-card>
         </ion-col>

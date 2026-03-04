@@ -60,16 +60,16 @@ export interface VariantSelectionResult {
       @if (selectedVariant()) {
         <div class="price-display">
           <div class="price-row">
-            <span class="price-label">Standard Price:</span>
+            <span class="price-label">{{ getPriceLabel() }}:</span>
             <ion-badge color="primary">
-              {{ formatPrice(selectedVariant()!.price_min, selectedVariant()!.price_max) }}
+              {{ formatPrice(getDisplayMin(), getDisplayMax()) }}
             </ion-badge>
           </div>
-          @if (showAfter5Pricing) {
+          @if (showAfter5Pricing && hasDistinctAfter5Price()) {
             <div class="price-row after5">
               <span class="price-label">After 5PM Price:</span>
               <ion-badge color="warning">
-                {{ formatPrice(selectedVariant()!.price_after5_min, selectedVariant()!.price_after5_max) }}
+                {{ formatPrice(getAfter5Min(), getAfter5Max()) }}
               </ion-badge>
             </div>
           }
@@ -270,6 +270,50 @@ export class VariantSelectorComponent {
       return `₱${min.toLocaleString()}`;
     }
     return `₱${min.toLocaleString()} - ₱${max.toLocaleString()}`;
+  }
+
+  getDisplayMin(): number {
+    const v = this.selectedVariant()!;
+    const gas = v.properties?.['gas_amount_fee'];
+    if (typeof gas === 'number') return gas;
+    return v.price_min;
+  }
+
+  getDisplayMax(): number {
+    const v = this.selectedVariant()!;
+    const gas = v.properties?.['gas_amount_fee'];
+    if (typeof gas === 'number') return gas;
+    return v.price_max;
+  }
+
+  getPriceLabel(): string {
+    const v = this.selectedVariant();
+    if (v?.properties?.['gas_amount_fee'] != null) return 'Price';
+    return 'Standard Price';
+  }
+
+  getAfter5Min(): number {
+    const v = this.selectedVariant()!;
+    const gas = v.properties?.['gas_amount_fee'];
+    if (typeof gas === 'number') return gas;
+    return v.price_after5_min ?? v.price_min;
+  }
+
+  getAfter5Max(): number {
+    const v = this.selectedVariant()!;
+    const gas = v.properties?.['gas_amount_fee'];
+    if (typeof gas === 'number') return gas;
+    return v.price_after5_max ?? v.price_max;
+  }
+
+  hasDistinctAfter5Price(): boolean {
+    const v = this.selectedVariant();
+    if (!v) return false;
+    const stdMin = v.price_min;
+    const stdMax = v.price_max;
+    const after5Min = v.price_after5_min ?? v.price_min;
+    const after5Max = v.price_after5_max ?? v.price_max;
+    return after5Min !== stdMin || after5Max !== stdMax;
   }
 
   reset() {

@@ -183,4 +183,12 @@ export class CatalogPage implements OnInit {
   getGroupVariants(group: ServiceGroup): ServiceVariant[] {
     return group.variants;
   }
+
+  hasDistinctAfter5Price(group: ServiceGroup): boolean {
+    // Omit after 5PM badge for Fuel Delivery (gas_amount_fee) - same price both tiers
+    const allHaveGasAmount = group.variants.every(v => v.properties?.['gas_amount_fee'] != null);
+    if (allHaveGasAmount) return false;
+    const { priceRange, priceAfter5Range } = group;
+    return priceAfter5Range.min !== priceRange.min || priceAfter5Range.max !== priceRange.max;
+  }
 }
