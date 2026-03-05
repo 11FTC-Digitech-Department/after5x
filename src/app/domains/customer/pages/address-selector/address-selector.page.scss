@@ -35,21 +35,23 @@ ion-content.map-view {
   gap: 12px;
   padding: 14px 16px;
   margin-bottom: 20px;
-  background: var(--ion-color-primary);
+  background: var(--ion-color-warning-tint);
+  border: 1px solid var(--ion-color-warning);
   border-radius: 12px;
 
   .notice-icon {
     font-size: 22px;
     flex-shrink: 0;
-    --ion-icon-color: white;
-    color: white;
+    --ion-icon-color: var(--ion-color-warning-shade);
+    color: var(--ion-color-warning-shade);
   }
 
   .notice-text {
     font-size: 14px;
     line-height: 1.45;
-    color: white;
-    --color: white;
+    color: var(--ion-color-dark);
+    --color: var(--ion-color-dark);
+    font-weight: 500;
   }
 }
 
