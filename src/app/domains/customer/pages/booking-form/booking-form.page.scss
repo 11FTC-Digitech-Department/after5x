@@ -764,6 +764,18 @@ ion-content {
   }
 }
 
+// Body Camera Section
+.body-camera-section {
+  .section-subtitle,
+  .body-cam-note {
+    font-size: 14px;
+  }
+  .body-cam-note {
+    display: block;
+    margin-top: 4px;
+  }
+}
+
 // Urgency Section
 .urgency-section {
   margin-bottom: 20px;

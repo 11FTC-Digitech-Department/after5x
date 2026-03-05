@@ -1334,6 +1334,12 @@ export class BookingFormPage implements OnInit {
     return `${date}T${startTime}:00`;
   }
 
+  bodyCameraFeeDisplay(): string {
+    const fee = this.selectedService()?.body_camera_fee;
+    if (fee == null || fee === 0) return 'a small fee';
+    return this.formatPrice(fee);
+  }
+
   formatPrice(amount: number | null | undefined): string {
     if (amount === null || amount === undefined) return '---';
     return new Intl.NumberFormat('en-PH', {
