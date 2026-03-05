@@ -13,7 +13,7 @@ import { addIcons } from 'ionicons';
 import {
   statsChart,
   calendar,
-  wallet,
+  receiptOutline,
   person,
   chatbubbles
 } from 'ionicons/icons';
@@ -55,7 +55,7 @@ export class ProviderTabsPage implements OnInit, OnDestroy {
     addIcons({
       statsChart,
       calendar,
-      wallet,
+      receiptOutline,
       person,
       chatbubbles
     });

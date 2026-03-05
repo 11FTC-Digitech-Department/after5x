@@ -15,7 +15,6 @@
   padding: 16px;
   animation: fadeIn 0.3s ease;
 
-  .balance-skeleton,
   .transactions-skeleton {
     border-radius: 12px;
     margin-bottom: 16px;
@@ -62,7 +61,7 @@
   }
 }
 
-// Cards
+// Transactions card
 ion-card {
   --background: #ffffff;
   border-radius: 12px;
@@ -93,52 +92,6 @@ ion-card {
   }
 }
 
-// Balance card
-.balance-card {
-  background: linear-gradient(135deg, var(--ion-color-primary), var(--ion-color-primary-shade));
-  color: white;
-
-  ion-card-content {
-    padding: 24px 20px;
-  }
-
-  .balance-header {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    font-size: 14px;
-    opacity: 0.9;
-    margin-bottom: 8px;
-
-    ion-icon {
-      font-size: 20px;
-    }
-  }
-
-  .balance-amount {
-    font-size: 36px;
-    font-weight: 700;
-    margin-bottom: 8px;
-  }
-
-  .frozen-balance {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    font-size: 13px;
-    opacity: 0.8;
-    padding: 8px 12px;
-    background: rgba(255, 255, 255, 0.15);
-    border-radius: 8px;
-    width: fit-content;
-
-    ion-icon {
-      font-size: 16px;
-    }
-  }
-}
-
-// Transactions card
 .transactions-card {
   ion-card-content {
     padding: 0 0 8px;
@@ -191,41 +144,11 @@ ion-card {
       align-items: center;
       justify-content: center;
       margin-right: 12px;
+      background: var(--ion-color-primary-tint);
 
       ion-icon {
         font-size: 20px;
-      }
-
-      &[data-type="CREDIT"] {
-        background: var(--ion-color-success-tint);
-
-        ion-icon {
-          color: var(--ion-color-success);
-        }
-      }
-
-      &[data-type="DEBIT"] {
-        background: var(--ion-color-danger-tint);
-
-        ion-icon {
-          color: var(--ion-color-danger);
-        }
-      }
-
-      &[data-type="WITHDRAWAL"] {
-        background: var(--ion-color-warning-tint);
-
-        ion-icon {
-          color: var(--ion-color-warning-shade);
-        }
-      }
-
-      &[data-type="ADJUSTMENT"] {
-        background: var(--ion-color-medium-tint);
-
-        ion-icon {
-          color: var(--ion-color-medium);
-        }
+        color: var(--ion-color-primary);
       }
     }
 
@@ -258,14 +181,7 @@ ion-card {
       font-size: 15px;
       font-weight: 600;
       white-space: nowrap;
-
-      &.positive {
-        color: var(--ion-color-success);
-      }
-
-      &.negative {
-        color: var(--ion-color-danger);
-      }
+      color: var(--ion-color-dark);
     }
   }
 }

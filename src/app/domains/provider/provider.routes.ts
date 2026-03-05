@@ -19,8 +19,8 @@ export const PROVIDER_ROUTES: Routes = [
         loadComponent: () => import('./pages/messages/messages.page').then(m => m.ProviderMessagesPage),
       },
       {
-        path: 'wallet',
-        loadComponent: () => import('./pages/wallet/wallet.page').then(m => m.WalletPage),
+        path: 'transactions',
+        loadComponent: () => import('./pages/transactions/transactions.page').then(m => m.TransactionsPage),
       },
       {
         path: 'profile',
