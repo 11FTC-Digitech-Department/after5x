@@ -204,22 +204,6 @@
       </ion-card>
     }
 
-    <!-- Payment Complete Card -->
-    @if (isPaid()) {
-      <ion-card class="payment-complete-card">
-        <ion-card-content>
-          <div class="complete-indicator">
-            <ion-icon name="checkmark-circle" color="success"></ion-icon>
-            <div class="complete-info">
-              <h4>Payment Received</h4>
-              <p>The customer has completed payment. Your earnings have been added to your wallet.</p>
-              <span class="earnings">Earned: {{ formatPrice(booking()?.provider_earnings || 0) }}</span>
-            </div>
-          </div>
-        </ion-card-content>
-      </ion-card>
-    }
-
     @if (booking()?.gas_amount_fee) {
       <ion-card class="cash-collect-card">
         <ion-card-content>
