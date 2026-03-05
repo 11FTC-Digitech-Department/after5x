@@ -2,6 +2,32 @@
   <ion-toolbar>
     <ion-title>Transactions</ion-title>
   </ion-toolbar>
+  <ion-toolbar>
+    <ion-searchbar
+      placeholder="Search by Booking ID"
+      [debounce]="300"
+      (ionInput)="onSearchInput($event)"
+      class="transactions-searchbar">
+    </ion-searchbar>
+    <div class="filter-row">
+      <ion-chip (click)="openDateFilter()" [color]="hasActiveDateFilter() ? 'primary' : 'medium'">
+        <ion-icon name="calendar-outline"></ion-icon>
+        <ion-label>
+          @if (hasActiveDateFilter()) {
+            {{ dateFrom() ? formatDateOnly(dateFrom()) : 'From' }} – {{ dateTo() ? formatDateOnly(dateTo()) : 'To' }}
+          } @else {
+            Filter by date
+          }
+        </ion-label>
+      </ion-chip>
+      @if (hasActiveDateFilter()) {
+        <ion-chip color="light" (click)="clearDateFilter()">
+          <ion-icon name="close-circle"></ion-icon>
+          <ion-label>Clear</ion-label>
+        </ion-chip>
+      }
+    </div>
+  </ion-toolbar>
 </ion-header>
 
 <ion-content [fullscreen]="true">
@@ -27,12 +53,11 @@
         <ion-card-content>
           @for (item of [1, 2, 3, 4, 5]; track item) {
             <div class="transaction-skeleton">
-              <ion-skeleton-text [animated]="true" style="width: 32px; height: 32px; border-radius: 50%;"></ion-skeleton-text>
-              <div style="flex: 1; margin-left: 12px;">
+              <div style="flex: 1;">
                 <ion-skeleton-text [animated]="true" style="width: 60%; height: 14px;"></ion-skeleton-text>
                 <ion-skeleton-text [animated]="true" style="width: 40%; height: 12px; margin-top: 4px;"></ion-skeleton-text>
               </div>
-              <ion-skeleton-text [animated]="true" style="width: 80px; height: 16px;"></ion-skeleton-text>
+              <ion-skeleton-text [animated]="true" style="width: 80px; height: 16px; flex-shrink: 0;"></ion-skeleton-text>
             </div>
           }
         </ion-card-content>
@@ -68,17 +93,31 @@
             <h4>No bookings yet</h4>
             <p>Your booking transactions will appear here</p>
           </div>
+        } @else if (filteredBookings().length === 0) {
+          <div class="empty-state">
+            <ion-icon name="search-outline" color="medium"></ion-icon>
+            <h4>No matches</h4>
+            <p>Try adjusting your search or date filter</p>
+          </div>
         } @else {
           <ion-list lines="none" class="transaction-list">
-            @for (booking of bookings(); track booking.id) {
+            @for (booking of filteredBookings(); track booking.id) {
               <ion-item class="transaction-item" button (click)="openJob(booking)">
-                <div class="transaction-icon" slot="start">
-                  <ion-icon name="receipt-outline"></ion-icon>
-                </div>
                 <ion-label>
-                  <h3>{{ getServiceName(booking) }}</h3>
+                  <h3 class="transaction-title">{{ getShortBookingId(booking.id) }}</h3>
                   <p class="transaction-description">{{ getCustomerName(booking) }}</p>
-                  <p class="transaction-time">{{ formatDateTime(booking.created_at) }}</p>
+                  <p class="transaction-meta">
+                    Created: {{ formatDateFull(booking.created_at) }}
+                  </p>
+                  <p class="transaction-meta">
+                    @if (getCompletionDate(booking)) {
+                      Completed: {{ formatDateFull(getCompletionDate(booking)) }}
+                    } @else if (isCompleted(booking)) {
+                      Completed: —
+                    } @else {
+                      Completed: Pending
+                    }
+                  </p>
                 </ion-label>
                 <span class="transaction-amount" slot="end">
                   {{ formatAmount(getGrandTotal(booking)) }}
@@ -91,3 +130,74 @@
     </ion-card>
   }
 </ion-content>
+
+<!-- Date range filter modal -->
+<ion-modal
+  [isOpen]="showDateFilter()"
+  (didDismiss)="closeDateFilter()"
+  [breakpoints]="[0, 0.5, 1]"
+  [initialBreakpoint]="0.5"
+  [keepContentsMounted]="true">
+  <ng-template>
+    <ion-header>
+      <ion-toolbar>
+        <ion-title>Filter by date</ion-title>
+        <ion-buttons slot="end">
+          <ion-button (click)="closeDateFilter()">Done</ion-button>
+        </ion-buttons>
+      </ion-toolbar>
+    </ion-header>
+    <ion-content class="ion-padding">
+      <p class="date-filter-hint">Show only bookings created within these dates. Pick a start and end date.</p>
+      <div class="date-filter-form">
+        <div class="date-field" (click)="openDatePicker('from')">
+          <span class="date-field-label">From</span>
+          <span class="date-field-value" [class.placeholder]="!dateFrom()">
+            {{ dateFrom() ? formatDateOnly(dateFrom()) : 'Tap to select' }}
+          </span>
+          <ion-icon name="chevron-forward" class="date-field-chevron"></ion-icon>
+        </div>
+        <div class="date-field" (click)="openDatePicker('to')">
+          <span class="date-field-label">To</span>
+          <span class="date-field-value" [class.placeholder]="!dateTo()">
+            {{ dateTo() ? formatDateOnly(dateTo()) : 'Tap to select' }}
+          </span>
+          <ion-icon name="chevron-forward" class="date-field-chevron"></ion-icon>
+        </div>
+        <ion-button expand="block" fill="outline" (click)="clearDateFilter(); closeDateFilter()">
+          Clear filter
+        </ion-button>
+      </div>
+    </ion-content>
+  </ng-template>
+</ion-modal>
+
+<!-- Date picker modal (opens when user taps a date field) -->
+<ion-modal
+  [isOpen]="editingDateField() !== null"
+  (didDismiss)="closeDatePicker()"
+  [breakpoints]="[0, 0.6, 1]"
+  [initialBreakpoint]="0.6"
+  [keepContentsMounted]="true">
+  <ng-template>
+    <ion-header>
+      <ion-toolbar>
+        <ion-title>{{ editingDateField() === 'from' ? 'Pick start date' : 'Pick end date' }}</ion-title>
+        <ion-buttons slot="end">
+          <ion-button (click)="closeDatePicker()">Cancel</ion-button>
+          <ion-button strong="true" (click)="applyDateSelection()">Apply</ion-button>
+        </ion-buttons>
+      </ion-toolbar>
+    </ion-header>
+    <ion-content class="date-picker-content">
+      <ion-datetime
+        class="date-picker-calendar"
+        presentation="date"
+        [value]="pendingDateValue()"
+        [min]="editingDateField() === 'to' ? dateFrom() || undefined : undefined"
+        [max]="editingDateField() === 'from' ? dateTo() || undefined : undefined"
+        (ionChange)="onDatePickerChange($event)">
+      </ion-datetime>
+    </ion-content>
+  </ng-template>
+</ion-modal>

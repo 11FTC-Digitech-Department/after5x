@@ -68,6 +68,19 @@
   }
 }
 
+// Modal content background - ensure visible when opened (fixes white-only issue)
+ion-modal ion-content {
+  --background: var(--ion-background-color);
+}
+
+// Date picker calendar - fit width, center in modal
+ion-modal .date-picker-content ion-datetime {
+  width: 100% !important;
+  max-width: 340px !important;
+  margin-left: auto !important;
+  margin-right: auto !important;
+}
+
 // Android Edge-to-Edge Support
 .plt-android {
   // Header toolbar padding for status bar
