@@ -169,7 +169,7 @@
                     <ion-item lines="none">
                       <ion-label>
                         <ion-text class="section-subtitle">Would you like us to include a body camera for additional safety and security?</ion-text>
-                        <ion-note class="body-cam-note">(Optional) Additional <strong>{{ bodyCameraFeeDisplay() }}</strong> will be applied</ion-note>
+                        <ion-note class="body-cam-note">(Optional) Additional <strong>{{ bodyCameraFeeDisplay() }}</strong> will be applied to the total booking cost.</ion-note>
                       </ion-label>
                       <ion-toggle formControlName="bodyCameraRequested" slot="end"></ion-toggle>
                     </ion-item>
@@ -492,9 +492,12 @@
                     <ion-input
                       formControlName="contactNumber"
                       type="tel"
-                      placeholder="+63 9XX XXX XXXX"
-                      maxlength="13"
-                    ></ion-input>
+                      placeholder="09XX XXX XXXX or +639XX XXX XXXX"
+                      maxlength="13">
+                    </ion-input>
+                  </ion-item>
+                  <ion-item lines="none" class="contact-number-guide-item">
+                    <ion-note class="contact-number-guide">Format: 09XXXXXXXXX or +639XXXXXXXXX (Philippine mobile, 11 digits)</ion-note>
                   </ion-item>
                 </ion-list>
               </ion-card-content>

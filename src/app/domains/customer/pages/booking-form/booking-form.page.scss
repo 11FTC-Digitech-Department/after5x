@@ -1603,6 +1603,18 @@ ion-select {
   z-index: 9999;
 }
 
+// Contact Number guide - always visible below input
+.contact-number-guide-item {
+  --min-height: auto;
+  --padding-top: 4px;
+  --padding-bottom: 8px;
+  --background: transparent;
+}
+.contact-number-guide {
+  font-size: 12px;
+  color: var(--ion-color-medium);
+}
+
 // Error States
 .error-message {
   font-size: 12px;
