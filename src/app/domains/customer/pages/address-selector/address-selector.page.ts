@@ -19,7 +19,8 @@ import {
   IonBadge,
   IonSpinner,
   IonSearchbar,
-  NavController
+  NavController,
+  ToastController
 } from '@ionic/angular/standalone';
 import { Subject } from 'rxjs';
 import { debounceTime, distinctUntilChanged, takeUntil } from 'rxjs/operators';
@@ -65,6 +66,7 @@ export class AddressSelectorPage implements ViewWillEnter, OnInit, OnDestroy {
   private navController = inject(NavController);
   private addressService = inject(AddressService);
   private googleMapsService = inject(GoogleMapsService);
+  private toastController = inject(ToastController);
 
   // State
   userAddresses = signal<UserAddress[]>([]);
@@ -200,13 +202,17 @@ export class AddressSelectorPage implements ViewWillEnter, OnInit, OnDestroy {
   }
 
   selectSavedAddress(address: UserAddress) {
-    // Validate coordinates before selection
     if (!address.hasValidLocation || (address.location.lat === 0 && address.location.lng === 0)) {
       this.locationError.set('This address has invalid location data. Please select a different address or use the map to update it.');
       return;
     }
 
-    // Clear any previous error
+    const validation = this.googleMapsService.validateLocation(address.location.lat, address.location.lng, address.full_address);
+    if (!validation.valid) {
+      this.locationError.set(validation.error ?? null);
+      return;
+    }
+
     this.locationError.set(null);
 
     const location: GeocodeResult = {
@@ -218,7 +224,19 @@ export class AddressSelectorPage implements ViewWillEnter, OnInit, OnDestroy {
   }
 
   onLocationSelected(location: GeocodeResult) {
+    const validation = this.googleMapsService.validateLocation(location.lat, location.lng, location.address);
+    if (!validation.valid) {
+      this.locationError.set(validation.error ?? null);
+      this.selectedLocation.set(null);
+      return;
+    }
+    this.locationError.set(null);
     this.selectedLocation.set(location);
+  }
+
+  onSelectionRejected(error: string) {
+    this.locationError.set(error);
+    this.selectedLocation.set(null);
   }
 
   async useCurrentLocation() {
@@ -238,6 +256,12 @@ export class AddressSelectorPage implements ViewWillEnter, OnInit, OnDestroy {
 
       if (!position) {
         this.locationError.set('Unable to get your location. Please check your location settings.');
+        return;
+      }
+
+      const validation = this.googleMapsService.validateLocation(position.lat, position.lng);
+      if (!validation.valid) {
+        this.locationError.set(validation.error ?? null);
         return;
       }
 
@@ -296,16 +320,13 @@ export class AddressSelectorPage implements ViewWillEnter, OnInit, OnDestroy {
     this.isSearching.set(true);
 
     try {
-      // Get current location for better search results (if available)
-      const currentLoc = this.currentLocation();
-
       // Add timeout to prevent hanging
       const timeoutPromise = new Promise((_, reject) =>
         setTimeout(() => reject(new Error('Search timeout')), 10000)
       );
 
       const results = await Promise.race([
-        this.googleMapsService.searchPlaces(query, currentLoc || undefined),
+        this.googleMapsService.searchPlaces(query),
         timeoutPromise
       ]) as any;
 
@@ -335,6 +356,12 @@ export class AddressSelectorPage implements ViewWillEnter, OnInit, OnDestroy {
       ]) as any;
 
       if (placeDetails) {
+        const validation = this.googleMapsService.validateLocation(placeDetails.lat, placeDetails.lng, placeDetails.address);
+        if (!validation.valid) {
+          this.locationError.set(validation.error ?? null);
+          return;
+        }
+        this.locationError.set(null);
         this.currentLocation.set({ lat: placeDetails.lat, lng: placeDetails.lng });
         this.selectedLocation.set(placeDetails);
         this.showMap.set(true);
@@ -375,19 +402,38 @@ export class AddressSelectorPage implements ViewWillEnter, OnInit, OnDestroy {
     this.clearSearch();
   }
 
-  confirmMapSelection() {
+  async confirmMapSelection() {
     const location = this.selectedLocation();
-    if (location) {
-      this.confirmSelection(location);
+    if (!location) return;
+
+    const validation = this.googleMapsService.validateLocation(location.lat, location.lng, location.address);
+    if (!validation.valid) {
+      this.locationError.set(validation.error ?? null);
+      this.selectedLocation.set(null);
+      this.currentLocation.set(null);
+      const toast = await this.toastController.create({
+        message: validation.error ?? 'Location outside service area.',
+        color: 'danger',
+        duration: 4000,
+        position: 'bottom'
+      });
+      await toast.present();
+      return;
     }
+
+    this.confirmSelection(location);
   }
 
   private confirmSelection(location: GeocodeResult) {
-    // Get the return URL and existing address from navigation state
+    const validation = this.googleMapsService.validateLocation(location.lat, location.lng, location.address);
+    if (!validation.valid) {
+      this.locationError.set(validation.error ?? null);
+      return;
+    }
+
     const returnUrl = this.navigationState?.returnUrl || '/c/book';
     const existingAddress = this.navigationState?.existingAddress;
 
-    // Navigate back with the selected location and existing address data (for edit mode)
     this.navController.navigateBack(returnUrl, {
       state: {
         selectedLocation: location,

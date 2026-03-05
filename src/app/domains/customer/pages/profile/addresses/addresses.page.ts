@@ -26,6 +26,7 @@ import {
   AlertController
 } from '@ionic/angular/standalone';
 import { AddressService } from '../../../../../core/supabase/address.service';
+import { GoogleMapsService } from '../../../../../core/services/google-maps.service';
 import { AddressDetailsFormComponent } from '../../../../../core/components/address-details-form/address-details-form.component';
 import { UserAddress, GeocodeResult } from '../../../../../core/models/address.model';
 
@@ -65,6 +66,7 @@ interface AddressSelectorNavigationState {
 export class AddressesPage implements OnInit, OnDestroy, ViewWillEnter {
   private router = inject(Router);
   private addressService = inject(AddressService);
+  private googleMapsService = inject(GoogleMapsService);
   private modalController = inject(ModalController);
   private toastController = inject(ToastController);
   private alertController = inject(AlertController);
@@ -97,12 +99,16 @@ export class AddressesPage implements OnInit, OnDestroy, ViewWillEnter {
     const state = history.state as AddressSelectorNavigationState;
 
     if (state?.selectedLocation) {
-      // Clear state to prevent re-triggering on subsequent navigations
       const location = state.selectedLocation;
       const existingAddress = state.existingAddress;
       history.replaceState({}, '');
 
-      // Open details form with selected location
+      const validation = this.googleMapsService.validateLocation(location.lat, location.lng, location.address);
+      if (!validation.valid) {
+        await this.showToast(validation.error ?? 'Location outside service area.', 'warning');
+        return;
+      }
+
       await this.openAddressDetailsForm(location, existingAddress);
     }
   }

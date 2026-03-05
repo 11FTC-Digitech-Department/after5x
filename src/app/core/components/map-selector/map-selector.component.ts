@@ -45,6 +45,7 @@ export class MapSelectorComponent implements OnInit, OnDestroy {
   selectedLocation = signal<GeocodeResult | null>(null);
   isSearching = signal(false);
   isLoading = signal(true);
+  locationError = signal<string | null>(null);
 
   // Computed signals
   mapCenter = computed((): MapCamera => {
@@ -105,11 +106,15 @@ export class MapSelectorComponent implements OnInit, OnDestroy {
         }
       }
 
-      // Get address for initial location
+      const validation = this.googleMapsService.validateLocation(center.lat, center.lng);
+      if (!validation.valid) {
+        this.selectedLocation.set(null);
+        return;
+      }
+
       const geocodeResult = await this.googleMapsService.reverseGeocode(center.lat, center.lng);
       if (geocodeResult) {
         this.selectedLocation.set(geocodeResult);
-
       }
     } catch (error) {
       devError('Error initializing map:', error);
@@ -118,15 +123,21 @@ export class MapSelectorComponent implements OnInit, OnDestroy {
     }
   }
 
-  private async setLocation(lat: number, lng: number) {
+  private async setLocation(lat: number, lng: number, address?: string) {
     try {
-      // Reverse geocode to get address first
+      const validation = this.googleMapsService.validateLocation(lat, lng, address);
+      if (!validation.valid) {
+        this.locationError.set(validation.error ?? null);
+        return;
+      }
+
+      this.locationError.set(null);
+
       const geocodeResult = await this.googleMapsService.reverseGeocode(lat, lng);
       if (geocodeResult) {
         this.selectedLocation.set(geocodeResult);
         this.locationSelected.emit(geocodeResult);
 
-        // Center the map on the selected location
         if (this.mapComponent && this.mapComponent.mapInstance()) {
           await this.mapComponent.mapInstance()?.setCamera({
             coordinate: { lat, lng },
@@ -142,17 +153,14 @@ export class MapSelectorComponent implements OnInit, OnDestroy {
   onSearchInput(event: any) {
     const query = event.target.value || '';
     this.searchQuery.set(query);
+    this.locationError.set(null);
     this.searchSubject.next(query);
   }
 
   private async performSearch(query: string) {
     this.isSearching.set(true);
     try {
-      const location = this.selectedLocation()?.lat && this.selectedLocation()?.lng
-        ? { lat: this.selectedLocation()!.lat, lng: this.selectedLocation()!.lng }
-        : undefined;
-
-      const results = await this.googleMapsService.searchPlaces(query, location);
+      const results = await this.googleMapsService.searchPlaces(query);
       this.searchResults.set(results);
     } catch (error) {
       devError('Error performing search:', error);
@@ -164,12 +172,10 @@ export class MapSelectorComponent implements OnInit, OnDestroy {
 
   async selectPlace(place: GooglePlaceResult) {
     try {
-      // Handle mock results (when not in Capacitor)
       if (place.place_id.startsWith('mock_')) {
         devWarn('Mock place selected - using current location as placeholder');
         const currentLocation = this.selectedLocation();
         if (currentLocation) {
-          // Keep current location for mock results
           this.searchQuery.set('');
           this.searchResults.set([]);
           return;
@@ -178,7 +184,7 @@ export class MapSelectorComponent implements OnInit, OnDestroy {
 
       const placeDetails = await this.googleMapsService.getPlaceDetails(place.place_id);
       if (placeDetails) {
-        await this.setLocation(placeDetails.lat, placeDetails.lng);
+        await this.setLocation(placeDetails.lat, placeDetails.lng, placeDetails.address);
         this.searchQuery.set('');
         this.searchResults.set([]);
       }
@@ -189,6 +195,7 @@ export class MapSelectorComponent implements OnInit, OnDestroy {
 
   async useCurrentLocation() {
     try {
+      this.locationError.set(null);
       const currentPosition = await this.googleMapsService.getCurrentPosition();
       if (currentPosition) {
         await this.setLocation(currentPosition.lat, currentPosition.lng);
@@ -201,6 +208,7 @@ export class MapSelectorComponent implements OnInit, OnDestroy {
   clearSearch() {
     this.searchQuery.set('');
     this.searchResults.set([]);
+    this.locationError.set(null);
   }
 
 
@@ -210,7 +218,11 @@ export class MapSelectorComponent implements OnInit, OnDestroy {
   }
 
   async onMapClick(geocodeResult: GeocodeResult) {
-    // Handle map click by setting the location from the geocode result
-    await this.setLocation(geocodeResult.lat, geocodeResult.lng);
+    await this.setLocation(geocodeResult.lat, geocodeResult.lng, geocodeResult.address);
+  }
+
+  onSelectionRejected(error: string) {
+    this.locationError.set(error);
+    this.selectedLocation.set(null);
   }
 }

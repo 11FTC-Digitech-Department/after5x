@@ -27,10 +27,14 @@ export class MapComponent implements OnInit, OnDestroy, AfterViewInit {
   center = input<MapCamera>({ lat: 14.5995, lng: 120.9842, zoom: 15 });
   height = input<string>('300px');
   initialMarker = input<{ lat: number; lng: number } | null>(null);
+  /** When true, only emit locationSelected for coordinates within QC bounds */
+  restrictToBounds = input<boolean>(false);
 
   // Outputs
   mapReady = output<void>();
   locationSelected = output<GeocodeResult>();
+  /** Emitted when user taps outside allowed bounds (if restrictToBounds is true) */
+  selectionRejected = output<string>();
 
   // ViewChild for map container - required by Capacitor Google Maps
   @ViewChild('mapContainer')
@@ -120,21 +124,29 @@ export class MapComponent implements OnInit, OnDestroy, AfterViewInit {
         const lat = event.latitude;
         const lng = event.longitude;
 
-        // Remove the current marker if it exists
+        if (this.restrictToBounds()) {
+          const validation = this.googleMapsService.validateLocation(lat, lng);
+          if (!validation.valid) {
+            if (this.currentMarkerId()) {
+              await this.mapInstance()?.removeMarker(this.currentMarkerId()!);
+              this.currentMarkerId.set(null);
+            }
+            this.selectionRejected.emit(validation.error ?? 'Location outside service area.');
+            return;
+          }
+        }
+
         if (this.currentMarkerId()) {
           await this.mapInstance()?.removeMarker(this.currentMarkerId()!);
         }
 
-        // Add a new marker at the clicked position
         const newMarkerId = await this.mapInstance()?.addMarker({
           coordinate: { lat, lng },
           draggable: true,
         });
 
-        // Store the new marker ID for future removal
         this.currentMarkerId.set(newMarkerId ?? null);
 
-        // Reverse geocode the coordinates to get the address
         try {
           const geocodeResult = await this.googleMapsService.reverseGeocode(lat, lng);
           if (geocodeResult) {
@@ -144,7 +156,6 @@ export class MapComponent implements OnInit, OnDestroy, AfterViewInit {
           devError('Error reverse geocoding location:', error);
         }
 
-        // Center the camera on the clicked position
         await this.mapInstance()?.setCamera({
           coordinate: { lat, lng },
           zoom: 15,

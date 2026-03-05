@@ -41,6 +41,8 @@ import { RealTimeService } from '@core/services/real-time.service';
 import { UserAddress, GeocodeResult } from '@core/models/address.model';
 import { BookingSubmissionData, BookingResponse, BookingError } from '@core/models/booking.model';
 import { NavController } from '@ionic/angular/standalone';
+import { GoogleMapsService } from '@core/services/google-maps.service';
+import { ToastController } from '@ionic/angular/standalone';
 import { devLog, devWarn, devError } from '../../../../core/utils/logger';
 
 interface BookingDetails {
@@ -137,6 +139,8 @@ export class BookingFormPage implements OnInit {
   private addressService = inject(AddressService);
   private bookingService = inject(BookingService);
   private realTimeService = inject(RealTimeService);
+  private googleMapsService = inject(GoogleMapsService);
+  private toastController = inject(ToastController);
 
   // Step management
   currentStep = signal<1 | 2>(1);
@@ -1065,12 +1069,18 @@ export class BookingFormPage implements OnInit {
     
     devLog('Authentication confirmed:', { profileId: profile?.id || 'using session', role: profile?.role });
 
-    // Validate location coordinates - prevent (0,0) which breaks provider matching
     const lat = this.selectedLocation()?.lat;
     const lng = this.selectedLocation()?.lng;
     if (!lat || !lng || (lat === 0 && lng === 0)) {
       devWarn('Invalid location coordinates');
       this.errorMessage.set('Please select your location on the map for accurate service delivery.');
+      return;
+    }
+
+    const loc = this.selectedLocation();
+    const locationValidation = this.googleMapsService.validateLocation(lat, lng, loc?.address);
+    if (!locationValidation.valid) {
+      this.errorMessage.set(locationValidation.error ?? 'Location outside service area.');
       return;
     }
 
@@ -1212,7 +1222,19 @@ export class BookingFormPage implements OnInit {
     });
   }
 
-  selectSavedAddress = (address: UserAddress) => {
+  selectSavedAddress = async (address: UserAddress) => {
+    const validation = this.googleMapsService.validateLocation(address.location.lat, address.location.lng, address.full_address);
+    if (!validation.valid) {
+      const toast = await this.toastController.create({
+        message: validation.error ?? 'Location outside service area.',
+        color: 'danger',
+        duration: 4000,
+        position: 'bottom'
+      });
+      await toast.present();
+      return;
+    }
+
     this.selectedAddressId.set(address.id);
     this.selectedLocation.set({
       lat: address.location.lat,
@@ -1220,7 +1242,6 @@ export class BookingFormPage implements OnInit {
       address: address.full_address
     });
 
-    // Update form with selected address
     this.bookingForm.patchValue({
       address: address.full_address,
       latitude: address.location.lat,
@@ -1228,11 +1249,22 @@ export class BookingFormPage implements OnInit {
     });
   }
 
-  onLocationSelected = (location: GeocodeResult) => {
-    this.selectedLocation.set(location);
-    this.selectedAddressId.set(null); // Clear saved address selection when manually selecting location
+  onLocationSelected = async (location: GeocodeResult) => {
+    const validation = this.googleMapsService.validateLocation(location.lat, location.lng, location.address);
+    if (!validation.valid) {
+      const toast = await this.toastController.create({
+        message: validation.error ?? 'Location outside service area.',
+        color: 'danger',
+        duration: 4000,
+        position: 'bottom'
+      });
+      await toast.present();
+      return;
+    }
 
-    // Update form with selected location
+    this.selectedLocation.set(location);
+    this.selectedAddressId.set(null);
+
     this.bookingForm.patchValue({
       address: location.address,
       latitude: location.lat,
