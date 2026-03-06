@@ -1,8 +1,8 @@
-# After5 v0.9.1 Release Notes (Internal Testing)
+# After5 v0.9.5 Release Notes (Internal Testing)
 
-**Release Date:** March 5, 2026  
-**Version Name:** 0.9.1  
-**Version Code:** 15 (Android)  
+**Release Date:** March 6, 2026  
+**Version Name:** 0.9.5  
+**Version Code:** 16 (Android)  
 **Package:** com.rockit.after5  
 **Distribution:** Internal testing only - not for public release
 
@@ -13,16 +13,18 @@
 This build is intended for **internal QA and stakeholder testing** only. Please report issues, UX feedback, and device-specific behavior through the team's chosen channel (e.g. Slack, Linear, or internal tracker).
 
 ### Scope of This Release
+- Database: bookings.completed_at added; set when booking status becomes completed.
+- Provider: Transactions shows completed_at; removed "Your earnings" from Waiting for Payment card.
 - Provider: Wallet tab replaced with Transactions tab; booking history with search and date range filter.
 - Customer: Service area notice, location validation, contact number guide, body camera fee clarification.
 - UI/UX: Address selector notice styling, date picker improvements.
 
 ### Focus Areas for Testers
-- [ ] Transactions page: search by Booking ID, date range filter, booking list with Created/Completed dates
+- [ ] Transactions page: search by Booking ID, date range filter, Completed date from completed_at
+- [ ] Job execution: No "Your earnings" in Waiting for Payment banner
 - [ ] Address selector: service area notice (Quezon City) visibility and styling
 - [ ] Map location selection: validation when outside Quezon City bounds
 - [ ] Booking form: contact number format guide, body camera fee note
-- [ ] Job execution: payment complete card removed
 - [ ] Regression checks on booking, payment, and address flows
 
 ---
@@ -37,15 +39,20 @@ This build is intended for **internal QA and stakeholder testing** only. Please 
 
 ### Provider
 - Replaced Wallet tab with Transactions tab; route changed from `/p/wallet` to `/p/transactions`.
-- Transactions page shows booking history (Booking ID, customer name, Created date, Completed date, grand total).
+- Transactions page shows booking history (Booking ID, customer name, Created date, Completed date from completed_at, grand total).
 - Search bar to filter by Booking ID.
 - Date range filter: From/To date selection with user-friendly modal and calendar picker.
 - Removed payment complete card from job execution page (the card that showed provider earnings when paid).
+- Removed "Your earnings" from Waiting for Payment card on job execution page.
+
+### Database
+- Added completed_at TIMESTAMPTZ to bookings table; set when status becomes completed (payment RPC and app).
 
 ### Technical
 - New Transactions page; removed Wallet page.
 - Provider routes and tabs updated for transactions.
 - `ProviderBookingService` used for transactions data; bookings filtered client-side by search and date.
+- Transaction Completed date sourced from completed_at (fallback to finished_work_at).
 - Map component: `restrictToBounds` and `selectionRejected` for location validation.
 - `GoogleMapsService` enhanced with bounds validation for Quezon City.
 - Global modal styling for date picker centering.
@@ -63,8 +70,8 @@ This build is intended for **internal QA and stakeholder testing** only. Please 
 
 | Platform | Version Name | Version Code | Min SDK | Target SDK |
 |----------|--------------|--------------|---------|------------|
-| Android  | 0.9.1        | 15           | 24      | 36         |
-| iOS      | 0.9.1        | 5            | 16.1    | -          |
+| Android  | 0.9.5        | 16           | 24      | 36         |
+| iOS      | 0.9.5        | 6            | 16.1    | -          |
 
 ### Build Configuration
 - **Signing:** Release signed with upload key (`android/keystore.properties` required)
@@ -77,13 +84,14 @@ This build is intended for **internal QA and stakeholder testing** only. Please 
 
 - **Android Bundle:** `android/app/build/outputs/bundle/customerRelease/app-customer-release.aab`
 - **Mapping:** `android/app/build/outputs/mapping/customerRelease/mapping.txt`
-- **iOS:** Build via Xcode or CI; ensure `MARKETING_VERSION=0.9.1` and `CURRENT_PROJECT_VERSION=5`
+- **iOS:** Build via Xcode or CI; ensure `MARKETING_VERSION=0.9.5` and `CURRENT_PROJECT_VERSION=6`
 
 ---
 
 ## Changelog Reference
 
 ### Commits Included
+- `19b7d36` - feat: Add completed_at field to booking model and update related services
 - `796eabb` - feat: Update address selector styling for improved visibility
 - `67cc26b` - feat: Update booking form with contact number guidance and body camera fee clarification
 - `cd9d09b` - feat: Enhance transactions page with search and date filtering
@@ -94,7 +102,7 @@ This build is intended for **internal QA and stakeholder testing** only. Please 
 - `cd83e22` - feat: Implement location validation and error handling in map components
 
 ### Previous Version
-- v0.9.0
+- v0.9.1
 
 ---
 
@@ -103,8 +111,10 @@ This build is intended for **internal QA and stakeholder testing** only. Please 
 > For internal testing track upload only. Store listing and release notes are not required for internal testers.
 
 <en-US>
-v0.9.1 (Internal)
+v0.9.5 (Internal)
 
+- Database: bookings.completed_at added; set when booking is completed.
+- Provider: Transactions shows completed_at; removed "Your earnings" from Waiting for Payment.
 - Provider: Wallet replaced with Transactions tab; search and date filter for booking history.
 - Customer: Service area notice (Quezon City), location validation, contact number guide, body camera fee clarification.
 - Removed payment complete card from provider job execution.
