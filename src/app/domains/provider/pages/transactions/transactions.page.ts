@@ -253,7 +253,7 @@ export class TransactionsPage implements OnInit {
   }
 
   getCompletionDate(booking: ProviderBooking): string | null {
-    return booking.finished_work_at ?? null;
+    return booking.completed_at ?? booking.finished_work_at ?? null;
   }
 
   isCompleted(booking: ProviderBooking): boolean {

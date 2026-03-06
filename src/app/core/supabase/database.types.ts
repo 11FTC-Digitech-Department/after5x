@@ -624,15 +624,21 @@ export type Database = {
         Row: {
           address_snapshot: Json
           arrived_at: string | null
+          base_service_fee: number | null
+          body_camera_fee: number | null
           booking_type: Database["public"]["Enums"]["booking_scheduling_type"]
           cancellation_reason: string | null
           cancelled_by: string | null
+          commission_amount: number | null
+          commission_rate: number | null
+          completed_at: string | null
           created_at: string | null
           customer_id: string
           finished_work_at: string | null
+          gas_amount_fee: number | null
+          grand_total: number | null
           grand_total_after_voucher: number | null
           grand_total_before_voucher: number | null
-          grand_total: number | null
           id: string
           otp_end: string | null
           otp_start: string | null
@@ -649,32 +655,35 @@ export type Database = {
           total_materials_amount: number | null
           total_transport_fees: number | null
           total_vat_amount: number | null
+          updated_at: string | null
+          urgent_fee: number | null
           voucher_amount: number | null
           voucher_code: string | null
-          voucher_discount_type: Database["public"]["Enums"]["voucher_discount_type"] | null
+          voucher_discount_type:
+            | Database["public"]["Enums"]["voucher_discount_type"]
+            | null
           voucher_id: string | null
           voucher_max_discount: number | null
           voucher_percent_off: number | null
-          base_service_fee: number | null
-          urgent_fee: number | null
-          body_camera_fee: number | null
-          commission_rate: number | null
-          commission_amount: number | null
-          gas_amount_fee: number | null
-          updated_at: string | null
         }
         Insert: {
           address_snapshot: Json
           arrived_at?: string | null
+          base_service_fee?: number | null
+          body_camera_fee?: number | null
           booking_type: Database["public"]["Enums"]["booking_scheduling_type"]
           cancellation_reason?: string | null
           cancelled_by?: string | null
+          commission_amount?: number | null
+          commission_rate?: number | null
+          completed_at?: string | null
           created_at?: string | null
           customer_id: string
           finished_work_at?: string | null
+          gas_amount_fee?: number | null
+          grand_total?: number | null
           grand_total_after_voucher?: number | null
           grand_total_before_voucher?: number | null
-          grand_total?: number | null
           id?: string
           otp_end?: string | null
           otp_start?: string | null
@@ -691,32 +700,35 @@ export type Database = {
           total_materials_amount?: number | null
           total_transport_fees?: number | null
           total_vat_amount?: number | null
+          updated_at?: string | null
+          urgent_fee?: number | null
           voucher_amount?: number | null
           voucher_code?: string | null
-          voucher_discount_type?: Database["public"]["Enums"]["voucher_discount_type"] | null
+          voucher_discount_type?:
+            | Database["public"]["Enums"]["voucher_discount_type"]
+            | null
           voucher_id?: string | null
           voucher_max_discount?: number | null
           voucher_percent_off?: number | null
-          base_service_fee?: number | null
-          urgent_fee?: number | null
-          body_camera_fee?: number | null
-          commission_rate?: number | null
-          commission_amount?: number | null
-          gas_amount_fee?: number | null
-          updated_at?: string | null
         }
         Update: {
           address_snapshot?: Json
           arrived_at?: string | null
+          base_service_fee?: number | null
+          body_camera_fee?: number | null
           booking_type?: Database["public"]["Enums"]["booking_scheduling_type"]
           cancellation_reason?: string | null
           cancelled_by?: string | null
+          commission_amount?: number | null
+          commission_rate?: number | null
+          completed_at?: string | null
           created_at?: string | null
           customer_id?: string
           finished_work_at?: string | null
+          gas_amount_fee?: number | null
+          grand_total?: number | null
           grand_total_after_voucher?: number | null
           grand_total_before_voucher?: number | null
-          grand_total?: number | null
           id?: string
           otp_end?: string | null
           otp_start?: string | null
@@ -733,19 +745,16 @@ export type Database = {
           total_materials_amount?: number | null
           total_transport_fees?: number | null
           total_vat_amount?: number | null
+          updated_at?: string | null
+          urgent_fee?: number | null
           voucher_amount?: number | null
           voucher_code?: string | null
-          voucher_discount_type?: Database["public"]["Enums"]["voucher_discount_type"] | null
+          voucher_discount_type?:
+            | Database["public"]["Enums"]["voucher_discount_type"]
+            | null
           voucher_id?: string | null
           voucher_max_discount?: number | null
           voucher_percent_off?: number | null
-          base_service_fee?: number | null
-          urgent_fee?: number | null
-          body_camera_fee?: number | null
-          commission_rate?: number | null
-          commission_amount?: number | null
-          gas_amount_fee?: number | null
-          updated_at?: string | null
         }
         Relationships: [
           {
@@ -768,6 +777,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "view_provider_stats_dashboard"
             referencedColumns: ["provider_id"]
+          },
+          {
+            foreignKeyName: "bookings_voucher_id_fkey"
+            columns: ["voucher_id"]
+            isOneToOne: false
+            referencedRelation: "vouchers"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -1055,6 +1071,9 @@ export type Database = {
           booking_completed: boolean | null
           booking_confirmed: boolean | null
           booking_started: boolean | null
+          chat_messages: boolean | null
+          chat_quiet_hours_end: string | null
+          chat_quiet_hours_start: string | null
           created_at: string | null
           id: string
           job_cancelled: boolean | null
@@ -1078,6 +1097,9 @@ export type Database = {
           booking_completed?: boolean | null
           booking_confirmed?: boolean | null
           booking_started?: boolean | null
+          chat_messages?: boolean | null
+          chat_quiet_hours_end?: string | null
+          chat_quiet_hours_start?: string | null
           created_at?: string | null
           id?: string
           job_cancelled?: boolean | null
@@ -1101,6 +1123,9 @@ export type Database = {
           booking_completed?: boolean | null
           booking_confirmed?: boolean | null
           booking_started?: boolean | null
+          chat_messages?: boolean | null
+          chat_quiet_hours_end?: string | null
+          chat_quiet_hours_start?: string | null
           created_at?: string | null
           id?: string
           job_cancelled?: boolean | null
@@ -1173,6 +1198,83 @@ export type Database = {
           {
             foreignKeyName: "notifications_user_id_fkey"
             columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      offers: {
+        Row: {
+          badge_text: string | null
+          created_at: string
+          created_by: string | null
+          description: string
+          discount_condition: string | null
+          discount_label: string | null
+          ends_at: string | null
+          id: string
+          image_url: string | null
+          metadata: Json
+          note: string | null
+          show_in_story: boolean
+          sort_order: number
+          starts_at: string | null
+          status: Database["public"]["Enums"]["offer_status"]
+          story_image_url: string | null
+          target_role: string
+          title: string
+          updated_at: string
+          voucher_code: string | null
+        }
+        Insert: {
+          badge_text?: string | null
+          created_at?: string
+          created_by?: string | null
+          description: string
+          discount_condition?: string | null
+          discount_label?: string | null
+          ends_at?: string | null
+          id?: string
+          image_url?: string | null
+          metadata?: Json
+          note?: string | null
+          show_in_story?: boolean
+          sort_order?: number
+          starts_at?: string | null
+          status?: Database["public"]["Enums"]["offer_status"]
+          story_image_url?: string | null
+          target_role?: string
+          title: string
+          updated_at?: string
+          voucher_code?: string | null
+        }
+        Update: {
+          badge_text?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string
+          discount_condition?: string | null
+          discount_label?: string | null
+          ends_at?: string | null
+          id?: string
+          image_url?: string | null
+          metadata?: Json
+          note?: string | null
+          show_in_story?: boolean
+          sort_order?: number
+          starts_at?: string | null
+          status?: Database["public"]["Enums"]["offer_status"]
+          story_image_url?: string | null
+          target_role?: string
+          title?: string
+          updated_at?: string
+          voucher_code?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "offers_created_by_fkey"
+            columns: ["created_by"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
@@ -1495,6 +1597,45 @@ export type Database = {
           },
         ]
       }
+      push_notification_queue: {
+        Row: {
+          app_type: string
+          body: string
+          booking_id: string | null
+          created_at: string | null
+          id: string
+          processed_at: string | null
+          status: string | null
+          title: string
+          type: string
+          user_ids: string[]
+        }
+        Insert: {
+          app_type: string
+          body: string
+          booking_id?: string | null
+          created_at?: string | null
+          id?: string
+          processed_at?: string | null
+          status?: string | null
+          title: string
+          type: string
+          user_ids: string[]
+        }
+        Update: {
+          app_type?: string
+          body?: string
+          booking_id?: string | null
+          created_at?: string | null
+          id?: string
+          processed_at?: string | null
+          status?: string | null
+          title?: string
+          type?: string
+          user_ids?: string[]
+        }
+        Relationships: []
+      }
       reviews: {
         Row: {
           booking_id: string
@@ -1596,77 +1737,122 @@ export type Database = {
       service_variants: {
         Row: {
           body_camera_fee: number | null
+          cleaning_type: string | null
           commission_amount_max_5to8: number | null
           commission_amount_max_8to5: number | null
           commission_amount_min_5to8: number | null
           commission_amount_min_8to5: number | null
           commission_rate: number | null
+          configuration: string | null
           created_at: string | null
           description: string | null
           duration_minutes: number | null
+          fuel_cost: number | null
           id: string
           is_active: boolean | null
           name: string
           price_after5_max: number
+          price_after5_max_with_transport: number | null
+          price_after5_max_with_transport_and_urgent: number | null
+          price_after5_max_with_urgent: number | null
           price_after5_min: number
+          price_after5_min_with_transport: number | null
+          price_after5_min_with_transport_and_urgent: number | null
+          price_after5_min_with_urgent: number | null
           price_max: number
           price_min: number
+          price_regular_max_with_transport: number | null
+          price_regular_max_with_transport_and_urgent: number | null
+          price_regular_max_with_urgent: number | null
+          price_regular_min_with_transport: number | null
+          price_regular_min_with_transport_and_urgent: number | null
+          price_regular_min_with_urgent: number | null
           properties: Json | null
           service_id: string
           transportation_fee: number | null
           transportation_fee_after5: number | null
-          urgent_charge: number | null
           updated_at: string | null
+          urgent_charge: number | null
           vat_rate: number | null
         }
         Insert: {
           body_camera_fee?: number | null
+          cleaning_type?: string | null
           commission_amount_max_5to8?: number | null
           commission_amount_max_8to5?: number | null
           commission_amount_min_5to8?: number | null
           commission_amount_min_8to5?: number | null
           commission_rate?: number | null
+          configuration?: string | null
           created_at?: string | null
           description?: string | null
           duration_minutes?: number | null
+          fuel_cost?: number | null
           id?: string
           is_active?: boolean | null
           name: string
           price_after5_max?: number
+          price_after5_max_with_transport?: number | null
+          price_after5_max_with_transport_and_urgent?: number | null
+          price_after5_max_with_urgent?: number | null
           price_after5_min?: number
+          price_after5_min_with_transport?: number | null
+          price_after5_min_with_transport_and_urgent?: number | null
+          price_after5_min_with_urgent?: number | null
           price_max?: number
           price_min?: number
+          price_regular_max_with_transport?: number | null
+          price_regular_max_with_transport_and_urgent?: number | null
+          price_regular_max_with_urgent?: number | null
+          price_regular_min_with_transport?: number | null
+          price_regular_min_with_transport_and_urgent?: number | null
+          price_regular_min_with_urgent?: number | null
           properties?: Json | null
           service_id: string
           transportation_fee?: number | null
           transportation_fee_after5?: number | null
-          urgent_charge?: number | null
           updated_at?: string | null
+          urgent_charge?: number | null
           vat_rate?: number | null
         }
         Update: {
           body_camera_fee?: number | null
+          cleaning_type?: string | null
           commission_amount_max_5to8?: number | null
           commission_amount_max_8to5?: number | null
           commission_amount_min_5to8?: number | null
           commission_amount_min_8to5?: number | null
           commission_rate?: number | null
+          configuration?: string | null
           created_at?: string | null
           description?: string | null
           duration_minutes?: number | null
+          fuel_cost?: number | null
           id?: string
           is_active?: boolean | null
           name?: string
           price_after5_max?: number
+          price_after5_max_with_transport?: number | null
+          price_after5_max_with_transport_and_urgent?: number | null
+          price_after5_max_with_urgent?: number | null
           price_after5_min?: number
+          price_after5_min_with_transport?: number | null
+          price_after5_min_with_transport_and_urgent?: number | null
+          price_after5_min_with_urgent?: number | null
           price_max?: number
           price_min?: number
+          price_regular_max_with_transport?: number | null
+          price_regular_max_with_transport_and_urgent?: number | null
+          price_regular_max_with_urgent?: number | null
+          price_regular_min_with_transport?: number | null
+          price_regular_min_with_transport_and_urgent?: number | null
+          price_regular_min_with_urgent?: number | null
           properties?: Json | null
           service_id?: string
           transportation_fee?: number | null
           transportation_fee_after5?: number | null
-          urgent_charge?: number | null
           updated_at?: string | null
+          urgent_charge?: number | null
           vat_rate?: number | null
         }
         Relationships: [
@@ -2001,6 +2187,204 @@ export type Database = {
           {
             foreignKeyName: "user_payment_methods_user_id_fkey"
             columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      voucher_redemption_logs: {
+        Row: {
+          attempted_code: string | null
+          booking_id: string | null
+          created_at: string | null
+          customer_id: string | null
+          error_message: string | null
+          id: string
+          metadata: Json | null
+          reason_code: string | null
+          status: string
+          voucher_id: string | null
+        }
+        Insert: {
+          attempted_code?: string | null
+          booking_id?: string | null
+          created_at?: string | null
+          customer_id?: string | null
+          error_message?: string | null
+          id?: string
+          metadata?: Json | null
+          reason_code?: string | null
+          status: string
+          voucher_id?: string | null
+        }
+        Update: {
+          attempted_code?: string | null
+          booking_id?: string | null
+          created_at?: string | null
+          customer_id?: string | null
+          error_message?: string | null
+          id?: string
+          metadata?: Json | null
+          reason_code?: string | null
+          status?: string
+          voucher_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "voucher_redemption_logs_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "voucher_redemption_logs_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "view_customer_bookings_detailed"
+            referencedColumns: ["booking_id"]
+          },
+          {
+            foreignKeyName: "voucher_redemption_logs_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "voucher_redemption_logs_voucher_id_fkey"
+            columns: ["voucher_id"]
+            isOneToOne: false
+            referencedRelation: "vouchers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      voucher_redemptions: {
+        Row: {
+          booking_id: string
+          created_at: string | null
+          customer_id: string
+          grand_total_after: number
+          grand_total_before: number
+          id: string
+          redeemed_amount: number
+          status: string
+          voucher_id: string
+        }
+        Insert: {
+          booking_id: string
+          created_at?: string | null
+          customer_id: string
+          grand_total_after: number
+          grand_total_before: number
+          id?: string
+          redeemed_amount: number
+          status?: string
+          voucher_id: string
+        }
+        Update: {
+          booking_id?: string
+          created_at?: string | null
+          customer_id?: string
+          grand_total_after?: number
+          grand_total_before?: number
+          id?: string
+          redeemed_amount?: number
+          status?: string
+          voucher_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "voucher_redemptions_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: true
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "voucher_redemptions_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: true
+            referencedRelation: "view_customer_bookings_detailed"
+            referencedColumns: ["booking_id"]
+          },
+          {
+            foreignKeyName: "voucher_redemptions_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "voucher_redemptions_voucher_id_fkey"
+            columns: ["voucher_id"]
+            isOneToOne: false
+            referencedRelation: "vouchers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      vouchers: {
+        Row: {
+          amount: number | null
+          code: string
+          created_at: string | null
+          created_by: string | null
+          currency: string
+          discount_type: Database["public"]["Enums"]["voucher_discount_type"]
+          id: string
+          max_discount: number | null
+          max_redemptions: number | null
+          min_grand_total: number | null
+          per_user_limit: number | null
+          percent_off: number | null
+          status: Database["public"]["Enums"]["voucher_status"]
+          updated_at: string | null
+          valid_from: string | null
+          valid_to: string | null
+        }
+        Insert: {
+          amount?: number | null
+          code: string
+          created_at?: string | null
+          created_by?: string | null
+          currency?: string
+          discount_type?: Database["public"]["Enums"]["voucher_discount_type"]
+          id?: string
+          max_discount?: number | null
+          max_redemptions?: number | null
+          min_grand_total?: number | null
+          per_user_limit?: number | null
+          percent_off?: number | null
+          status?: Database["public"]["Enums"]["voucher_status"]
+          updated_at?: string | null
+          valid_from?: string | null
+          valid_to?: string | null
+        }
+        Update: {
+          amount?: number | null
+          code?: string
+          created_at?: string | null
+          created_by?: string | null
+          currency?: string
+          discount_type?: Database["public"]["Enums"]["voucher_discount_type"]
+          id?: string
+          max_discount?: number | null
+          max_redemptions?: number | null
+          min_grand_total?: number | null
+          per_user_limit?: number | null
+          percent_off?: number | null
+          status?: Database["public"]["Enums"]["voucher_status"]
+          updated_at?: string | null
+          valid_from?: string | null
+          valid_to?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vouchers_created_by_fkey"
+            columns: ["created_by"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
@@ -2413,35 +2797,35 @@ export type Database = {
       addgeometrycolumn:
         | {
             Args: {
-              column_name: string
-              new_dim: number
-              new_srid: number
-              new_type: string
-              schema_name: string
-              table_name: string
-              use_typmod?: boolean
-            }
-            Returns: string
-          }
-        | {
-            Args: {
-              column_name: string
-              new_dim: number
-              new_srid: number
-              new_type: string
-              table_name: string
-              use_typmod?: boolean
-            }
-            Returns: string
-          }
-        | {
-            Args: {
               catalog_name: string
               column_name: string
               new_dim: number
               new_srid_in: number
               new_type: string
               schema_name: string
+              table_name: string
+              use_typmod?: boolean
+            }
+            Returns: string
+          }
+        | {
+            Args: {
+              column_name: string
+              new_dim: number
+              new_srid: number
+              new_type: string
+              schema_name: string
+              table_name: string
+              use_typmod?: boolean
+            }
+            Returns: string
+          }
+        | {
+            Args: {
+              column_name: string
+              new_dim: number
+              new_srid: number
+              new_type: string
               table_name: string
               use_typmod?: boolean
             }
@@ -2490,6 +2874,15 @@ export type Database = {
       dropgeometrycolumn:
         | {
             Args: {
+              catalog_name: string
+              column_name: string
+              schema_name: string
+              table_name: string
+            }
+            Returns: string
+          }
+        | {
+            Args: {
               column_name: string
               schema_name: string
               table_name: string
@@ -2497,26 +2890,17 @@ export type Database = {
             Returns: string
           }
         | { Args: { column_name: string; table_name: string }; Returns: string }
+      dropgeometrytable:
         | {
             Args: {
               catalog_name: string
-              column_name: string
               schema_name: string
               table_name: string
             }
             Returns: string
           }
-      dropgeometrytable:
         | { Args: { schema_name: string; table_name: string }; Returns: string }
         | { Args: { table_name: string }; Returns: string }
-        | {
-            Args: {
-              catalog_name: string
-              schema_name: string
-              table_name: string
-            }
-            Returns: string
-          }
       enablelongtransactions: { Args: never; Returns: string }
       ensure_customer_record: {
         Args: { p_user_id: string }
@@ -2637,6 +3021,10 @@ export type Database = {
           provider_rating: number
         }[]
       }
+      get_chat_unread_count: {
+        Args: { p_booking_id: string; p_user_id: string }
+        Returns: number
+      }
       get_invoice_by_booking: {
         Args: { p_booking_id: string }
         Returns: {
@@ -2658,6 +3046,9 @@ export type Database = {
           booking_completed: boolean | null
           booking_confirmed: boolean | null
           booking_started: boolean | null
+          chat_messages: boolean | null
+          chat_quiet_hours_end: string | null
+          chat_quiet_hours_start: string | null
           created_at: string | null
           id: string
           job_cancelled: boolean | null
@@ -2697,6 +3088,21 @@ export type Database = {
           wallet_id: string
         }[]
       }
+      get_user_conversations: {
+        Args: { p_user_id: string }
+        Returns: {
+          booking_id: string
+          booking_status: string
+          last_message_at: string
+          last_message_content: string
+          last_message_type: string
+          other_participant_avatar: string
+          other_participant_id: string
+          other_participant_name: string
+          service_name: string
+          unread_count: number
+        }[]
+      }
       get_user_notifications: {
         Args: { p_limit?: number; p_offset?: number }
         Returns: {
@@ -2727,10 +3133,31 @@ export type Database = {
         Args: { provider_id: string }
         Returns: undefined
       }
+      insert_system_chat_message: {
+        Args: { p_booking_id: string; p_content: string }
+        Returns: undefined
+      }
       is_admin: { Args: never; Returns: boolean }
       is_agency_owner_of_provider: {
         Args: { target_provider_id: string }
         Returns: boolean
+      }
+      is_within_chat_quiet_hours: {
+        Args: { p_user_id: string }
+        Returns: boolean
+      }
+      log_voucher_attempt: {
+        Args: {
+          p_booking_id: string
+          p_code: string
+          p_customer_id: string
+          p_error: string
+          p_metadata?: Json
+          p_reason: string
+          p_status: string
+          p_voucher_id: string
+        }
+        Returns: undefined
       }
       longtransactionsenabled: { Args: never; Returns: boolean }
       mark_notification_read: {
@@ -2738,8 +3165,8 @@ export type Database = {
         Returns: boolean
       }
       populate_geometry_columns:
-        | { Args: { use_typmod?: boolean }; Returns: string }
         | { Args: { tbl_oid: unknown; use_typmod?: boolean }; Returns: number }
+        | { Args: { use_typmod?: boolean }; Returns: string }
       postgis_constraint_dims: {
         Args: { geomcolumn: string; geomschema: string; geomtable: string }
         Returns: number
@@ -2777,6 +3204,24 @@ export type Database = {
       }
       postgis_version: { Args: never; Returns: string }
       postgis_wagyu_version: { Args: never; Returns: string }
+      redeem_voucher: {
+        Args: { p_booking_id: string; p_code: string }
+        Returns: {
+          grand_total_after: number
+          grand_total_before: number
+          voucher_amount: number
+          voucher_code: string
+          voucher_id: string
+        }[]
+      }
+      remove_voucher: {
+        Args: { p_booking_id: string }
+        Returns: {
+          booking_id: string
+          grand_total_after: number
+          grand_total_before: number
+        }[]
+      }
       send_push_notification_async: {
         Args: {
           p_app_type: string
@@ -2836,6 +3281,14 @@ export type Database = {
       st_asewkt: { Args: { "": string }; Returns: string }
       st_asgeojson:
         | {
+            Args: { geog: unknown; maxdecimaldigits?: number; options?: number }
+            Returns: string
+          }
+        | {
+            Args: { geom: unknown; maxdecimaldigits?: number; options?: number }
+            Returns: string
+          }
+        | {
             Args: {
               geom_column?: string
               maxdecimaldigits?: number
@@ -2844,18 +3297,32 @@ export type Database = {
             }
             Returns: string
           }
-        | {
-            Args: { geom: unknown; maxdecimaldigits?: number; options?: number }
-            Returns: string
-          }
-        | {
-            Args: { geog: unknown; maxdecimaldigits?: number; options?: number }
-            Returns: string
-          }
         | { Args: { "": string }; Returns: string }
       st_asgml:
         | {
+            Args: {
+              geog: unknown
+              id?: string
+              maxdecimaldigits?: number
+              nprefix?: string
+              options?: number
+            }
+            Returns: string
+          }
+        | {
             Args: { geom: unknown; maxdecimaldigits?: number; options?: number }
+            Returns: string
+          }
+        | { Args: { "": string }; Returns: string }
+        | {
+            Args: {
+              geog: unknown
+              id?: string
+              maxdecimaldigits?: number
+              nprefix?: string
+              options?: number
+              version: number
+            }
             Returns: string
           }
         | {
@@ -2869,35 +3336,13 @@ export type Database = {
             }
             Returns: string
           }
-        | {
-            Args: {
-              geog: unknown
-              id?: string
-              maxdecimaldigits?: number
-              nprefix?: string
-              options?: number
-              version: number
-            }
-            Returns: string
-          }
-        | {
-            Args: {
-              geog: unknown
-              id?: string
-              maxdecimaldigits?: number
-              nprefix?: string
-              options?: number
-            }
-            Returns: string
-          }
-        | { Args: { "": string }; Returns: string }
       st_askml:
         | {
-            Args: { geom: unknown; maxdecimaldigits?: number; nprefix?: string }
+            Args: { geog: unknown; maxdecimaldigits?: number; nprefix?: string }
             Returns: string
           }
         | {
-            Args: { geog: unknown; maxdecimaldigits?: number; nprefix?: string }
+            Args: { geom: unknown; maxdecimaldigits?: number; nprefix?: string }
             Returns: string
           }
         | { Args: { "": string }; Returns: string }
@@ -2918,11 +3363,11 @@ export type Database = {
       }
       st_assvg:
         | {
-            Args: { geom: unknown; maxdecimaldigits?: number; rel?: number }
+            Args: { geog: unknown; maxdecimaldigits?: number; rel?: number }
             Returns: string
           }
         | {
-            Args: { geog: unknown; maxdecimaldigits?: number; rel?: number }
+            Args: { geom: unknown; maxdecimaldigits?: number; rel?: number }
             Returns: string
           }
         | { Args: { "": string }; Returns: string }
@@ -2930,8 +3375,7 @@ export type Database = {
       st_astwkb:
         | {
             Args: {
-              geom: unknown[]
-              ids: number[]
+              geom: unknown
               prec?: number
               prec_m?: number
               prec_z?: number
@@ -2942,7 +3386,8 @@ export type Database = {
           }
         | {
             Args: {
-              geom: unknown
+              geom: unknown[]
+              ids: number[]
               prec?: number
               prec_m?: number
               prec_z?: number
@@ -2956,8 +3401,8 @@ export type Database = {
         Returns: string
       }
       st_azimuth:
-        | { Args: { geom1: unknown; geom2: unknown }; Returns: number }
         | { Args: { geog1: unknown; geog2: unknown }; Returns: number }
+        | { Args: { geom1: unknown; geom2: unknown }; Returns: number }
       st_boundingdiagonal: {
         Args: { fits?: boolean; geom: unknown }
         Returns: unknown
@@ -3022,11 +3467,11 @@ export type Database = {
         Returns: boolean
       }
       st_distance:
-        | { Args: { geom1: unknown; geom2: unknown }; Returns: number }
         | {
             Args: { geog1: unknown; geog2: unknown; use_spheroid?: boolean }
             Returns: number
           }
+        | { Args: { geom1: unknown; geom2: unknown }; Returns: number }
       st_distancesphere:
         | { Args: { geom1: unknown; geom2: unknown }; Returns: number }
         | {
@@ -3048,6 +3493,11 @@ export type Database = {
       }
       st_equals: { Args: { geom1: unknown; geom2: unknown }; Returns: boolean }
       st_expand:
+        | { Args: { box: unknown; dx: number; dy: number }; Returns: unknown }
+        | {
+            Args: { box: unknown; dx: number; dy: number; dz?: number }
+            Returns: unknown
+          }
         | {
             Args: {
               dm?: number
@@ -3058,11 +3508,6 @@ export type Database = {
             }
             Returns: unknown
           }
-        | {
-            Args: { box: unknown; dx: number; dy: number; dz?: number }
-            Returns: unknown
-          }
-        | { Args: { box: unknown; dx: number; dy: number }; Returns: unknown }
       st_force3d: { Args: { geom: unknown; zvalue?: number }; Returns: unknown }
       st_force3dm: {
         Args: { geom: unknown; mvalue?: number }
@@ -3085,8 +3530,8 @@ export type Database = {
       st_geogfromtext: { Args: { "": string }; Returns: unknown }
       st_geographyfromtext: { Args: { "": string }; Returns: unknown }
       st_geohash:
-        | { Args: { geom: unknown; maxchars?: number }; Returns: string }
         | { Args: { geog: unknown; maxchars?: number }; Returns: string }
+        | { Args: { geom: unknown; maxchars?: number }; Returns: string }
       st_geomcollfromtext: { Args: { "": string }; Returns: unknown }
       st_geometricmedian: {
         Args: {
@@ -3130,8 +3575,8 @@ export type Database = {
         Returns: unknown
       }
       st_intersects:
-        | { Args: { geom1: unknown; geom2: unknown }; Returns: boolean }
         | { Args: { geog1: unknown; geog2: unknown }; Returns: boolean }
+        | { Args: { geom1: unknown; geom2: unknown }; Returns: boolean }
       st_isvaliddetail: {
         Args: { flags?: number; geom: unknown }
         Returns: Database["public"]["CompositeTypes"]["valid_detail"]
@@ -3284,8 +3729,8 @@ export type Database = {
         Returns: unknown
       }
       st_setsrid:
-        | { Args: { geom: unknown; srid: number }; Returns: unknown }
         | { Args: { geog: unknown; srid: number }; Returns: unknown }
+        | { Args: { geom: unknown; srid: number }; Returns: unknown }
       st_sharedpaths: {
         Args: { geom1: unknown; geom2: unknown }
         Returns: unknown
@@ -3308,8 +3753,8 @@ export type Database = {
         Returns: Record<string, unknown>[]
       }
       st_srid:
-        | { Args: { geom: unknown }; Returns: number }
         | { Args: { geog: unknown }; Returns: number }
+        | { Args: { geom: unknown }; Returns: number }
       st_subdivide: {
         Args: { geom: unknown; gridsize?: number; maxvertices?: number }
         Returns: unknown[]
@@ -3338,15 +3783,15 @@ export type Database = {
       }
       st_touches: { Args: { geom1: unknown; geom2: unknown }; Returns: boolean }
       st_transform:
-        | { Args: { geom: unknown; to_proj: string }; Returns: unknown }
-        | {
-            Args: { from_proj: string; geom: unknown; to_srid: number }
-            Returns: unknown
-          }
         | {
             Args: { from_proj: string; geom: unknown; to_proj: string }
             Returns: unknown
           }
+        | {
+            Args: { from_proj: string; geom: unknown; to_srid: number }
+            Returns: unknown
+          }
+        | { Args: { geom: unknown; to_proj: string }; Returns: unknown }
       st_triangulatepolygon: { Args: { g1: unknown }; Returns: unknown }
       st_union:
         | { Args: { geom1: unknown; geom2: unknown }; Returns: unknown }
@@ -3441,6 +3886,7 @@ export type Database = {
         | "COMPLETED_WORK"
         | "RECEIPT_PROOF"
       media_type: "IMAGE" | "VIDEO"
+      offer_status: "draft" | "active" | "inactive" | "expired"
       payment_method_type:
         | "EWALLET"
         | "CARD"
@@ -3452,8 +3898,9 @@ export type Database = {
       provider_status: "offline" | "online" | "busy" | "suspended"
       ticket_category: "DISPUTE" | "BILLING" | "TECHNICAL" | "OTHER"
       ticket_status: "OPEN" | "IN_PROGRESS" | "RESOLVED" | "CLOSED"
-      voucher_discount_type: "amount" | "percent"
       verification_status: "pending" | "verified" | "rejected"
+      voucher_discount_type: "amount" | "percent"
+      voucher_status: "active" | "disabled" | "expired"
     }
     CompositeTypes: {
       geometry_dump: {
@@ -3619,6 +4066,7 @@ export const Constants = {
         "RECEIPT_PROOF",
       ],
       media_type: ["IMAGE", "VIDEO"],
+      offer_status: ["draft", "active", "inactive", "expired"],
       payment_method_type: [
         "EWALLET",
         "CARD",
@@ -3631,8 +4079,10 @@ export const Constants = {
       provider_status: ["offline", "online", "busy", "suspended"],
       ticket_category: ["DISPUTE", "BILLING", "TECHNICAL", "OTHER"],
       ticket_status: ["OPEN", "IN_PROGRESS", "RESOLVED", "CLOSED"],
-      voucher_discount_type: ["amount", "percent"],
       verification_status: ["pending", "verified", "rejected"],
+      voucher_discount_type: ["amount", "percent"],
+      voucher_status: ["active", "disabled", "expired"],
     },
   },
 } as const
+
