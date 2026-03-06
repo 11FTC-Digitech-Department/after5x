@@ -764,6 +764,18 @@ ion-content {
   }
 }
 
+// Body Camera Section
+.body-camera-section {
+  .section-subtitle,
+  .body-cam-note {
+    font-size: 14px;
+  }
+  .body-cam-note {
+    display: block;
+    margin-top: 4px;
+  }
+}
+
 // Urgency Section
 .urgency-section {
   margin-bottom: 20px;
@@ -1589,6 +1601,18 @@ ion-select {
   align-items: center;
   justify-content: center;
   z-index: 9999;
+}
+
+// Contact Number guide - always visible below input
+.contact-number-guide-item {
+  --min-height: auto;
+  --padding-top: 4px;
+  --padding-bottom: 8px;
+  --background: transparent;
+}
+.contact-number-guide {
+  font-size: 12px;
+  color: var(--ion-color-medium);
 }
 
 // Error States

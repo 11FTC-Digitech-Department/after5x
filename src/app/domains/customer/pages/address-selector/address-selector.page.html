@@ -17,6 +17,14 @@
   @if (!showMap()) {
     <!-- Saved Addresses List -->
     <div class="addresses-container">
+      <!-- Service area notice -->
+      <div class="service-area-notice">
+        <ion-icon name="information-circle" class="notice-icon"></ion-icon>
+        <ion-text class="notice-text">
+          During our soft launch period, After5 is only available within Quezon City. Please stay tuned for our official launch in other areas.
+        </ion-text>
+      </div>
+
       <!-- Search Address Section -->
       <div class="section search-section">
         <ion-text class="section-title" color="medium">
@@ -74,12 +82,6 @@
             <ion-text class="section-title" color="medium">
               <small>Your saved addresses</small>
             </ion-text>
-            @if (locationError()) {
-              <ion-item color="danger" lines="none" class="error-item">
-                <ion-icon name="alert-circle" slot="start"></ion-icon>
-                <ion-label class="ion-text-wrap">{{ locationError() }}</ion-label>
-              </ion-item>
-            }
             <ion-list class="address-list">
               @for (address of userAddresses(); track address.id) {
                 <ion-item button (click)="selectSavedAddress(address)" class="address-item">
@@ -135,9 +137,10 @@
           }
         </ion-button>
         @if (locationError()) {
-          <ion-text color="danger" class="error-text">
-            <small>{{ locationError() }}</small>
-          </ion-text>
+          <div class="location-error-compact">
+            <ion-icon name="alert-circle"></ion-icon>
+            <ion-text>{{ locationError() }}</ion-text>
+          </div>
         }
       </div>
 
@@ -149,9 +152,17 @@
         [height]="'100%'"
         [center]="getMapCenter()"
         [initialMarker]="currentLocation()"
-        (locationSelected)="onLocationSelected($event)">
+        [restrictToBounds]="true"
+        (locationSelected)="onLocationSelected($event)"
+        (selectionRejected)="onSelectionRejected($event)">
       </app-map>
 
+      @if (locationError()) {
+        <div class="location-error-compact map-error">
+          <ion-icon name="alert-circle"></ion-icon>
+          <ion-text>{{ locationError() }}</ion-text>
+        </div>
+      }
       <!-- Selected Address Display -->
       @if (selectedLocation()) {
         <div class="selected-location-card">
@@ -163,7 +174,7 @@
             Use This Location
           </ion-button>
         </div>
-      } @else {
+      } @else if (!locationError()) {
         <div class="map-instructions">
           <ion-text color="medium">Tap on the map to select a location</ion-text>
         </div>

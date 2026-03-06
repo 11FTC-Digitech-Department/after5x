@@ -7,11 +7,65 @@ import { GooglePlaceResult, GeocodeResult } from '../models/address.model';
 import { environment } from '../../../environments/environment';
 import { CapacitorHttp } from '@capacitor/core';
 
+/**
+ * Quezon City, Philippines bounds for address selection.
+ * OSM admin boundary bbox, clipped east at Marikina River (121.06) to exclude Marikina.
+ */
+export const QC_BOUNDS = {
+  north: 14.776,
+  south: 14.589,
+  east: 121.06,
+  west: 120.99,
+} as const;
+
+export const QC_BOUNDS_ERROR =
+  'This location is outside our service area (Quezon City). Please choose an address within Quezon City.';
+
+/** Cities/locality names that are within the service area. Add more to expand coverage. */
+export const ALLOWED_LOCALITIES = ['Quezon City'] as const;
+
 @Injectable({
   providedIn: 'root',
 })
 export class GoogleMapsService {
   private platform = inject(Platform);
+
+  /** Check if coordinates are within QC bounds (rectangle) */
+  isWithinQCBounds(lat: number, lng: number): boolean {
+    return (
+      lat >= QC_BOUNDS.south &&
+      lat <= QC_BOUNDS.north &&
+      lng >= QC_BOUNDS.west &&
+      lng <= QC_BOUNDS.east
+    );
+  }
+
+  /**
+   * Check if address indicates location is in an allowed locality.
+   * Primary validation when geocoded address is available.
+   */
+  isAddressInQuezonCity(address: string): boolean {
+    if (!address) return false;
+    const upper = address.toUpperCase();
+    return ALLOWED_LOCALITIES.some(loc => upper.includes(loc.toUpperCase()));
+  }
+
+  /**
+   * Validate location. Uses address (from geocode) when provided for accurate city check.
+   * Falls back to bounds when address not available (e.g. saved address).
+   */
+  validateLocation(
+    lat: number,
+    lng: number,
+    address?: string
+  ): { valid: boolean; error?: string } {
+    if (address) {
+      if (this.isAddressInQuezonCity(address)) return { valid: true };
+      return { valid: false, error: QC_BOUNDS_ERROR };
+    }
+    if (this.isWithinQCBounds(lat, lng)) return { valid: true };
+    return { valid: false, error: QC_BOUNDS_ERROR };
+  }
 
   /**
    * Initialize a Google Map in a container element
@@ -177,19 +231,23 @@ export class GoogleMapsService {
     }
   }
 
+  /** Center of Quezon City for Places Autocomplete bounds */
+  private readonly QC_CENTER = { lat: 14.682, lng: 121.025 };
+
   /**
-   * Search for places using Google Places API
+   * Search for places using Google Places API.
+   * Restricted to Quezon City, Philippines.
    */
-  async searchPlaces(query: string, location?: { lat: number; lng: number }): Promise<GooglePlaceResult[]> {
+  async searchPlaces(query: string): Promise<GooglePlaceResult[]> {
     try {
       const apiKey = environment.googleMaps.apiKey;
-      let url = `https://maps.googleapis.com/maps/api/place/autocomplete/json?input=${encodeURIComponent(query)}&key=${apiKey}&types=address`;
+      const url =
+        `https://maps.googleapis.com/maps/api/place/autocomplete/json?` +
+        `input=${encodeURIComponent(query)}&key=${apiKey}&types=address` +
+        `&location=${this.QC_CENTER.lat},${this.QC_CENTER.lng}&radius=20000` +
+        `&strictbounds=true&components=country:ph`;
 
-      if (location) {
-        url += `&location=${location.lat},${location.lng}&radius=50000`;
-      }
-
-      const response = await CapacitorHttp.get({ url: url });
+      const response = await CapacitorHttp.get({ url });
       
       if (response.status === 200) {
         const data = await response.data;

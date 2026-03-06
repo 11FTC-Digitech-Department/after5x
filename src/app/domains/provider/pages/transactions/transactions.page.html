@@ -1,0 +1,203 @@
+<ion-header [translucent]="true" class="ion-no-border">
+  <ion-toolbar>
+    <ion-title>Transactions</ion-title>
+  </ion-toolbar>
+  <ion-toolbar>
+    <ion-searchbar
+      placeholder="Search by Booking ID"
+      [debounce]="300"
+      (ionInput)="onSearchInput($event)"
+      class="transactions-searchbar">
+    </ion-searchbar>
+    <div class="filter-row">
+      <ion-chip (click)="openDateFilter()" [color]="hasActiveDateFilter() ? 'primary' : 'medium'">
+        <ion-icon name="calendar-outline"></ion-icon>
+        <ion-label>
+          @if (hasActiveDateFilter()) {
+            {{ dateFrom() ? formatDateOnly(dateFrom()) : 'From' }} – {{ dateTo() ? formatDateOnly(dateTo()) : 'To' }}
+          } @else {
+            Filter by date
+          }
+        </ion-label>
+      </ion-chip>
+      @if (hasActiveDateFilter()) {
+        <ion-chip color="light" (click)="clearDateFilter()">
+          <ion-icon name="close-circle"></ion-icon>
+          <ion-label>Clear</ion-label>
+        </ion-chip>
+      }
+    </div>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content [fullscreen]="true">
+  <ion-header collapse="condense">
+    <ion-toolbar>
+      <ion-title size="large">Transactions</ion-title>
+    </ion-toolbar>
+  </ion-header>
+
+  <!-- Pull to refresh -->
+  <ion-refresher slot="fixed" (ionRefresh)="handleRefresh($event)">
+    <ion-refresher-content pullingIcon="chevron-down-circle-outline" refreshingSpinner="circles">
+    </ion-refresher-content>
+  </ion-refresher>
+
+  <!-- Loading State -->
+  @if (isLoading()) {
+    <div class="loading-container">
+      <ion-card class="transactions-skeleton">
+        <ion-card-header>
+          <ion-skeleton-text [animated]="true" style="width: 50%; height: 18px;"></ion-skeleton-text>
+        </ion-card-header>
+        <ion-card-content>
+          @for (item of [1, 2, 3, 4, 5]; track item) {
+            <div class="transaction-skeleton">
+              <div style="flex: 1;">
+                <ion-skeleton-text [animated]="true" style="width: 60%; height: 14px;"></ion-skeleton-text>
+                <ion-skeleton-text [animated]="true" style="width: 40%; height: 12px; margin-top: 4px;"></ion-skeleton-text>
+              </div>
+              <ion-skeleton-text [animated]="true" style="width: 80px; height: 16px; flex-shrink: 0;"></ion-skeleton-text>
+            </div>
+          }
+        </ion-card-content>
+      </ion-card>
+    </div>
+  }
+
+  <!-- Error State -->
+  @else if (error()) {
+    <div class="error-container">
+      <ion-icon name="receipt-outline" color="medium"></ion-icon>
+      <h3>Unable to load transactions</h3>
+      <p>{{ error() }}</p>
+      <ion-button fill="outline" (click)="loadBookings()">
+        Try Again
+      </ion-button>
+    </div>
+  }
+
+  <!-- Transactions Content -->
+  @else {
+    <ion-card class="transactions-card">
+      <ion-card-header>
+        <ion-card-title>
+          <ion-icon name="receipt-outline"></ion-icon>
+          Booking History
+        </ion-card-title>
+      </ion-card-header>
+      <ion-card-content>
+        @if (bookings().length === 0) {
+          <div class="empty-state">
+            <ion-icon name="receipt-outline" color="medium"></ion-icon>
+            <h4>No bookings yet</h4>
+            <p>Your booking transactions will appear here</p>
+          </div>
+        } @else if (filteredBookings().length === 0) {
+          <div class="empty-state">
+            <ion-icon name="search-outline" color="medium"></ion-icon>
+            <h4>No matches</h4>
+            <p>Try adjusting your search or date filter</p>
+          </div>
+        } @else {
+          <ion-list lines="none" class="transaction-list">
+            @for (booking of filteredBookings(); track booking.id) {
+              <ion-item class="transaction-item" button (click)="openJob(booking)">
+                <ion-label>
+                  <h3 class="transaction-title">{{ getShortBookingId(booking.id) }}</h3>
+                  <p class="transaction-description">{{ getCustomerName(booking) }}</p>
+                  <p class="transaction-meta">
+                    Created: {{ formatDateFull(booking.created_at) }}
+                  </p>
+                  <p class="transaction-meta">
+                    @if (getCompletionDate(booking)) {
+                      Completed: {{ formatDateFull(getCompletionDate(booking)) }}
+                    } @else if (isCompleted(booking)) {
+                      Completed: —
+                    } @else {
+                      Completed: Pending
+                    }
+                  </p>
+                </ion-label>
+                <span class="transaction-amount" slot="end">
+                  {{ formatAmount(getGrandTotal(booking)) }}
+                </span>
+              </ion-item>
+            }
+          </ion-list>
+        }
+      </ion-card-content>
+    </ion-card>
+  }
+</ion-content>
+
+<!-- Date range filter modal -->
+<ion-modal
+  [isOpen]="showDateFilter()"
+  (didDismiss)="closeDateFilter()"
+  [breakpoints]="[0, 0.5, 1]"
+  [initialBreakpoint]="0.5"
+  [keepContentsMounted]="true">
+  <ng-template>
+    <ion-header>
+      <ion-toolbar>
+        <ion-title>Filter by date</ion-title>
+        <ion-buttons slot="end">
+          <ion-button (click)="closeDateFilter()">Done</ion-button>
+        </ion-buttons>
+      </ion-toolbar>
+    </ion-header>
+    <ion-content class="ion-padding">
+      <p class="date-filter-hint">Show only bookings created within these dates. Pick a start and end date.</p>
+      <div class="date-filter-form">
+        <div class="date-field" (click)="openDatePicker('from')">
+          <span class="date-field-label">From</span>
+          <span class="date-field-value" [class.placeholder]="!dateFrom()">
+            {{ dateFrom() ? formatDateOnly(dateFrom()) : 'Tap to select' }}
+          </span>
+          <ion-icon name="chevron-forward" class="date-field-chevron"></ion-icon>
+        </div>
+        <div class="date-field" (click)="openDatePicker('to')">
+          <span class="date-field-label">To</span>
+          <span class="date-field-value" [class.placeholder]="!dateTo()">
+            {{ dateTo() ? formatDateOnly(dateTo()) : 'Tap to select' }}
+          </span>
+          <ion-icon name="chevron-forward" class="date-field-chevron"></ion-icon>
+        </div>
+        <ion-button expand="block" fill="outline" (click)="clearDateFilter(); closeDateFilter()">
+          Clear filter
+        </ion-button>
+      </div>
+    </ion-content>
+  </ng-template>
+</ion-modal>
+
+<!-- Date picker modal (opens when user taps a date field) -->
+<ion-modal
+  [isOpen]="editingDateField() !== null"
+  (didDismiss)="closeDatePicker()"
+  [breakpoints]="[0, 0.6, 1]"
+  [initialBreakpoint]="0.6"
+  [keepContentsMounted]="true">
+  <ng-template>
+    <ion-header>
+      <ion-toolbar>
+        <ion-title>{{ editingDateField() === 'from' ? 'Pick start date' : 'Pick end date' }}</ion-title>
+        <ion-buttons slot="end">
+          <ion-button (click)="closeDatePicker()">Cancel</ion-button>
+          <ion-button strong="true" (click)="applyDateSelection()">Apply</ion-button>
+        </ion-buttons>
+      </ion-toolbar>
+    </ion-header>
+    <ion-content class="date-picker-content">
+      <ion-datetime
+        class="date-picker-calendar"
+        presentation="date"
+        [value]="pendingDateValue()"
+        [min]="editingDateField() === 'to' ? dateFrom() || undefined : undefined"
+        [max]="editingDateField() === 'from' ? dateTo() || undefined : undefined"
+        (ionChange)="onDatePickerChange($event)">
+      </ion-datetime>
+    </ion-content>
+  </ng-template>
+</ion-modal>

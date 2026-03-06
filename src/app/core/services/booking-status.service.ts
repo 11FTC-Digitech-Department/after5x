@@ -91,6 +91,7 @@ export class BookingStatusService {
         break;
       case BookingStatus.COMPLETED:
         updateData.finished_work_at = new Date().toISOString();
+        updateData.completed_at = new Date().toISOString();
         break;
     }
 

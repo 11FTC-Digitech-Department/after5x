@@ -29,14 +29,23 @@
         <ion-text>Searching...</ion-text>
       </div>
     }
+
+    @if (locationError()) {
+      <div class="location-error">
+        <ion-icon name="alert-circle" color="danger"></ion-icon>
+        <ion-text color="danger" class="ion-text-wrap">{{ locationError() }}</ion-text>
+      </div>
+    }
   </div>
 
   <!-- Map Component -->
   <app-map
     [center]="mapCenter()"
     [height]="height()"
+    [restrictToBounds]="true"
     (mapReady)="onMapReady()"
-    (locationSelected)="onMapClick($event)">
+    (locationSelected)="onMapClick($event)"
+    (selectionRejected)="onSelectionRejected($event)">
   </app-map>
 
     <!-- Current Location Button -->

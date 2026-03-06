@@ -248,6 +248,7 @@ export interface CustomerBooking {
   arrived_at: string | null;
   started_work_at: string | null;
   finished_work_at: string | null;
+  completed_at: string | null;
   cancellation_reason: string | null;
   cancelled_by: string | null;
   otp_start: string | null;
