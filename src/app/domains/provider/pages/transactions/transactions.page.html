@@ -104,7 +104,12 @@
             @for (booking of filteredBookings(); track booking.id) {
               <ion-item class="transaction-item" button (click)="openJob(booking)">
                 <ion-label>
-                  <h3 class="transaction-title">{{ getShortBookingId(booking.id) }}</h3>
+                  <h3 class="transaction-title">
+                    {{ getShortBookingId(booking.id) }}
+                    <ion-badge [color]="getStatusConfig(booking.status).color" class="status-badge">
+                      {{ getStatusConfig(booking.status).label }}
+                    </ion-badge>
+                  </h3>
                   <p class="transaction-description">{{ getCustomerName(booking) }}</p>
                   <p class="transaction-meta">
                     Created: {{ formatDateFull(booking.created_at) }}

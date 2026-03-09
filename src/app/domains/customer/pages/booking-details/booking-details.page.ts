@@ -136,12 +136,11 @@ const STATUS_CONFIG: Record<string, { label: string; color: string; icon: string
   }
 };
 
-// Statuses that can be cancelled
+// Statuses that can be cancelled (before provider starts traveling)
 const CANCELLABLE_STATUSES = [
   BookingStatus.FINDING_PROVIDER,
   BookingStatus.PENDING_ACCEPTANCE,
-  BookingStatus.CONFIRMED,
-  BookingStatus.ON_THE_WAY
+  BookingStatus.CONFIRMED
 ];
 
 // Statuses that allow chat

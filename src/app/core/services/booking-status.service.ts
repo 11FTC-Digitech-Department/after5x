@@ -18,7 +18,7 @@ export class BookingStatusService {
     [BookingStatus.FINDING_PROVIDER]: [BookingStatus.PENDING_ACCEPTANCE, BookingStatus.CANCELLED],
     [BookingStatus.PENDING_ACCEPTANCE]: [BookingStatus.CONFIRMED, BookingStatus.REJECTED, BookingStatus.CANCELLED],
     [BookingStatus.CONFIRMED]: [BookingStatus.ON_THE_WAY, BookingStatus.CANCELLED],
-    [BookingStatus.ON_THE_WAY]: [BookingStatus.ARRIVED, BookingStatus.CANCELLED],
+    [BookingStatus.ON_THE_WAY]: [BookingStatus.ARRIVED],
     [BookingStatus.ARRIVED]: [BookingStatus.IN_PROGRESS, BookingStatus.CANCELLED],
     [BookingStatus.IN_PROGRESS]: [BookingStatus.PAYMENT_PENDING, BookingStatus.CANCELLED],
     [BookingStatus.PAYMENT_PENDING]: [BookingStatus.PAID, BookingStatus.CANCELLED],
@@ -399,6 +399,27 @@ export class BookingStatusService {
 
   async cancelBooking(bookingId: string, reason: string, cancelledBy: string): Promise<void> {
     const client = this.supabaseService.client;
+
+    const CANCELLABLE_STATUSES: BookingStatus[] = [
+      BookingStatus.FINDING_PROVIDER,
+      BookingStatus.PENDING_ACCEPTANCE,
+      BookingStatus.CONFIRMED
+    ];
+
+    const { data: booking, error: fetchError } = await client
+      .from('bookings')
+      .select('status')
+      .eq('id', bookingId)
+      .single();
+
+    if (fetchError || !booking) {
+      throw new Error(`Booking ${bookingId} not found`);
+    }
+
+    const currentStatus = booking.status as BookingStatus;
+    if (!CANCELLABLE_STATUSES.includes(currentStatus)) {
+      throw new Error('Cancellation not allowed when provider is on the way or service has started');
+    }
 
     // Update booking with cancellation details
     const { error } = await client

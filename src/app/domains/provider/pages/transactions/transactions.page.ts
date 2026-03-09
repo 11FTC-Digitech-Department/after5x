@@ -16,6 +16,7 @@ import {
   IonItem,
   IonLabel,
   IonButton,
+  IonBadge,
   IonRefresher,
   IonRefresherContent,
   IonSkeletonText,
@@ -33,6 +34,21 @@ import { SessionService } from '@core/auth/session';
 import { ProviderBookingService, ProviderBooking } from '@core/services/provider-booking.service';
 import { WalletService } from '@core/services/wallet.service';
 import { BookingStatus } from '@core/models/booking.model';
+
+const STATUS_CONFIG: Record<string, { label: string; color: string; icon: string }> = {
+  [BookingStatus.FINDING_PROVIDER]: { label: 'Finding Provider', color: 'warning', icon: 'hourglass' },
+  [BookingStatus.PENDING_ACCEPTANCE]: { label: 'Pending', color: 'warning', icon: 'hourglass' },
+  [BookingStatus.CONFIRMED]: { label: 'Confirmed', color: 'primary', icon: 'checkmark-circle' },
+  [BookingStatus.ON_THE_WAY]: { label: 'On The Way', color: 'tertiary', icon: 'car' },
+  [BookingStatus.ARRIVED]: { label: 'Arrived', color: 'tertiary', icon: 'location-outline' },
+  [BookingStatus.IN_PROGRESS]: { label: 'In Progress', color: 'secondary', icon: 'hammer' },
+  [BookingStatus.PAYMENT_PENDING]: { label: 'Payment Due', color: 'warning', icon: 'alert-circle' },
+  [BookingStatus.PAID]: { label: 'Paid', color: 'success', icon: 'checkmark-circle' },
+  [BookingStatus.COMPLETED]: { label: 'Completed', color: 'success', icon: 'checkmark-circle' },
+  [BookingStatus.CANCELLED]: { label: 'Cancelled', color: 'danger', icon: 'close-circle' },
+  [BookingStatus.REJECTED]: { label: 'Rejected', color: 'danger', icon: 'close-circle' },
+  [BookingStatus.EXPIRED]: { label: 'Expired', color: 'medium', icon: 'time-outline' }
+};
 
 @Component({
   selector: 'app-transactions',
@@ -54,6 +70,7 @@ import { BookingStatus } from '@core/models/booking.model';
     IonItem,
     IonLabel,
     IonButton,
+    IonBadge,
     IonRefresher,
     IonRefresherContent,
     IonSkeletonText,
@@ -270,5 +287,9 @@ export class TransactionsPage implements OnInit {
 
   hasActiveDateFilter(): boolean {
     return !!this.dateFrom() || !!this.dateTo();
+  }
+
+  getStatusConfig(status: string): { label: string; color: string; icon: string } {
+    return STATUS_CONFIG[status] || { label: status || 'Unknown', color: 'medium', icon: 'ellipse' };
   }
 }

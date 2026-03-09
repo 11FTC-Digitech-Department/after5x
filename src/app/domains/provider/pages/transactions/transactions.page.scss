@@ -225,6 +225,13 @@ ion-card {
         font-weight: 600;
         color: var(--ion-color-primary);
         margin: 0 0 2px;
+
+        .status-badge {
+          margin-left: 8px;
+          font-size: 11px;
+          font-weight: 500;
+          vertical-align: middle;
+        }
       }
 
       .transaction-description {
