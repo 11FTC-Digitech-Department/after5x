@@ -430,6 +430,8 @@ export class ChatService {
 
   /**
    * Get booking details for chat header
+   * Fetches other participant directly from profiles to avoid RLS issues when
+   * provider views customer (customers table restricts SELECT to owner)
    */
   async getChatContext(bookingId: string): Promise<{
     serviceName: string;
@@ -440,31 +442,13 @@ export class ChatService {
     if (!userId) return null;
 
     try {
-      const { data, error } = await this.supabaseService.client
+      const { data: booking, error: bookingError } = await this.supabaseService.client
         .from('bookings')
         .select(`
           id,
           status,
           customer_id,
           provider_id,
-          customer:customers!customer_id (
-            id,
-            profiles!inner (
-              id,
-              full_name,
-              avatar_url,
-              phone_number
-            )
-          ),
-          provider:providers!provider_id (
-            id,
-            profiles!inner (
-              id,
-              full_name,
-              avatar_url,
-              phone_number
-            )
-          ),
           booking_items (
             service_variant:service_variants (
               name
@@ -474,26 +458,31 @@ export class ChatService {
         .eq('id', bookingId)
         .single();
 
-      if (error || !data) return null;
+      if (bookingError || !booking) return null;
 
-      // Determine other participant
-      const isCustomer = data.customer_id === userId;
-      const otherProfile = isCustomer
-        ? (data.provider as any)?.profiles
-        : (data.customer as any)?.profiles;
+      const isCustomer = booking.customer_id === userId;
+      const otherProfileId = isCustomer ? booking.provider_id : booking.customer_id;
 
-      if (!otherProfile) return null;
+      if (!otherProfileId) return null;
 
-      const serviceName = (data.booking_items as any[])?.[0]?.service_variant?.name || 'Service';
+      const { data: profile, error: profileError } = await this.supabaseService.client
+        .from('profiles')
+        .select('id, full_name, avatar_url, phone_number')
+        .eq('id', otherProfileId)
+        .single();
+
+      if (profileError || !profile) return null;
+
+      const serviceName = (booking.booking_items as any[])?.[0]?.service_variant?.name || 'Service';
 
       return {
         serviceName,
-        bookingStatus: data.status ?? '',
+        bookingStatus: booking.status ?? '',
         otherParticipant: {
-          id: otherProfile.id,
-          full_name: otherProfile.full_name,
-          avatar_url: otherProfile.avatar_url,
-          phone_number: otherProfile.phone_number || null
+          id: profile.id,
+          full_name: profile.full_name,
+          avatar_url: profile.avatar_url,
+          phone_number: profile.phone_number || null
         }
       };
     } catch (error) {
