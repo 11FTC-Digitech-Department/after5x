@@ -51,7 +51,7 @@
                         <ion-col size="12" size-md="5" size-lg="4">
                           <div class="service-hero-provider">
                             <ion-avatar class="provider-hero-avatar">
-                              <img [src]="selectedService()?.provider?.profile?.avatar_url || 'assets/logo/main-logo.png'" alt="Provider" />
+                              <img [src]="selectedService()?.provider?.profile?.avatar_url || 'assets/logo/main-logo.png'" alt="Provider" referrerpolicy="no-referrer" />
                             </ion-avatar>
                             <div class="provider-info">
                               <ion-text class="provider-hero-name">{{ selectedService()?.provider?.profile?.full_name }}</ion-text>
@@ -570,7 +570,7 @@
                   <ion-text class="summary-label">Assigned Provider:</ion-text>
                   <div class="provider-summary">
                     <ion-avatar class="provider-avatar-small">
-                      <img [src]="assignedProvider().profile?.avatar_url || 'assets/logo/main-logo.png'" alt="Provider" />
+                      <img [src]="assignedProvider().profile?.avatar_url || 'assets/logo/main-logo.png'" alt="Provider" referrerpolicy="no-referrer" />
                     </ion-avatar>
                     <div class="provider-info">
                       <ion-text class="provider-name">{{ assignedProvider().profile?.full_name }}</ion-text>

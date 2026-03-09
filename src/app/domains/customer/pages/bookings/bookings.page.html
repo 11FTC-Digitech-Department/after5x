@@ -146,7 +146,7 @@
                 @if (getProviderName(booking)) {
                   @if (getProviderAvatar(booking)) {
                     <ion-avatar class="provider-avatar">
-                      <img [src]="getProviderAvatar(booking)" [alt]="getProviderName(booking)" />
+                      <img [src]="getProviderAvatar(booking)" [alt]="getProviderName(booking)" referrerpolicy="no-referrer" />
                     </ion-avatar>
                   } @else {
                     <ion-icon name="person-outline"></ion-icon>

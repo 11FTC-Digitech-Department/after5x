@@ -29,7 +29,7 @@
         <ion-item>
           <ion-avatar slot="start">
             @if (provider.profile?.avatar_url) {
-              <img [src]="provider.profile?.avatar_url" [alt]="provider.profile?.full_name" />
+              <img [src]="provider.profile?.avatar_url" [alt]="provider.profile?.full_name" referrerpolicy="no-referrer" />
             } @else {
               <div class="avatar-placeholder">{{ getInitials(provider.profile?.full_name || '') }}</div>
             }
