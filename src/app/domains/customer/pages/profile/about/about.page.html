@@ -19,14 +19,14 @@
   <!-- App Info -->
   <div class="app-info">
     <div class="app-logo">
-      <ion-icon name="flash" color="primary"></ion-icon>
+      <img src="assets/logo/alt-logo.svg" alt="After5" class="logo-img" />
     </div>
     <h1 class="app-name">{{ appName }}</h1>
     <p class="app-tagline">
       <ion-text color="medium">Your trusted home services partner</ion-text>
     </p>
     <p class="app-version">
-      <ion-text color="medium">Version {{ appVersion }}</ion-text>
+      <ion-text color="medium">Version {{ appVersion() || '0.0.1' }} @if (buildNumber()) { (build {{ buildNumber() }}) }</ion-text>
     </p>
   </div>
 

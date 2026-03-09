@@ -10,7 +10,8 @@ ion-content {
   margin: 0 16px;
 
   .category-header {
-    --padding-start: 0;
+    --padding-start: 16px;
+    --padding-end: 16px;
 
     ion-icon[slot="start"] {
       font-size: 22px;
@@ -24,7 +25,7 @@ ion-content {
   }
 
   .category-content {
-    padding-left: 8px;
+    padding: 8px 12px 8px 16px;
   }
 
   .nested-accordion {
@@ -33,7 +34,8 @@ ion-content {
     border-radius: 8px;
 
     .faq-header {
-      --padding-start: 12px;
+      --padding-start: 16px;
+      --padding-end: 16px;
       --min-height: 48px;
 
       ion-label {
@@ -84,25 +86,28 @@ ion-content {
   }
 
   ion-item {
-    --padding-start: 16px;
+    --padding-start: 12px;
+    --padding-end: 12px;
+    --inner-padding-end: 12px;
+    --min-height: 56px;
 
     ion-icon[slot="start"] {
       font-size: 22px;
-      margin-right: 16px;
+      margin-right: 12px;
       color: var(--ion-color-primary);
     }
 
     ion-note {
       display: block;
       font-size: 13px;
-      margin-top: 2px;
+      margin-top: 4px;
     }
   }
 }
 
 .support-footer {
   text-align: center;
-  padding: 16px 16px 32px;
+  padding: 24px 16px 32px;
 
   small {
     font-size: 12px;

@@ -13,16 +13,15 @@ ion-content {
     width: 80px;
     height: 80px;
     border-radius: 20px;
-    background: linear-gradient(135deg, var(--ion-color-primary), var(--ion-color-primary-shade));
     display: flex;
     align-items: center;
     justify-content: center;
     margin-bottom: 16px;
-    box-shadow: 0 4px 16px rgba(var(--ion-color-primary-rgb), 0.3);
 
-    ion-icon {
-      font-size: 40px;
-      color: var(--ion-color-primary-contrast);
+    .logo-img {
+      width: 64px;
+      height: 64px;
+      object-fit: contain;
     }
   }
 

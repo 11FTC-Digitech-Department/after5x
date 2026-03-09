@@ -69,18 +69,12 @@
     </ion-list-header>
 
     @for (contact of contactOptions; track contact.label) {
-      <ion-item
-        [button]="!contact.disabled"
-        [disabled]="contact.disabled"
-        (click)="!contact.disabled && onContactClick(contact.action)">
+      <ion-item button detail (click)="onContactClick(contact.action)">
         <ion-icon [name]="contact.icon" slot="start"></ion-icon>
         <ion-label>
           {{ contact.label }}
           <ion-note>{{ contact.description }}</ion-note>
         </ion-label>
-        @if (!contact.disabled) {
-          <ion-icon name="chevron-forward" slot="end" color="medium"></ion-icon>
-        }
       </ion-item>
     }
   </ion-list>
