@@ -58,7 +58,7 @@
           color="warning"
           [loading]="isStatsLoading()"
           [clickable]="true"
-          (cardClick)="goToSchedule()"
+          (cardClick)="goToSchedule('incoming')"
         ></app-stats-card>
 
         <app-stats-card
@@ -69,7 +69,7 @@
           color="tertiary"
           [loading]="isStatsLoading()"
           [clickable]="true"
-          (cardClick)="goToSchedule()"
+          (cardClick)="goToSchedule('active')"
         ></app-stats-card>
 
         <app-stats-card
@@ -80,7 +80,7 @@
           color="primary"
           [loading]="isStatsLoading()"
           [clickable]="true"
-          (cardClick)="goToSchedule()"
+          (cardClick)="goToSchedule('incoming')"
         ></app-stats-card>
       </div>
     </div>

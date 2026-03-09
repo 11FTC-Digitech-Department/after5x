@@ -1,7 +1,8 @@
 import { Component, OnInit, OnDestroy, inject, signal, computed, effect } from '@angular/core';
 import { devError } from '../../../../core/utils/logger';
 import { CommonModule } from '@angular/common';
-import { Router } from '@angular/router';
+import { Router, ActivatedRoute } from '@angular/router';
+import { Subscription } from 'rxjs';
 import {
   IonContent,
   IonHeader,
@@ -123,6 +124,7 @@ type SegmentType = 'incoming' | 'active' | 'history';
 })
 export class SchedulePage implements OnInit, OnDestroy {
   private router = inject(Router);
+  private route = inject(ActivatedRoute);
   private sessionService = inject(SessionService);
   private providerBookingService = inject(ProviderBookingService);
   private realTimeService = inject(RealTimeService);
@@ -136,6 +138,7 @@ export class SchedulePage implements OnInit, OnDestroy {
 
   // Real-time subscription
   private unsubscribeRealTime: (() => void) | null = null;
+  private queryParamsSub?: Subscription;
 
   // Track if initial data load happened (prevents duplicate loads from effect)
   private dataLoaded = signal(false);
@@ -214,9 +217,17 @@ export class SchedulePage implements OnInit, OnDestroy {
       this.setupRealTimeSubscription();
     }
     // If profile not available yet, effect will handle loading when it arrives
+
+    this.queryParamsSub = this.route.queryParams.subscribe(params => {
+      const seg = params['segment'];
+      if (seg === 'incoming' || seg === 'active' || seg === 'history') {
+        this.selectedSegment.set(seg);
+      }
+    });
   }
 
   ngOnDestroy() {
+    this.queryParamsSub?.unsubscribe();
     if (this.unsubscribeRealTime) {
       this.unsubscribeRealTime();
     }
