@@ -32,6 +32,7 @@ import {
   IonChip,
   IonAvatar,
   IonSpinner, IonBackButton, IonFooter, IonBadge, IonNote, IonSegment, IonSegmentButton, IonToggle, IonSkeletonText } from '@ionic/angular/standalone';
+import { Capacitor } from '@capacitor/core';
 import { Camera, CameraResultType, CameraSource, CameraPermissionType } from '@capacitor/camera';
 import { ServiceService, ServiceWithProvider } from '@core/services/service.service';
 import { SessionService } from '@core/auth/session';
@@ -692,7 +693,28 @@ export class BookingFormPage implements OnInit {
     if (state?.selectedLocation || state?.preSelectedProviderId) {
       history.replaceState({}, '');
     }
+
+    if (Capacitor.isNativePlatform()) {
+      document.addEventListener('ionBackButton', this.handleHardwareBack);
+    }
   }
+
+  ionViewWillLeave() {
+    if (Capacitor.isNativePlatform()) {
+      document.removeEventListener('ionBackButton', this.handleHardwareBack);
+    }
+  }
+
+  private handleHardwareBack = (ev: Event) => {
+    const customEv = ev as CustomEvent<{ register: (priority: number, handler: (processNextHandler: () => void) => void) => void }>;
+    customEv.detail.register(10, (processNextHandler) => {
+      if (this.currentStep() === 2) {
+        this.previousStep();
+      } else {
+        processNextHandler();
+      }
+    });
+  };
 
   private readNavigationState(): BookingNavigationState {
     const navigation = this.router.getCurrentNavigation();
