@@ -35,6 +35,23 @@ ion-content {
 
 }
 
+@media (max-width: 480px) {
+  .welcome-grid .logo-row {
+    height: 70vh;
+
+    .logo-section .app-logo {
+      width: 70%;
+      max-width: 240px;
+    }
+  }
+}
+
+@media (max-width: 360px) {
+  .welcome-footer .welcome-text h1 {
+    font-size: 1.75rem;
+  }
+}
+
 .welcome-footer {
   --border-width: 0;
   --background: transparent;
