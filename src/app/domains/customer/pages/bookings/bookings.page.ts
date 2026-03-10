@@ -1,12 +1,14 @@
 import { Component, OnInit, OnDestroy, inject, signal, computed, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Router } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import {
+  IonBackButton,
   IonContent,
   IonHeader,
   IonTitle,
   IonToolbar,
+  IonButtons,
   IonSegment,
   IonSegmentButton,
   IonLabel,
@@ -27,6 +29,7 @@ import {
 import { addIcons } from 'ionicons';
 import { format, formatDistanceToNow, isToday, isYesterday, isThisWeek } from 'date-fns';
 import {
+  arrowBack,
   calendarOutline,
   timeOutline,
   locationOutline,
@@ -100,10 +103,13 @@ const STATUS_CONFIG: Record<string, { label: string; color: string; icon: string
   imports: [
     CommonModule,
     FormsModule,
+    RouterLink,
+    IonBackButton,
     IonContent,
     IonHeader,
     IonTitle,
     IonToolbar,
+    IonButtons,
     IonSegment,
     IonSegmentButton,
     IonLabel,
@@ -200,6 +206,7 @@ export class BookingsPage implements OnInit, OnDestroy {
 
   constructor() {
     addIcons({
+      arrowBack,
       calendarOutline,
       timeOutline,
       locationOutline,

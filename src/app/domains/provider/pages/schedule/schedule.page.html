@@ -1,8 +1,11 @@
-<ion-header [translucent]="true" class="ion-no-border">
-  <ion-toolbar>
+<ion-header class="ion-no-border">
+  <ion-toolbar class="booking-header">
+    <ion-buttons slot="start">
+      <ion-back-button defaultHref="/p/dashboard"></ion-back-button>
+    </ion-buttons>
     <ion-title>My Jobs</ion-title>
   </ion-toolbar>
-  <ion-toolbar>
+  <ion-toolbar class="progress-toolbar">
     <ion-segment [value]="selectedSegment()" (ionChange)="onSegmentChange($event)" scrollable="true">
       <ion-segment-button value="incoming">
         <ion-label>

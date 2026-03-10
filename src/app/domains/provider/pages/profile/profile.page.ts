@@ -4,6 +4,8 @@ import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import {
+  IonBackButton,
+  IonButtons,
   IonContent,
   IonHeader,
   IonTitle,
@@ -45,6 +47,8 @@ interface MenuSection {
   styleUrls: ['./profile.page.scss'],
   standalone: true,
   imports: [
+    IonBackButton,
+    IonButtons,
     IonContent,
     IonHeader,
     IonTitle,

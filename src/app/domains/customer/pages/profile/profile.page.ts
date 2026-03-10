@@ -4,6 +4,8 @@ import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import {
+  IonBackButton,
+  IonButtons,
   IonContent,
   IonHeader,
   IonTitle,
@@ -46,6 +48,8 @@ interface MenuSection {
   styleUrls: ['./profile.page.scss'],
   standalone: true,
   imports: [
+    IonBackButton,
+    IonButtons,
     IonContent,
     IonHeader,
     IonTitle,
@@ -88,8 +92,7 @@ export class ProfilePage implements OnInit {
       title: 'Account',
       items: [
         { icon: 'person-outline', label: 'Edit Profile', route: '/c/profile/edit' },
-        { icon: 'location-outline', label: 'Addresses', route: '/c/profile/addresses' },
-        { icon: 'card-outline', label: 'Payment Methods', route: '/c/profile/payment-methods' }
+        { icon: 'location-outline', label: 'Addresses', route: '/c/profile/addresses' }
       ]
     },
     {

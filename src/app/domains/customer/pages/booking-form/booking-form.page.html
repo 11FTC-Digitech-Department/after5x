@@ -1,7 +1,13 @@
 <ion-header class="ion-no-border">
   <ion-toolbar class="booking-header">
       <ion-buttons slot="start">
-        <ion-back-button defaultHref="/c/home"></ion-back-button>
+        @if (currentStep() === 2) {
+          <ion-button fill="clear" (click)="previousStep()">
+            <ion-icon name="arrow-back"></ion-icon>
+          </ion-button>
+        } @else {
+          <ion-back-button defaultHref="/c/home"></ion-back-button>
+        }
       </ion-buttons>
     <ion-title>Book a Service</ion-title>
   </ion-toolbar>
@@ -18,10 +24,11 @@
 </ion-header>
 
 <ion-content [fullscreen]="true" class="transparent-for-maps">
+  <div class="booking-content">
   <!-- Step 1: Booking Details -->
   @if (currentStep() === 1) {
     <form [formGroup]="bookingForm" class="booking-form">
-      <ion-grid>
+      <ion-grid class="ion-no-padding">
         <!-- Selected Service Display or Service Type Selection -->
         <ion-row>
           <ion-col size="12">
@@ -44,7 +51,7 @@
                         <ion-col size="12" size-md="5" size-lg="4">
                           <div class="service-hero-provider">
                             <ion-avatar class="provider-hero-avatar">
-                              <img [src]="selectedService()?.provider?.profile?.avatar_url || 'assets/logo/main-logo.png'" alt="Provider" />
+                              <img [src]="selectedService()?.provider?.profile?.avatar_url || 'assets/logo/main-logo.png'" alt="Provider" referrerpolicy="no-referrer" />
                             </ion-avatar>
                             <div class="provider-info">
                               <ion-text class="provider-hero-name">{{ selectedService()?.provider?.profile?.full_name }}</ion-text>
@@ -538,7 +545,7 @@
 
   <!-- Step 2: Review & Confirm -->
   @if (currentStep() === 2) {
-    <ion-grid>
+    <ion-grid class="ion-no-padding">
       <!-- Booking Summary -->
       <ion-row>
         <ion-col size="12">
@@ -563,7 +570,7 @@
                   <ion-text class="summary-label">Assigned Provider:</ion-text>
                   <div class="provider-summary">
                     <ion-avatar class="provider-avatar-small">
-                      <img [src]="assignedProvider().profile?.avatar_url || 'assets/logo/main-logo.png'" alt="Provider" />
+                      <img [src]="assignedProvider().profile?.avatar_url || 'assets/logo/main-logo.png'" alt="Provider" referrerpolicy="no-referrer" />
                     </ion-avatar>
                     <div class="provider-info">
                       <ion-text class="provider-name">{{ assignedProvider().profile?.full_name }}</ion-text>
@@ -730,6 +737,7 @@
 
     </ion-grid>
   }
+  </div>
 </ion-content>
 
 <!-- Error Message Display -->

@@ -36,7 +36,7 @@
         <ion-item>
           <ion-avatar slot="start">
             @if (user.avatar_url) {
-              <img [src]="user.avatar_url" [alt]="user.full_name" />
+              <img [src]="user.avatar_url" [alt]="user.full_name" referrerpolicy="no-referrer" />
             } @else {
               <div class="avatar-placeholder">{{ getInitials(user.full_name) }}</div>
             }

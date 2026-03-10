@@ -14,7 +14,7 @@
     @if (!isOwn && showAvatar) {
       <ion-avatar class="avatar">
         @if (message.sender?.avatar_url) {
-          <img [src]="message.sender?.avatar_url" [alt]="message.sender?.full_name" />
+          <img [src]="message.sender?.avatar_url" [alt]="message.sender?.full_name" referrerpolicy="no-referrer" />
         } @else {
           <div class="avatar-placeholder">{{ senderInitial }}</div>
         }

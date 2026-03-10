@@ -389,8 +389,8 @@ export class DashboardPage implements OnInit, OnDestroy {
     this.router.navigate(['/p/job', job.id]);
   }
 
-  goToSchedule() {
-    this.router.navigate(['/p/schedule']);
+  goToSchedule(segment?: 'incoming' | 'active') {
+    this.router.navigate(['/p/schedule'], segment ? { queryParams: { segment } } : {});
   }
 
   goToNotifications() {

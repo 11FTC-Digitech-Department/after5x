@@ -1,5 +1,5 @@
 <ion-header class="ion-no-border">
-  <ion-toolbar>
+  <ion-toolbar class="booking-header">
     <ion-buttons slot="start">
       <ion-back-button defaultHref="/c/home"></ion-back-button>
     </ion-buttons>
@@ -99,7 +99,7 @@
       <ion-col size="12">
         <ion-card class="providers-card">
           <ion-card-content>
-            <ion-card-title>Choose an Expert</ion-card-title>
+            <ion-card-title>Choose Preferred Expert</ion-card-title>
             @if (isBaseLoading() && availableProviders().length === 0) {
               <ion-skeleton-text animated style="height: 60px; width: 100%; margin-bottom: 8px;"></ion-skeleton-text>
               <ion-skeleton-text animated style="height: 60px; width: 100%;"></ion-skeleton-text>
@@ -127,7 +127,8 @@
                         [src]="provider.avatarUrl || 'assets/logo/main-logo.png'"
                         alt="Provider"
                         loading="lazy"
-                        decoding="async" />
+                        decoding="async"
+                        referrerpolicy="no-referrer" />
                     </ion-avatar>
                     <ion-label>
                       <h2>
@@ -262,7 +263,8 @@
                         [src]="selectedProvider()?.avatarUrl || 'assets/logo/main-logo.png'"
                         alt="Provider"
                         loading="lazy"
-                        decoding="async" />
+                        decoding="async"
+                        referrerpolicy="no-referrer" />
                     </ion-avatar>
                     <div class="provider-rating-large">
                       <ion-icon name="star" color="warning"></ion-icon>

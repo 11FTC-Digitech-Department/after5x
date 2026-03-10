@@ -250,6 +250,7 @@ case $COMMAND in
         cd ..
         BUNDLE_PATH="android/app/build/outputs/bundle/${FLAVOR}Release/app-${FLAVOR}-release.aab"
         MAPPING_PATH="android/app/build/outputs/mapping/${FLAVOR}Release/mapping.txt"
+        NATIVE_SYMBOLS_PATH="android/app/build/outputs/native-debug-symbols/${FLAVOR}Release/native-debug-symbols.zip"
 
         BUNDLE_ABS_PATH="$SCRIPT_DIR/../$BUNDLE_PATH"
         if [ ! -f "$BUNDLE_ABS_PATH" ]; then
@@ -265,10 +266,22 @@ case $COMMAND in
         mkdir -p "$DOWNLOADS_DIR"
         mv "$RENAMED_BUNDLE_PATH" "$DOWNLOADS_DIR/"
 
-        echo ""
-        echo -e "${GREEN}✓ Bundle built successfully!${NC}"
-        echo -e "${BLUE}Bundle:  ${NC}$DOWNLOADS_DIR/$RENAMED_BUNDLE"
-        echo -e "${BLUE}Mapping: ${NC}$MAPPING_PATH"
+        NATIVE_SYMBOLS_ABS="$SCRIPT_DIR/../$NATIVE_SYMBOLS_PATH"
+        if [ -f "$NATIVE_SYMBOLS_ABS" ]; then
+            RENAMED_SYMBOLS="after5-${FLAVOR}-${APK_ENV_LABEL}-v.${VERSION_NAME}-native-debug-symbols.zip"
+            cp "$NATIVE_SYMBOLS_ABS" "$DOWNLOADS_DIR/$RENAMED_SYMBOLS"
+            echo ""
+            echo -e "${GREEN}✓ Bundle built successfully!${NC}"
+            echo -e "${BLUE}Bundle:  ${NC}$DOWNLOADS_DIR/$RENAMED_BUNDLE"
+            echo -e "${BLUE}Mapping: ${NC}$MAPPING_PATH"
+            echo -e "${BLUE}Native symbols: ${NC}$DOWNLOADS_DIR/$RENAMED_SYMBOLS"
+        else
+            echo ""
+            echo -e "${GREEN}✓ Bundle built successfully!${NC}"
+            echo -e "${BLUE}Bundle:  ${NC}$DOWNLOADS_DIR/$RENAMED_BUNDLE"
+            echo -e "${BLUE}Mapping: ${NC}$MAPPING_PATH"
+        fi
+        echo -e "${BLUE}Native symbols: ${NC}included in bundle (ndk.debugSymbolLevel=FULL)"
         ;;
     sync)
         echo -e "${YELLOW}[3/3] Sync only - skipping build${NC}"

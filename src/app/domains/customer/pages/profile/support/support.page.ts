@@ -67,22 +67,15 @@ export class SupportPage {
   readonly contactOptions = [
     {
       icon: 'mail-outline',
-      label: 'Email Support',
-      description: 'support@after5.ph',
+      label: 'Email',
+      description: 'customerservice@after5.ph',
       action: 'email'
     },
     {
       icon: 'call-outline',
-      label: 'Call Hotline',
-      description: '+63 917 123 4567',
+      label: 'Hotline',
+      description: '0917-111-7555',
       action: 'call'
-    },
-    {
-      icon: 'chatbubbles-outline',
-      label: 'Live Chat',
-      description: 'Coming Soon',
-      action: 'chat',
-      disabled: true
     }
   ];
 
@@ -141,7 +134,7 @@ export class SupportPage {
         },
         {
           question: 'How do I delete my account?',
-          answer: 'To delete your account, please contact our support team at support@after5.ph. Note that account deletion is permanent and all your data will be removed.'
+          answer: 'To delete your account, please contact our support team at customerservice@after5.ph. Note that account deletion is permanent and all your data will be removed.'
         }
       ]
     },
@@ -207,13 +200,10 @@ export class SupportPage {
   async onContactClick(action: string) {
     switch (action) {
       case 'email':
-        window.location.href = 'mailto:support@after5.ph';
+        window.location.href = 'mailto:customerservice@after5.ph';
         break;
       case 'call':
-        window.location.href = 'tel:+639171234567';
-        break;
-      case 'chat':
-        // Coming soon
+        window.location.href = 'tel:+639171117555';
         break;
     }
   }

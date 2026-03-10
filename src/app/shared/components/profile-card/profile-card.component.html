@@ -19,7 +19,7 @@
         <div class="avatar-container" (click)="onAvatarClick()">
           <ion-avatar class="profile-avatar">
             @if (avatarUrl) {
-              <img [src]="avatarUrl" [alt]="fullName" />
+              <img [src]="avatarUrl" [alt]="fullName" referrerpolicy="no-referrer" />
             } @else {
               <div class="avatar-initials">{{ initials }}</div>
             }

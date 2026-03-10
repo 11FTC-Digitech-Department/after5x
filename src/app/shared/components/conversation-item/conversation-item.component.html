@@ -2,7 +2,7 @@
   <!-- Avatar -->
   <ion-avatar slot="start">
     @if (conversation.other_participant?.avatar_url) {
-      <img [src]="conversation.other_participant.avatar_url" [alt]="conversation.other_participant?.full_name" />
+      <img [src]="conversation.other_participant.avatar_url" [alt]="conversation.other_participant?.full_name" referrerpolicy="no-referrer" />
     } @else {
       <div class="avatar-placeholder">{{ participantInitial }}</div>
     }

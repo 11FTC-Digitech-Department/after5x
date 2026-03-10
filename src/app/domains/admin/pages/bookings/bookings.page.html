@@ -1,6 +1,9 @@
 <ion-header>
   <ion-toolbar>
-    <ion-title>Booking Management</ion-title>
+    <ion-buttons slot="start">
+      <ion-back-button defaultHref="/a/dashboard" text="Back" icon="arrow-back"></ion-back-button>
+    </ion-buttons>
+    <ion-title>Bookings</ion-title>
   </ion-toolbar>
   <ion-toolbar>
     <ion-segment [value]="statusFilter()" (ionChange)="onStatusChange($event)" [scrollable]="true">

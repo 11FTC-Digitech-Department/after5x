@@ -3,6 +3,16 @@ ion-content {
   --background: #f8f9fa;
 }
 
+// Consistent content wrapper for both steps (unified margins)
+.booking-content {
+  padding: 16px;
+  padding-bottom: 24px;
+
+  .booking-form {
+    margin: 0;
+  }
+}
+
 // Header Styles
 .booking-header {
   --color: #2c3e50;
@@ -26,39 +36,36 @@ ion-content {
   }
 }
 
-// Progress Toolbar
+// Progress Toolbar - matches bookings filter segment pattern
 .progress-toolbar {
   --background: white;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  --padding-start: 8px;
+  --padding-end: 8px;
+  --padding-top: 0;
+  --padding-bottom: 8px;
 
   ion-segment {
-    --background: transparent;
-
+    --background: var(--ion-color-light);
+    border-radius: 8px;
 
     ion-segment-button {
-      --background: transparent;
-      --background-checked: var(--ion-color-primary);
-      --color-checked: white;
-      --transition: all 0.3s ease;
-      font-weight: 500;
+      --indicator-color: var(--ion-color-primary);
+      --indicator-height: 3px;
+      --padding-start: 8px;
+      --padding-end: 8px;
+      min-width: 0;
+      font-size: 13px;
 
       ion-label {
-        font-size: 14px;
+        text-transform: none;
+        font-weight: 500;
       }
 
-      // Selected state
-      &.segment-button-checked {
-        --background: var(--ion-color-primary);
-        --color: white;
-        box-shadow: 0 2px 4px rgba(var(--ion-color-primary-rgb), 0.3);
+      &.segment-button-checked ion-label {
+        font-weight: 600;
+        color: var(--ion-color-primary);
       }
 
-      // Hover state
-      &:hover:not(.segment-button-checked) {
-        --background: rgba(var(--ion-color-primary-rgb), 0.1);
-      }
-
-      // Disabled state
       &.segment-button-disabled {
         opacity: 0.5;
         pointer-events: none;
@@ -173,16 +180,15 @@ ion-content {
   }
 }
 
-// Form Sections
+// Form Sections (aligned with service-details / booking-details)
 .form-section {
-  margin: 0;
-  margin-bottom: 16px;
+  margin: 0 0 16px 0;
   border-radius: 12px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
   border: none;
 
   ion-card-header {
-    padding-bottom: 8px;
+    padding: 16px 16px 8px;
 
     .section-title {
       display: flex;
@@ -208,7 +214,7 @@ ion-content {
   }
 
   ion-card-content {
-    padding-top: 8px;
+    padding: 8px 16px 16px;
   }
 }
 
@@ -1159,14 +1165,16 @@ ion-content {
   }
 }
 
-// Review Section Styles
+// Review Section Styles (aligned with service-details / booking-details)
 .review-section {
-  margin-bottom: 16px;
+  margin: 0 0 16px 0;
   border-radius: 12px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
   border: none;
 
   ion-card-header {
+    padding: 16px 16px 8px;
+
     .section-title {
       display: flex;
       align-items: center;
@@ -1332,15 +1340,17 @@ ion-content {
   }
 }
 
-// Price Section Styles
+// Price Section Styles (aligned with service-details / booking-details)
 .price-section {
-  margin-bottom: 16px;
+  margin: 0 0 16px 0;
   border-radius: 12px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
   border: none;
   --background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
 
   ion-card-header {
+    padding: 16px 16px 8px;
+
     .section-title {
       display: flex;
       align-items: center;
@@ -1358,7 +1368,7 @@ ion-content {
   }
 
   ion-card-content {
-    padding-top: 8px;
+    padding: 8px 16px 16px;
   }
 }
 

@@ -66,14 +66,14 @@ export class SupportPage {
   readonly contactOptions = [
     {
       icon: 'mail-outline',
-      label: 'Email Support',
-      description: 'provider-support@after5.ph',
+      label: 'Email',
+      description: 'customerservice@after5.ph',
       action: 'email'
     },
     {
       icon: 'call-outline',
-      label: 'Provider Hotline',
-      description: '+63 917 123 4568',
+      label: 'Hotline',
+      description: '0917-111-7555',
       action: 'call'
     },
     {
@@ -210,10 +210,10 @@ export class SupportPage {
   async onContactClick(action: string) {
     switch (action) {
       case 'email':
-        window.location.href = 'mailto:provider-support@after5.ph';
+        window.location.href = 'mailto:customerservice@after5.ph';
         break;
       case 'call':
-        window.location.href = 'tel:+639171234568';
+        window.location.href = 'tel:+639171117555';
         break;
       case 'chat':
         break;

@@ -28,10 +28,16 @@
   }
 }
 
-// Header styling
+// Header - white bg, matches categories structure and size (ion-no-border, back button, title)
 ion-header {
-  ion-toolbar {
+  .bookings-header-toolbar {
     --background: var(--ion-background-color, #ffffff);
+    --color: var(--ion-color-dark, #222428);
+
+    ion-back-button,
+    ion-title {
+      --color: var(--ion-color-dark, #222428);
+    }
   }
 }
 
