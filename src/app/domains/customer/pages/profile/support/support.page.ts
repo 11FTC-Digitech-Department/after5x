@@ -67,13 +67,13 @@ export class SupportPage {
   readonly contactOptions = [
     {
       icon: 'mail-outline',
-      label: 'Email Support',
+      label: 'Email',
       description: 'customerservice@after5.ph',
       action: 'email'
     },
     {
       icon: 'call-outline',
-      label: 'Call Hotline',
+      label: 'Hotline',
       description: '0917-111-7555',
       action: 'call'
     }
