@@ -25,6 +25,7 @@ import {
   IonModal,
   IonDatetime,
   IonButtons,
+  IonBackButton,
   RefresherCustomEvent
 } from '@ionic/angular/standalone';
 import { addIcons } from 'ionicons';
@@ -78,7 +79,8 @@ const STATUS_CONFIG: Record<string, { label: string; color: string; icon: string
     IonChip,
     IonModal,
     IonDatetime,
-    IonButtons
+    IonButtons,
+    IonBackButton
   ]
 })
 export class TransactionsPage implements OnInit {

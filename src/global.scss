@@ -103,3 +103,103 @@ ion-modal .date-picker-content ion-datetime {
     padding-bottom: var(--safe-area-inset-bottom);
   }
 }
+
+// Auth segment - platform-specific designs
+.plt-ios ion-segment.auth-segment {
+  // iOS: indicator (pill) style - avoids border merge
+  --background: rgba(var(--ion-text-color-rgb, 0, 0, 0), 0.065);
+
+  ion-segment-button {
+    --background: none !important;
+    --background-checked: none !important;
+    --border-width: 0 !important;
+    --color: var(--ion-color-primary);
+    --color-checked: white;
+    --indicator-color: var(--ion-color-primary);
+    --indicator-height: 100%;
+    --border-radius: 8px;
+    font-weight: 600;
+  }
+}
+
+.plt-android ion-segment.auth-segment {
+  // Android: bordered pill style
+  --background: transparent;
+
+  ion-segment-button {
+    --border-color: var(--ion-color-primary);
+    --color: var(--ion-color-primary);
+    --background: #f0f0f0;
+    --background-checked: var(--ion-color-primary);
+    --color-checked: white;
+    --border-radius: 8px;
+    font-weight: 600;
+  }
+
+  // Prevent border merge between adjacent buttons
+  gap: 0 6px !important;
+  column-gap: 6px !important;
+
+  ion-segment-button:not(:first-child) {
+    margin-inline-start: 4px !important;
+  }
+}
+
+// Experts app (dark) - platform overrides
+.plt-ios ion-content.experts-app ion-segment.auth-segment {
+  --background: rgba(255, 255, 255, 0.15);
+
+  ion-segment-button {
+    --color: rgba(255, 255, 255, 0.9);
+    --color-checked: #1a1a2e;
+    --indicator-color: white;
+  }
+}
+
+.plt-android ion-content.experts-app ion-segment.auth-segment {
+  --background: transparent;
+
+  ion-segment-button {
+    --background: rgba(255, 255, 255, 0.1);
+    --background-checked: white;
+    --color: white;
+    --color-checked: #1a1a2e;
+    --border-color: rgba(255, 255, 255, 0.4);
+  }
+}
+
+// Header contrast - iOS + Android: ensure toolbar content is always visible
+ion-header ion-toolbar {
+  --background: var(--ion-background-color, #ffffff) !important;
+  --color: var(--ion-color-dark, #222428) !important;
+
+  ion-title,
+  ion-button,
+  ion-back-button {
+    --color: var(--ion-color-dark, #222428) !important;
+  }
+
+  ion-icon {
+    color: var(--ion-color-dark, #222428) !important;
+  }
+}
+
+// Colored toolbars (dark bg): use white text for contrast
+ion-header ion-toolbar[color] {
+  --color: var(--ion-color-primary-contrast, #ffffff) !important;
+
+  ion-title,
+  ion-button,
+  ion-back-button,
+  ion-icon {
+    --color: var(--ion-color-primary-contrast, #ffffff) !important;
+    color: var(--ion-color-primary-contrast, #ffffff) !important;
+  }
+}
+
+// iOS UI Fixes - segment gap
+.plt-ios {
+  ion-segment {
+    gap: 4px;
+  }
+}

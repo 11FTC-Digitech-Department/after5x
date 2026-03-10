@@ -36,39 +36,36 @@ ion-content {
   }
 }
 
-// Progress Toolbar
+// Progress Toolbar - matches bookings filter segment pattern
 .progress-toolbar {
   --background: white;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  --padding-start: 8px;
+  --padding-end: 8px;
+  --padding-top: 0;
+  --padding-bottom: 8px;
 
   ion-segment {
-    --background: transparent;
-
+    --background: var(--ion-color-light);
+    border-radius: 8px;
 
     ion-segment-button {
-      --background: transparent;
-      --background-checked: var(--ion-color-primary);
-      --color-checked: white;
-      --transition: all 0.3s ease;
-      font-weight: 500;
+      --indicator-color: var(--ion-color-primary);
+      --indicator-height: 3px;
+      --padding-start: 8px;
+      --padding-end: 8px;
+      min-width: 0;
+      font-size: 13px;
 
       ion-label {
-        font-size: 14px;
+        text-transform: none;
+        font-weight: 500;
       }
 
-      // Selected state
-      &.segment-button-checked {
-        --background: var(--ion-color-primary);
-        --color: white;
-        box-shadow: 0 2px 4px rgba(var(--ion-color-primary-rgb), 0.3);
+      &.segment-button-checked ion-label {
+        font-weight: 600;
+        color: var(--ion-color-primary);
       }
 
-      // Hover state
-      &:hover:not(.segment-button-checked) {
-        --background: rgba(var(--ion-color-primary-rgb), 0.1);
-      }
-
-      // Disabled state
       &.segment-button-disabled {
         opacity: 0.5;
         pointer-events: none;

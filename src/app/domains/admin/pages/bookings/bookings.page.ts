@@ -5,7 +5,8 @@ import {
   IonList, IonItem, IonLabel, IonBadge,
   IonSegment, IonSegmentButton,
   IonSpinner, IonInfiniteScroll, IonInfiniteScrollContent,
-  IonIcon, IonRefresher, IonRefresherContent, IonChip
+  IonIcon, IonRefresher, IonRefresherContent, IonChip,
+  IonButtons, IonBackButton
 } from '@ionic/angular/standalone';
 import { addIcons } from 'ionicons';
 import { calendarOutline, cashOutline } from 'ionicons/icons';
@@ -23,6 +24,7 @@ import { devError } from '../../../../core/utils/logger';
     IonSegment, IonSegmentButton,
     IonSpinner, IonInfiniteScroll, IonInfiniteScrollContent,
     IonIcon, IonRefresher, IonRefresherContent, IonChip,
+    IonButtons, IonBackButton,
     CommonModule
   ]
 })

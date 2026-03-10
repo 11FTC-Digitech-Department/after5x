@@ -14,12 +14,6 @@ ion-content {
       color: white;
     }
 
-    .auth-segment ion-segment-button {
-      --background: rgba(255, 255, 255, 0.1);
-      --color: white;
-      --background-checked: white;
-      --color-checked: #1a1a2e;
-    }
 
     .social-login-container {
       .social-button {
@@ -98,17 +92,6 @@ ion-content {
 
 .auth-segment {
   margin-bottom: 2rem;
-  --background: transparent;
-
-  ion-segment-button {
-    --border-color: var(--ion-color-primary);
-    --color: var(--ion-color-primary);
-    --background: #f0f0f0;
-    --background-checked: var(--ion-color-primary);
-    --color-checked: white;
-    --border-radius: 8px;
-    font-weight: 600;
-  }
 }
 
 .biometric-container {

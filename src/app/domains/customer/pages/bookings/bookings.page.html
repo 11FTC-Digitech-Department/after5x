@@ -1,5 +1,8 @@
-<ion-header [translucent]="true">
-  <ion-toolbar>
+<ion-header class="ion-no-border">
+  <ion-toolbar class="bookings-header-toolbar">
+    <ion-buttons slot="start">
+      <ion-back-button defaultHref="/c/home"></ion-back-button>
+    </ion-buttons>
     <ion-title>My Bookings</ion-title>
   </ion-toolbar>
 
@@ -26,12 +29,6 @@
 </ion-header>
 
 <ion-content [fullscreen]="true">
-  <ion-header collapse="condense">
-    <ion-toolbar>
-      <ion-title size="large">My Bookings</ion-title>
-    </ion-toolbar>
-  </ion-header>
-
   <!-- Pull to refresh -->
   <ion-refresher slot="fixed" (ionRefresh)="handleRefresh($event)">
     <ion-refresher-content pullingIcon="chevron-down-circle-outline" refreshingSpinner="circles">

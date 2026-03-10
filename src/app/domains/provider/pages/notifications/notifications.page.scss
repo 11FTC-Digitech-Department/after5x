@@ -14,28 +14,36 @@ ion-content {
   --background: var(--ion-color-light);
 }
 
-// Segment toolbar (header)
-.segment-toolbar {
-  --min-height: 48px;
+// Filter toolbar - matches bookings segment design
+.filter-toolbar {
+  --padding-start: 8px;
+  --padding-end: 8px;
   --padding-top: 0;
-  --padding-bottom: 0;
+  --padding-bottom: 8px;
 
   ion-segment {
-    --background: transparent;
-    width: 100%;
-    height: 100%;
-    padding-inline: 0;
+    --background: var(--ion-color-light);
+    border-radius: 8px;
 
     ion-segment-button {
-      --border-radius: 0;
-      --indicator-box-shadow: none;
       --indicator-color: var(--ion-color-primary);
-      --padding-top: 12px;
-      --padding-bottom: 12px;
-      min-height: 48px;
+      --indicator-height: 3px;
+      --padding-start: 8px;
+      --padding-end: 8px;
+      min-width: 0;
       font-size: 13px;
-      font-weight: 500;
-      flex-shrink: 0; // Keep labels from shrinking so scrollable works
+
+      ion-label {
+        text-transform: none;
+        font-weight: 500;
+      }
+
+      &.segment-button-checked {
+        ion-label {
+          font-weight: 600;
+          color: var(--ion-color-primary);
+        }
+      }
     }
   }
 }

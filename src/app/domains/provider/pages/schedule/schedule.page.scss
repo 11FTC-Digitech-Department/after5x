@@ -1,42 +1,49 @@
-// Animations
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
+// Header - matches booking-form
+.booking-header {
+  --color: #2c3e50;
+  --background: white;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+
+  ion-title {
+    font-weight: 600;
+    font-size: 18px;
   }
 }
 
-// Segment control
-.segment-container {
-  padding: 16px;
-  background: var(--ion-background-color);
-  position: sticky;
-  top: 0;
-  z-index: 10;
+// Segment - matches booking-form progress-toolbar
+.progress-toolbar {
+  --background: white;
+  --padding-start: 8px;
+  --padding-end: 8px;
+  --padding-top: 0;
+  --padding-bottom: 8px;
 
   ion-segment {
     --background: var(--ion-color-light);
-    border-radius: 10px;
+    border-radius: 8px;
 
     ion-segment-button {
-      --border-radius: 8px;
-      --indicator-box-shadow: none;
       --indicator-color: var(--ion-color-primary);
-      min-height: 40px;
+      --indicator-height: 3px;
+      --padding-start: 8px;
+      --padding-end: 8px;
+      min-width: 0;
+      font-size: 13px;
 
       ion-label {
-        display: flex;
-        align-items: center;
-        gap: 6px;
-        font-size: 14px;
+        text-transform: none;
         font-weight: 500;
       }
 
+      &.segment-button-checked ion-label {
+        font-weight: 600;
+        color: var(--ion-color-primary);
+      }
 
+      &.segment-button-disabled {
+        opacity: 0.5;
+        pointer-events: none;
+      }
     }
   }
 
@@ -46,6 +53,18 @@
     min-width: 18px;
     height: 18px;
     border-radius: 9px;
+  }
+}
+
+// Animations
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
 }
 
@@ -205,11 +224,6 @@
 
 // Responsive
 @media (min-width: 768px) {
-  .segment-container {
-    max-width: 600px;
-    margin: 0 auto;
-  }
-
   .jobs-list {
     max-width: 600px;
     margin: 0 auto;

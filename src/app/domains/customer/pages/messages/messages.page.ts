@@ -3,6 +3,8 @@ import { devError } from '../../../../core/utils/logger';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import {
+  IonBackButton,
+  IonButtons,
   IonContent,
   IonHeader,
   IonTitle,
@@ -29,6 +31,8 @@ import { ConversationItemComponent } from '../../../../shared/components/convers
   standalone: true,
   imports: [
     CommonModule,
+    IonBackButton,
+    IonButtons,
     IonContent,
     IonHeader,
     IonTitle,
