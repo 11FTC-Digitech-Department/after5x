@@ -45,6 +45,7 @@ export class AboutPage implements OnInit {
   buildNumber = signal<string | null>(null);
   readonly appName = 'After5';
   readonly companyName = 'After5 Services Inc.';
+  readonly currentYear = new Date().getFullYear();
 
   readonly socialLinks = [
     { icon: 'globe-outline', label: 'Website', url: 'https://after5.ph' },
