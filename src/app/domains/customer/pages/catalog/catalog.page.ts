@@ -130,11 +130,11 @@ export class CatalogPage implements OnInit {
   }
 
   selectService(group: ServiceGroup) {
-    if (!group.hasMultipleVariants || !group.service.variant_selection_schema) {
-      // Single variant or no schema - navigate directly to service details
+    if (!group.hasMultipleVariants) {
+      // Single variant - navigate directly to service details
       this.navigateToService(group.variants[0].id);
     } else {
-      // Multiple variants with schema - toggle expanded state
+      // Multiple variants - require explicit selection before navigation
       const currentExpanded = this.expandedServiceId();
       if (currentExpanded === group.service.id) {
         this.expandedServiceId.set(null);
@@ -148,6 +148,19 @@ export class CatalogPage implements OnInit {
 
   onVariantSelected(result: VariantSelectionResult | null) {
     this.selectedVariantResult.set(result);
+  }
+
+  onFallbackVariantSelected(group: ServiceGroup, selectedVariantId: string) {
+    const selectedVariant = group.variants.find(variant => variant.id === selectedVariantId) || null;
+    if (!selectedVariant) {
+      this.selectedVariantResult.set(null);
+      return;
+    }
+
+    this.selectedVariantResult.set({
+      variant: selectedVariant,
+      selections: {}
+    });
   }
 
   proceedWithVariant() {

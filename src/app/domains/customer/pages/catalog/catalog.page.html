@@ -55,7 +55,7 @@
                   <ion-card-header>
                     <div class="card-title-row">
                       <ion-card-title>{{ group.service.name }}</ion-card-title>
-                      @if (group.hasMultipleVariants && group.service.variant_selection_schema) {
+                      @if (group.hasMultipleVariants) {
                         <ion-icon
                           name="chevron-forward"
                           class="expand-icon"
@@ -89,14 +89,27 @@
                 </div>
 
                 <!-- Expanded Variant Selector -->
-                @if (isExpanded(group.service.id) && group.service.variant_selection_schema) {
+                @if (isExpanded(group.service.id) && group.hasMultipleVariants) {
                   <div class="variant-selector-container">
-                    <app-variant-selector
-                      [schema]="group.service.variant_selection_schema"
-                      [variants]="getGroupVariants(group)"
-                      [showAfter5Pricing]="true"
-                      (variantSelected)="onVariantSelected($event)">
-                    </app-variant-selector>
+                    @if (group.service.variant_selection_schema) {
+                      <app-variant-selector
+                        [schema]="group.service.variant_selection_schema"
+                        [variants]="getGroupVariants(group)"
+                        [showAfter5Pricing]="true"
+                        (variantSelected)="onVariantSelected($event)">
+                      </app-variant-selector>
+                    } @else {
+                      <div class="fallback-option-buttons">
+                        @for (variant of group.variants; track variant.id) {
+                          <ion-button
+                            size="small"
+                            [fill]="selectedVariantResult()?.variant?.id === variant.id ? 'solid' : 'outline'"
+                            (click)="onFallbackVariantSelected(group, variant.id)">
+                            {{ variant.name }}
+                          </ion-button>
+                        }
+                      </div>
+                    }
 
                     @if (selectedVariantResult()) {
                       <ion-button
