@@ -135,18 +135,18 @@ export class NotificationSettingsPage implements OnInit {
       ]
     },
     {
-      title: 'Promotions & Updates',
+      title: 'Offers & Updates',
       settings: [
         {
           key: 'promotions',
           label: 'Promotions',
-          description: 'Tips to earn more and special opportunities',
+          description: 'Tips and opportunities',
           enabled: false
         },
         {
           key: 'news_updates',
           label: 'News & Updates',
-          description: 'New features and platform updates',
+          description: 'Features and platform updates',
           enabled: true
         }
       ]
