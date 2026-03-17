@@ -76,6 +76,15 @@ type FilterType = 'all' | 'jobs' | 'payments' | 'system';
   ]
 })
 export class NotificationsPage implements OnInit, OnDestroy {
+  ionViewWillEnter() {
+    const profile = this.sessionService.profile();
+    if (profile?.id) {
+      if (!this.userId) this.userId = profile.id;
+      this.loadNotifications();
+      this.notificationService.refreshUnreadCount();
+    }
+  }
+
   private router = inject(Router);
   private sessionService = inject(SessionService);
   private notificationService = inject(NotificationService);
@@ -137,6 +146,7 @@ export class NotificationsPage implements OnInit, OnDestroy {
     if (profile?.id) {
       this.userId = profile.id;
       await this.loadNotifications();
+      await this.notificationService.refreshUnreadCount();
       this.setupRealTimeSubscription();
     }
   }
@@ -167,14 +177,20 @@ export class NotificationsPage implements OnInit, OnDestroy {
     this.unsubscribeRealTime = this.realTimeService.subscribeToNotifications(
       this.userId,
       (notification) => {
-        // Add new notification to the top of the list
-        this.notifications.update(list => [notification as Notification, ...list]);
+        // Deduplicate: avoid adding if already in list (real-time can deliver twice)
+        this.notifications.update(list => {
+          const n = notification as Notification;
+          if (list.some(item => item.id === n.id)) return list;
+          return [n, ...list];
+        });
+        this.notificationService.refreshUnreadCount();
       }
     );
   }
 
   async handleRefresh(event: RefresherCustomEvent) {
     await this.loadNotifications();
+    await this.notificationService.refreshUnreadCount();
     event.target.complete();
   }
 
@@ -188,9 +204,10 @@ export class NotificationsPage implements OnInit, OnDestroy {
       await this.markAsRead(notification);
     }
 
-    // Navigate to relevant page based on notification data
-    if (notification.data?.bookingId) {
-      this.router.navigate(['/p/job', notification.data.bookingId]);
+    // Navigate to relevant page based on notification data (support bookingId and booking_id)
+    const bookingId = notification.data?.bookingId ?? notification.data?.booking_id;
+    if (bookingId) {
+      this.router.navigate(['/p/job', bookingId]);
     }
   }
 
@@ -198,10 +215,10 @@ export class NotificationsPage implements OnInit, OnDestroy {
     try {
       await this.notificationService.markNotificationAsRead(notification.id);
 
-      // Update local state
       this.notifications.update(list =>
         list.map(n => n.id === notification.id ? { ...n, read: true } : n)
       );
+      await this.notificationService.refreshUnreadCount();
     } catch (error) {
       devError('Failed to mark notification as read:', error);
     }
@@ -218,10 +235,10 @@ export class NotificationsPage implements OnInit, OnDestroy {
         )
       );
 
-      // Update local state
       this.notifications.update(list =>
         list.map(n => ({ ...n, read: true }))
       );
+      await this.notificationService.refreshUnreadCount();
 
       await this.showToast('All notifications marked as read', 'success');
     } catch (error) {

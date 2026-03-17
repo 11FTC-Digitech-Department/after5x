@@ -44,7 +44,7 @@ export class ProviderTabsPage implements OnInit, OnDestroy {
   private realTimeService = inject(RealTimeService);
   private chatService = inject(ChatService);
 
-  unreadNotificationCount = signal(0);
+  unreadNotificationCount = this.notificationService.unreadCount;
   unreadChatCount = signal(0);
 
   private unsubscribeRealTime: (() => void) | null = null;
@@ -67,7 +67,7 @@ export class ProviderTabsPage implements OnInit, OnDestroy {
 
       if (profile?.id && !isLoading && !this.userId) {
         this.userId = profile.id;
-        this.loadUnreadCount();
+        this.notificationService.refreshUnreadCount();
         this.loadUnreadChatCount();
         this.setupRealTimeSubscription();
       }
@@ -78,9 +78,15 @@ export class ProviderTabsPage implements OnInit, OnDestroy {
     const profile = this.sessionService.profile();
     if (profile?.id && !this.userId) {
       this.userId = profile.id;
-      await this.loadUnreadCount();
+      await this.notificationService.refreshUnreadCount();
       await this.loadUnreadChatCount();
       this.setupRealTimeSubscription();
+    }
+  }
+
+  ionViewWillEnter() {
+    if (this.userId) {
+      this.notificationService.refreshUnreadCount();
     }
   }
 
@@ -90,16 +96,6 @@ export class ProviderTabsPage implements OnInit, OnDestroy {
     }
     if (this.unsubscribeChatUpdates) {
       this.unsubscribeChatUpdates();
-    }
-  }
-
-  async loadUnreadCount() {
-    try {
-      const notifications = await this.notificationService.getUserNotifications(50);
-      const unreadCount = notifications.filter((n: any) => !n.read).length;
-      this.unreadNotificationCount.set(unreadCount);
-    } catch (error) {
-      devError('Failed to load notification count:', error);
     }
   }
 
@@ -115,11 +111,9 @@ export class ProviderTabsPage implements OnInit, OnDestroy {
   private setupRealTimeSubscription() {
     if (!this.userId) return;
 
-    this.unsubscribeRealTime = this.realTimeService.subscribeToNotifications(
+    this.unsubscribeRealTime = this.notificationService.subscribeToUnreadUpdates(
       this.userId,
-      () => {
-        this.unreadNotificationCount.update(count => count + 1);
-      }
+      () => {}
     );
 
     // Subscribe to real-time chat updates for badge

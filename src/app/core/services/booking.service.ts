@@ -14,7 +14,8 @@ import {
   ProviderInfo,
   BookingError,
   PriceBreakdown,
-  CustomerBooking
+  CustomerBooking,
+  NotificationType
 } from '../models/booking.model';
 
 @Injectable({
@@ -261,6 +262,14 @@ export class BookingService {
         title: 'Booking Created',
         description: 'Your service request has been submitted and is being processed.'
       });
+
+      // Step 7b: Notify customer that booking was created (in-app + for real-time toast)
+      await this.notificationService.notifyBookingEvent(
+        bookingId,
+        NotificationType.BOOKING_CREATED,
+        [userProfile.id],
+        { serviceType: data.serviceType }
+      );
 
       // Step 8: Calculate final pricing and update booking with commission
       const priceBreakdown = await this.calculateFinalPrice(bookingId);
