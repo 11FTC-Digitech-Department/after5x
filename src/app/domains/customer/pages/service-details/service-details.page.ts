@@ -117,18 +117,29 @@ export class ServiceDetailsPage implements OnInit, OnDestroy {
   servicePrice = computed(() => {
     const data = this.serviceData();
     if (!data) return '';
-    if (data.priceRange) {
-      const { min, max } = data.priceRange;
-      return min === max ? `₱${min.toLocaleString()}` : `₱${min.toLocaleString()} - ₱${max.toLocaleString()}`;
-    }
-    return `₱${data.price_min} - ₱${data.price_max}`;
+    const price = data.properties?.['gas_amount_fee'] ?? data.price_min;
+    return `₱${Number(price).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
   });
 
   serviceDuration = computed(() => {
     const data = this.serviceData();
     if (!data) return '';
-    return `${data.duration_minutes} minutes`;
+    return `Est. ${data.duration_minutes} minutes`;
   });
+
+  getServiceIcon(): string {
+    const name = this.serviceData()?.category?.name?.toLowerCase() || '';
+    const iconMap: Record<string, string> = {
+      'locksmithing': 'key',
+      'air conditioning': 'snow',
+      'aircon': 'snow',
+      'electrical': 'flash',
+      'roadside assistance': 'car',
+      'automotive': 'car',
+      'plumbing': 'water'
+    };
+    return iconMap[name] || 'construct';
+  }
 
   providerName = computed(() => {
     const provider = this.selectedProvider();
