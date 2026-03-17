@@ -17,6 +17,7 @@ import {
   IonRefresher,
   IonRefresherContent,
   IonButton,
+  AlertController,
   RefresherCustomEvent,
   ToastController
 } from '@ionic/angular/standalone';
@@ -30,7 +31,8 @@ import {
   chevronForward,
   ellipseOutline,
   ellipse,
-  timeOutline
+  timeOutline,
+  trashOutline
 } from 'ionicons/icons';
 
 import { SessionService } from '@core/auth/session';
@@ -90,6 +92,7 @@ export class NotificationsPage implements OnInit, OnDestroy {
   private notificationService = inject(NotificationService);
   private realTimeService = inject(RealTimeService);
   private toastController = inject(ToastController);
+  private alertController = inject(AlertController);
 
   // State
   notifications = signal<Notification[]>([]);
@@ -137,7 +140,8 @@ export class NotificationsPage implements OnInit, OnDestroy {
       chevronForward,
       ellipseOutline,
       ellipse,
-      timeOutline
+      timeOutline,
+      trashOutline
     });
   }
 
@@ -228,23 +232,75 @@ export class NotificationsPage implements OnInit, OnDestroy {
     const unreadNotifications = this.notifications().filter(n => !n.read);
 
     try {
-      // Mark all unread as read
       await Promise.all(
         unreadNotifications.map(n =>
           this.notificationService.markNotificationAsRead(n.id)
         )
       );
-
       this.notifications.update(list =>
         list.map(n => ({ ...n, read: true }))
       );
       await this.notificationService.refreshUnreadCount();
-
       await this.showToast('All notifications marked as read', 'success');
     } catch (error) {
       devError('Failed to mark all as read:', error);
       await this.showToast('Failed to mark notifications as read', 'danger');
     }
+  }
+
+  onDeleteClick(event: Event, notification: Notification) {
+    event.stopPropagation();
+    this.confirmDeleteSingle(notification);
+  }
+
+  async confirmDeleteSingle(notification: Notification) {
+    const alert = await this.alertController.create({
+      header: 'Remove notification',
+      message: 'This notification will be removed from your list.',
+      buttons: [
+        { text: 'Cancel', role: 'cancel' },
+        {
+          text: 'Remove',
+          role: 'destructive',
+          handler: async () => {
+            const ok = await this.notificationService.softDeleteNotification(notification.id);
+            if (ok) {
+              this.notifications.update(list => list.filter(n => n.id !== notification.id));
+              await this.notificationService.refreshUnreadCount();
+              await this.showToast('Notification removed', 'success');
+            } else {
+              await this.showToast('Failed to remove notification', 'danger');
+            }
+          }
+        }
+      ]
+    });
+    await alert.present();
+  }
+
+  async confirmDeleteAll() {
+    const alert = await this.alertController.create({
+      header: 'Clear all notifications',
+      message: 'All notifications will be removed from your list. You cannot undo this.',
+      buttons: [
+        { text: 'Cancel', role: 'cancel' },
+        {
+          text: 'Clear all',
+          role: 'destructive',
+          handler: async () => {
+            const ok = await this.notificationService.softDeleteAllNotifications();
+            if (ok) {
+              this.notifications.set([]);
+              await this.notificationService.refreshUnreadCount();
+              await this.showToast('All notifications cleared', 'success');
+            } else {
+              await this.showToast('Failed to clear notifications', 'danger');
+            }
+          }
+        }
+      ]
+    });
+    await alert.present();
   }
 
   // Helper methods

@@ -400,6 +400,11 @@ export class BookingsPage implements OnInit, OnDestroy {
     const config = STATUS_CONFIG[newStatus];
     if (!config) return;
 
+    // Skip toast when we initiated the cancellation (booking-details already shows feedback)
+    if (newStatus === 'cancelled' && booking?.cancelled_by === this.sessionService.profile()?.id) {
+      return;
+    }
+
     const serviceName = this.getServiceName(booking);
     const message = `${serviceName}: ${config.label}`;
 

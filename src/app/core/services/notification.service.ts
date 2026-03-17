@@ -397,6 +397,51 @@ export class NotificationService {
     `;
   }
 
+  async softDeleteNotification(notificationId: string): Promise<boolean> {
+    const client = this.supabaseService.client;
+    const user = this.sessionService.profile();
+    if (!user) return false;
+
+    const { error } = await client
+      .from('notifications')
+      .update({
+        is_deleted: true,
+        deleted_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', notificationId)
+      .eq('user_id', user.id)
+      .eq('is_deleted', false);
+
+    if (error) {
+      devError('Failed to soft delete notification:', error);
+      return false;
+    }
+    return true;
+  }
+
+  async softDeleteAllNotifications(): Promise<boolean> {
+    const client = this.supabaseService.client;
+    const user = this.sessionService.profile();
+    if (!user) return false;
+
+    const { error } = await client
+      .from('notifications')
+      .update({
+        is_deleted: true,
+        deleted_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      })
+      .eq('user_id', user.id)
+      .eq('is_deleted', false);
+
+    if (error) {
+      devError('Failed to soft delete all notifications:', error);
+      return false;
+    }
+    return true;
+  }
+
   async markNotificationAsRead(notificationId: string): Promise<void> {
     const client = this.supabaseService.client;
     const user = this.sessionService.profile();
@@ -428,6 +473,7 @@ export class NotificationService {
       .from('notifications')
       .select('*')
       .eq('user_id', user.id)
+      .eq('is_deleted', false)
       .order('created_at', { ascending: false })
       .limit(limit);
 
