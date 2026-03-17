@@ -23,10 +23,14 @@ import {
   IonCardSubtitle,
   IonCardContent,
   IonButton,
+  IonItem,
+  IonLabel,
+  IonSelect,
+  IonSelectOption,
   ModalController
 } from '@ionic/angular/standalone';
 import { addIcons } from 'ionicons';
-import { optionsOutline, chevronForward, star, constructOutline } from 'ionicons/icons';
+import { optionsOutline, chevronForward, star, constructOutline, checkmarkCircle } from 'ionicons/icons';
 import { ServiceService, ServiceGroup, ServiceVariant } from '@core/services/service.service';
 import { AuthGuard } from '@core/auth/auth.guard';
 import { VariantSelectorComponent, VariantSelectionResult } from '@shared/components/variant-selector/variant-selector.component';
@@ -63,6 +67,10 @@ interface CategoryInfo {
     IonCardSubtitle,
     IonCardContent,
     IonButton,
+    IonItem,
+    IonLabel,
+    IonSelect,
+    IonSelectOption,
     CommonModule,
     FormsModule,
     VariantSelectorComponent
@@ -85,7 +93,7 @@ export class CatalogPage implements OnInit {
   selectedVariantResult = signal<VariantSelectionResult | null>(null);
 
   constructor() {
-    addIcons({ optionsOutline, chevronForward, star, constructOutline });
+    addIcons({ optionsOutline, chevronForward, star, constructOutline, checkmarkCircle });
   }
 
   async ngOnInit() {
@@ -195,6 +203,49 @@ export class CatalogPage implements OnInit {
 
   getGroupVariants(group: ServiceGroup): ServiceVariant[] {
     return group.variants;
+  }
+
+  getFallbackSelectedId(group: ServiceGroup): string | undefined {
+    const result = this.selectedVariantResult();
+    if (!result) return undefined;
+    const inGroup = group.variants.some(v => v.id === result!.variant.id);
+    return inGroup ? result.variant.id : undefined;
+  }
+
+  getFallbackDisplayMin(v: ServiceVariant): number {
+    const gas = v.properties?.['gas_amount_fee'];
+    if (typeof gas === 'number') return gas;
+    return v.price_min;
+  }
+
+  getFallbackDisplayMax(v: ServiceVariant): number {
+    const gas = v.properties?.['gas_amount_fee'];
+    if (typeof gas === 'number') return gas;
+    return v.price_max;
+  }
+
+  getFallbackPriceLabel(v: ServiceVariant): string {
+    if (v.properties?.['gas_amount_fee'] != null) return 'Price';
+    return 'Standard Price';
+  }
+
+  getFallbackAfter5Min(v: ServiceVariant): number {
+    const gas = v.properties?.['gas_amount_fee'];
+    if (typeof gas === 'number') return gas;
+    return v.price_after5_min ?? v.price_min;
+  }
+
+  getFallbackAfter5Max(v: ServiceVariant): number {
+    const gas = v.properties?.['gas_amount_fee'];
+    if (typeof gas === 'number') return gas;
+    return v.price_after5_max ?? v.price_max;
+  }
+
+  hasFallbackDistinctAfter5Price(v: ServiceVariant): boolean {
+    if (v.properties?.['gas_amount_fee'] != null) return false;
+    const after5Min = v.price_after5_min ?? v.price_min;
+    const after5Max = v.price_after5_max ?? v.price_max;
+    return after5Min !== v.price_min || after5Max !== v.price_max;
   }
 
   hasDistinctAfter5Price(group: ServiceGroup): boolean {

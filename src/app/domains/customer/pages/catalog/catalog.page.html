@@ -99,16 +99,43 @@
                         (variantSelected)="onVariantSelected($event)">
                       </app-variant-selector>
                     } @else {
-                      <div class="fallback-option-buttons">
-                        @for (variant of group.variants; track variant.id) {
-                          <ion-button
-                            size="small"
-                            [fill]="selectedVariantResult()?.variant?.id === variant.id ? 'solid' : 'outline'"
-                            (click)="onFallbackVariantSelected(group, variant.id)">
-                            {{ variant.name }}
-                          </ion-button>
-                        }
-                      </div>
+                      <ion-item lines="none" class="fallback-select-item">
+                        <ion-label position="stacked">Select option</ion-label>
+                        <ion-select
+                          [value]="getFallbackSelectedId(group)"
+                          placeholder="Select option"
+                          interface="action-sheet"
+                          [interfaceOptions]="{ header: group.service.name }"
+                          (ionChange)="onFallbackVariantSelected(group, $event.detail.value)">
+                          @for (variant of group.variants; track variant.id) {
+                            <ion-select-option [value]="variant.id">
+                              {{ variant.name }} — {{ formatPriceRange(getFallbackDisplayMin(variant), getFallbackDisplayMax(variant)) }}
+                            </ion-select-option>
+                          }
+                        </ion-select>
+                      </ion-item>
+                      @if (selectedVariantResult()) {
+                        <div class="fallback-price-display">
+                          <div class="price-row">
+                            <span class="price-label">{{ getFallbackPriceLabel(selectedVariantResult()!.variant) }}:</span>
+                            <ion-badge color="primary">
+                              {{ formatPriceRange(getFallbackDisplayMin(selectedVariantResult()!.variant), getFallbackDisplayMax(selectedVariantResult()!.variant)) }}
+                            </ion-badge>
+                          </div>
+                          @if (hasFallbackDistinctAfter5Price(selectedVariantResult()!.variant)) {
+                            <div class="price-row after5">
+                              <span class="price-label">After 5PM Price:</span>
+                              <ion-badge color="warning">
+                                {{ formatPriceRange(getFallbackAfter5Min(selectedVariantResult()!.variant), getFallbackAfter5Max(selectedVariantResult()!.variant)) }}
+                              </ion-badge>
+                            </div>
+                          }
+                          <div class="duration-row">
+                            <ion-icon name="checkmark-circle" color="success"></ion-icon>
+                            <span>Est. {{ selectedVariantResult()!.variant.duration_minutes }} minutes</span>
+                          </div>
+                        </div>
+                      }
                     }
 
                     @if (selectedVariantResult()) {
