@@ -122,6 +122,8 @@ export class CustomerTabsPage implements OnInit, OnDestroy {
       async (notification) => {
         // Skip toast for booking_created - booking-form shows its own toast after creation
         if (notification.type === 'booking_created') return;
+        // Skip toast for booking_cancelled when user initiated (booking-details already shows feedback)
+        if (notification.type === 'booking_cancelled' && (notification as { data?: { cancelled_by?: string } }).data?.cancelled_by === this.userId) return;
         if (notification.id && this.notificationService.shouldShowToast(notification.id)) {
           await this.showToast(notification.title || 'New notification', notification.type);
         }
