@@ -1685,6 +1685,14 @@ ion-select {
   }
 }
 
+// Footer primary CTA - matches service-details Book Now
+.book-now-button {
+  --border-radius: 0;
+  font-weight: 600;
+  font-size: 16px;
+  height: 56px;
+}
+
 // Provider summary styles
 .provider-summary {
   display: flex;

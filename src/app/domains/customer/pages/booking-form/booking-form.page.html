@@ -753,9 +753,10 @@
     <ion-toolbar>
       <ion-button
         expand="full"
+        size="large"
         [disabled]="!canProceedToReview()"
         (click)="nextStep()"
-      >
+        class="book-now-button">
         Review Booking
         <ion-icon name="arrow-forward" slot="end"></ion-icon>
       </ion-button>
@@ -770,9 +771,10 @@
             <ion-button
               fill="clear"
               expand="full"
+              size="large"
               color="medium"
               (click)="previousStep()"
-            >
+              class="book-now-button">
               <ion-icon name="arrow-back" slot="start"></ion-icon>
               Edit
             </ion-button>
@@ -781,10 +783,11 @@
           <ion-col [size]="isLoading() ? 12 : 8">
             <ion-button
               expand="full"
+              size="large"
               [disabled]="isLoading()"
               (click)="submitBooking()"
               color="success"
-            >
+              class="book-now-button">
               @if (isLoading()) {
                 <ion-spinner name="crescent" slot="start"></ion-spinner>
                 Processing...

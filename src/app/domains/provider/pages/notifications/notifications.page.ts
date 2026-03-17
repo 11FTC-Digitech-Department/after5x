@@ -17,6 +17,7 @@ import {
   IonRefresher,
   IonRefresherContent,
   IonButton,
+  AlertController,
   RefresherCustomEvent,
   ToastController
 } from '@ionic/angular/standalone';
@@ -30,7 +31,8 @@ import {
   chevronForward,
   ellipseOutline,
   ellipse,
-  timeOutline
+  timeOutline,
+  trashOutline
 } from 'ionicons/icons';
 
 import { SessionService } from '@core/auth/session';
@@ -76,11 +78,21 @@ type FilterType = 'all' | 'jobs' | 'payments' | 'system';
   ]
 })
 export class NotificationsPage implements OnInit, OnDestroy {
+  ionViewWillEnter() {
+    const profile = this.sessionService.profile();
+    if (profile?.id) {
+      if (!this.userId) this.userId = profile.id;
+      this.loadNotifications();
+      this.notificationService.refreshUnreadCount();
+    }
+  }
+
   private router = inject(Router);
   private sessionService = inject(SessionService);
   private notificationService = inject(NotificationService);
   private realTimeService = inject(RealTimeService);
   private toastController = inject(ToastController);
+  private alertController = inject(AlertController);
 
   // State
   notifications = signal<Notification[]>([]);
@@ -128,7 +140,8 @@ export class NotificationsPage implements OnInit, OnDestroy {
       chevronForward,
       ellipseOutline,
       ellipse,
-      timeOutline
+      timeOutline,
+      trashOutline
     });
   }
 
@@ -137,6 +150,7 @@ export class NotificationsPage implements OnInit, OnDestroy {
     if (profile?.id) {
       this.userId = profile.id;
       await this.loadNotifications();
+      await this.notificationService.refreshUnreadCount();
       this.setupRealTimeSubscription();
     }
   }
@@ -167,14 +181,20 @@ export class NotificationsPage implements OnInit, OnDestroy {
     this.unsubscribeRealTime = this.realTimeService.subscribeToNotifications(
       this.userId,
       (notification) => {
-        // Add new notification to the top of the list
-        this.notifications.update(list => [notification as Notification, ...list]);
+        // Deduplicate: avoid adding if already in list (real-time can deliver twice)
+        this.notifications.update(list => {
+          const n = notification as Notification;
+          if (list.some(item => item.id === n.id)) return list;
+          return [n, ...list];
+        });
+        this.notificationService.refreshUnreadCount();
       }
     );
   }
 
   async handleRefresh(event: RefresherCustomEvent) {
     await this.loadNotifications();
+    await this.notificationService.refreshUnreadCount();
     event.target.complete();
   }
 
@@ -188,9 +208,10 @@ export class NotificationsPage implements OnInit, OnDestroy {
       await this.markAsRead(notification);
     }
 
-    // Navigate to relevant page based on notification data
-    if (notification.data?.bookingId) {
-      this.router.navigate(['/p/job', notification.data.bookingId]);
+    // Navigate to relevant page based on notification data (support bookingId and booking_id)
+    const bookingId = notification.data?.bookingId ?? notification.data?.booking_id;
+    if (bookingId) {
+      this.router.navigate(['/p/job', bookingId]);
     }
   }
 
@@ -198,10 +219,10 @@ export class NotificationsPage implements OnInit, OnDestroy {
     try {
       await this.notificationService.markNotificationAsRead(notification.id);
 
-      // Update local state
       this.notifications.update(list =>
         list.map(n => n.id === notification.id ? { ...n, read: true } : n)
       );
+      await this.notificationService.refreshUnreadCount();
     } catch (error) {
       devError('Failed to mark notification as read:', error);
     }
@@ -211,23 +232,75 @@ export class NotificationsPage implements OnInit, OnDestroy {
     const unreadNotifications = this.notifications().filter(n => !n.read);
 
     try {
-      // Mark all unread as read
       await Promise.all(
         unreadNotifications.map(n =>
           this.notificationService.markNotificationAsRead(n.id)
         )
       );
-
-      // Update local state
       this.notifications.update(list =>
         list.map(n => ({ ...n, read: true }))
       );
-
+      await this.notificationService.refreshUnreadCount();
       await this.showToast('All notifications marked as read', 'success');
     } catch (error) {
       devError('Failed to mark all as read:', error);
       await this.showToast('Failed to mark notifications as read', 'danger');
     }
+  }
+
+  onDeleteClick(event: Event, notification: Notification) {
+    event.stopPropagation();
+    this.confirmDeleteSingle(notification);
+  }
+
+  async confirmDeleteSingle(notification: Notification) {
+    const alert = await this.alertController.create({
+      header: 'Remove notification',
+      message: 'This notification will be removed from your list.',
+      buttons: [
+        { text: 'Cancel', role: 'cancel' },
+        {
+          text: 'Remove',
+          role: 'destructive',
+          handler: async () => {
+            const ok = await this.notificationService.softDeleteNotification(notification.id);
+            if (ok) {
+              this.notifications.update(list => list.filter(n => n.id !== notification.id));
+              await this.notificationService.refreshUnreadCount();
+              await this.showToast('Notification removed', 'success');
+            } else {
+              await this.showToast('Failed to remove notification', 'danger');
+            }
+          }
+        }
+      ]
+    });
+    await alert.present();
+  }
+
+  async confirmDeleteAll() {
+    const alert = await this.alertController.create({
+      header: 'Clear all notifications',
+      message: 'All notifications will be removed from your list. You cannot undo this.',
+      buttons: [
+        { text: 'Cancel', role: 'cancel' },
+        {
+          text: 'Clear all',
+          role: 'destructive',
+          handler: async () => {
+            const ok = await this.notificationService.softDeleteAllNotifications();
+            if (ok) {
+              this.notifications.set([]);
+              await this.notificationService.refreshUnreadCount();
+              await this.showToast('All notifications cleared', 'success');
+            } else {
+              await this.showToast('Failed to clear notifications', 'danger');
+            }
+          }
+        }
+      ]
+    });
+    await alert.present();
   }
 
   // Helper methods

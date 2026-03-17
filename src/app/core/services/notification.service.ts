@@ -228,7 +228,14 @@ export class NotificationService {
   private async sendNotification(notification: NotificationPayload, recipients: string[]): Promise<void> {
     const client = this.supabaseService.client;
 
-    // Send to each channel
+    // Always create in-app record once (ensures both customer and provider receive it, no duplicates)
+    try {
+      await this.sendInAppNotification(recipients, notification);
+    } catch (error) {
+      devError('Failed to create in-app notification:', error);
+    }
+
+    // Send to external channels
     for (const channel of notification.channels) {
       try {
         switch (channel) {
@@ -242,7 +249,7 @@ export class NotificationService {
             await this.sendEmailNotification(recipients, notification);
             break;
           case NotificationChannel.IN_APP:
-            await this.sendInAppNotification(recipients, notification);
+            // Already created above; skip to avoid duplicate
             break;
         }
       } catch (error) {
@@ -251,7 +258,10 @@ export class NotificationService {
     }
   }
 
-  private async sendPushNotification(recipients: string[], notification: NotificationPayload): Promise<void> {
+  private async sendPushNotification(
+    recipients: string[],
+    notification: NotificationPayload
+  ): Promise<void> {
     // For now, log the push notification
     // In production, integrate with FCM, OneSignal, or similar service
     devLog('Sending push notification:', {
@@ -260,9 +270,6 @@ export class NotificationService {
       message: notification.message,
       data: notification.data
     });
-
-    // Create in-app notification record for push notifications
-    await this.sendInAppNotification(recipients, notification);
   }
 
   private async sendSMSNotification(recipients: string[], notification: NotificationPayload): Promise<void> {
@@ -316,13 +323,15 @@ export class NotificationService {
     const client = this.supabaseService.client;
 
     // Create notification records in database (matching existing schema)
+    // Always include bookingId in data for booking-related notifications (for view-details redirect)
+    const dataWithBookingId = { ...(notification.data || {}), bookingId: notification.bookingId };
     const notificationRecords = recipients.map(recipientId => ({
       user_id: recipientId,
       type: notification.type,
       title: notification.title,
       body: notification.message, // Use 'body' to match existing schema
       message: notification.message, // Also set message for new column
-      data: notification.data,
+      data: dataWithBookingId,
       read: false,
       created_at: new Date().toISOString()
     }));
@@ -388,6 +397,51 @@ export class NotificationService {
     `;
   }
 
+  async softDeleteNotification(notificationId: string): Promise<boolean> {
+    const client = this.supabaseService.client;
+    const user = this.sessionService.profile();
+    if (!user) return false;
+
+    const { error } = await client
+      .from('notifications')
+      .update({
+        is_deleted: true,
+        deleted_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', notificationId)
+      .eq('user_id', user.id)
+      .eq('is_deleted', false);
+
+    if (error) {
+      devError('Failed to soft delete notification:', error);
+      return false;
+    }
+    return true;
+  }
+
+  async softDeleteAllNotifications(): Promise<boolean> {
+    const client = this.supabaseService.client;
+    const user = this.sessionService.profile();
+    if (!user) return false;
+
+    const { error } = await client
+      .from('notifications')
+      .update({
+        is_deleted: true,
+        deleted_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      })
+      .eq('user_id', user.id)
+      .eq('is_deleted', false);
+
+    if (error) {
+      devError('Failed to soft delete all notifications:', error);
+      return false;
+    }
+    return true;
+  }
+
   async markNotificationAsRead(notificationId: string): Promise<void> {
     const client = this.supabaseService.client;
     const user = this.sessionService.profile();
@@ -419,6 +473,7 @@ export class NotificationService {
       .from('notifications')
       .select('*')
       .eq('user_id', user.id)
+      .eq('is_deleted', false)
       .order('created_at', { ascending: false })
       .limit(limit);
 

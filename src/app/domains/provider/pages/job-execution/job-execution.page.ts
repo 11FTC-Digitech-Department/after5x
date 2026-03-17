@@ -185,6 +185,7 @@ export class JobExecutionPage implements OnInit, OnDestroy {
   isExecutingAction = signal(false);
   isTrackingLocation = signal(false);
   unreadChatCount = signal(0);
+  private skipNextRejectToast = false;
 
   // GPS tracking
   private locationWatchId: string | null = null;
@@ -367,6 +368,11 @@ export class JobExecutionPage implements OnInit, OnDestroy {
           }
         },
         onStatusChange: async (newStatus) => {
+          // Skip toast when we initiated reject (we show our own)
+          if (newStatus === 'rejected' && this.skipNextRejectToast) {
+            this.skipNextRejectToast = false;
+            return;
+          }
           const config = STATUS_CONFIG[newStatus];
           if (config) {
             await this.showToast(config.message, config.color);
@@ -456,6 +462,7 @@ export class JobExecutionPage implements OnInit, OnDestroy {
           role: 'destructive',
           handler: async (data) => {
             this.isExecutingAction.set(true);
+            this.skipNextRejectToast = true;
             try {
               await this.providerBookingService.rejectJob(booking.id, data.reason || 'Provider rejected');
               await this.showToast('Job rejected', 'warning');

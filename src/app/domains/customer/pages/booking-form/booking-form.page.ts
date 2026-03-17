@@ -1157,6 +1157,15 @@ export class BookingFormPage implements OnInit {
 
       devLog('Booking created successfully:', response.bookingId);
 
+      // Toast: booking created
+      const toast = await this.toastController.create({
+        message: 'Your booking has been submitted and is being processed.',
+        color: 'warning',
+        duration: 3000,
+        position: 'top'
+      });
+      await toast.present();
+
       // Store assigned provider for review display
       this.assignedProvider.set(response.assignedProvider);
 

@@ -1159,7 +1159,9 @@ export type Database = {
           body: string
           created_at: string | null
           data: Json | null
+          deleted_at: string | null
           id: string
+          is_deleted: boolean
           message: string
           read: boolean | null
           read_at: string | null
@@ -1172,7 +1174,9 @@ export type Database = {
           body: string
           created_at?: string | null
           data?: Json | null
+          deleted_at?: string | null
           id?: string
+          is_deleted?: boolean
           message: string
           read?: boolean | null
           read_at?: string | null
@@ -1185,7 +1189,9 @@ export type Database = {
           body?: string
           created_at?: string | null
           data?: Json | null
+          deleted_at?: string | null
           id?: string
+          is_deleted?: boolean
           message?: string
           read?: boolean | null
           read_at?: string | null

@@ -197,6 +197,7 @@ export class BookingDetailsPage implements OnInit, OnDestroy {
   isLoading = signal(true);
   isCancelling = signal(false);
   unreadChatCount = signal(0);
+  private skipNextCancelToast = false;
 
   // Real-time connection state (for UI feedback)
   connectionMode = this.realtimeManager.mode;
@@ -351,7 +352,12 @@ export class BookingDetailsPage implements OnInit, OnDestroy {
             // Show visual feedback when update is received
             if (previousStatus !== updatedBooking.status) {
               this.showStatusUpdateFeedback(updatedBooking.status);
-              this.showStatusToast(updatedBooking.status);
+              // Skip toast for CANCELLED when we initiated the cancel (we show our own)
+              if (updatedBooking.status === 'cancelled' && this.skipNextCancelToast) {
+                this.skipNextCancelToast = false;
+              } else {
+                this.showStatusToast(updatedBooking.status);
+              }
             }
           }
         },
@@ -452,6 +458,7 @@ export class BookingDetailsPage implements OnInit, OnDestroy {
     if (!booking || !userId) return;
 
     this.isCancelling.set(true);
+    this.skipNextCancelToast = true;
     try {
       await this.bookingStatusService.cancelBooking(
         booking.id,

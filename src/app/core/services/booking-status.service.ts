@@ -252,8 +252,8 @@ export class BookingStatusService {
 
       const enrichedData = { ...metadata, providerName, serviceName, grandTotal };
 
-      // Notify customer
-      await this.notificationService.notifyCustomerStatusUpdate(bookingId, customerId, status, enrichedData);
+      // Customer: in-app notifications created by DB trigger (handle_booking_status_change_notify)
+      // to ensure they are saved; app-side insert can fail due to RLS when provider creates for customer.
 
       // Notify provider if applicable
       if (providerId && this.shouldNotifyProvider(status)) {
@@ -273,12 +273,9 @@ export class BookingStatusService {
   }
 
   private shouldNotifyProvider(status: BookingStatus): boolean {
-    const providerNotifications: BookingStatus[] = [
-      BookingStatus.CONFIRMED,
-      BookingStatus.CANCELLED,
-      BookingStatus.REJECTED
-    ];
-    return providerNotifications.includes(status);
+    // Only CONFIRMED - CANCELLED and REJECTED are handled by DB trigger (handle_booking_status_change_notify)
+    // to avoid duplicate in-app notifications for the same event
+    return status === BookingStatus.CONFIRMED;
   }
 
   private getProviderNotificationType(status: BookingStatus): NotificationType | null {

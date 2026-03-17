@@ -100,6 +100,11 @@ ion-content {
 }
 
 
+// Notification list
+.notifications-list {
+  padding: 0;
+}
+
 // Notification item
 .notification-item {
   display: flex;
@@ -107,6 +112,7 @@ ion-content {
   gap: 12px;
   background: #ffffff;
   padding: 16px;
+  margin-bottom: 8px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
   cursor: pointer;
   transition: transform 0.2s ease, box-shadow 0.2s ease;
@@ -120,6 +126,28 @@ ion-content {
   &.unread {
     background: rgba(var(--ion-color-primary-rgb), 0.04);
     border-left: 3px solid var(--ion-color-primary);
+  }
+}
+
+.notification-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+  align-self: center;
+
+  ion-button {
+    --padding-start: 4px;
+    --padding-end: 4px;
+    margin: 0;
+
+    ion-icon {
+      font-size: 24px;
+    }
+  }
+
+  .notification-arrow {
+    font-size: 24px;
   }
 }
 

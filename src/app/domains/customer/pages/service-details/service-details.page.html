@@ -41,17 +41,43 @@
         <ion-card class="service-info-card">
           <ion-card-content>
             <ion-grid>
-              <ion-row>
+              <ion-row class="service-header-row">
                 <ion-col size="12">
                   @if (isBaseLoading() && !serviceData()) {
                     <ion-skeleton-text animated style="height: 28px; width: 80%; margin-bottom: 8px;"></ion-skeleton-text>
                     <ion-skeleton-text animated style="height: 20px; width: 60%;"></ion-skeleton-text>
                   } @else {
-                    <ion-card-title class="service-title">{{ serviceTitle() }}</ion-card-title>
-                    <ion-card-subtitle class="service-subtitle">{{ serviceData()?.category?.name }}</ion-card-subtitle>
+                    <div class="service-header">
+                      <ion-icon [name]="getServiceIcon()" class="service-icon"></ion-icon>
+                      <div class="service-title-block">
+                        <ion-card-title class="service-title">{{ serviceTitle() }}</ion-card-title>
+                        <ion-card-subtitle class="service-subtitle">{{ serviceData()?.category?.name | uppercase }}</ion-card-subtitle>
+                      </div>
+                    </div>
                   }
                 </ion-col>
               </ion-row>
+
+              @if (selectedProvider() && !isBaseLoading()) {
+                <ion-row class="provider-preview-row">
+                  <ion-col size="12">
+                    <div class="provider-preview">
+                      <ion-avatar class="provider-preview-avatar">
+                        <img
+                          [src]="selectedProvider()?.avatarUrl || 'assets/logo/main-logo.png'"
+                          alt="Provider"
+                          loading="lazy"
+                          decoding="async"
+                          referrerpolicy="no-referrer" />
+                      </ion-avatar>
+                      <div class="provider-preview-info">
+                        <ion-text class="provider-preview-name">{{ providerName() }}</ion-text>
+                        <ion-text class="provider-preview-label">SERVICE PROVIDER</ion-text>
+                      </div>
+                    </div>
+                  </ion-col>
+                </ion-row>
+              }
 
               <ion-row class="service-details-row">
                 <ion-col size="6">
@@ -59,8 +85,8 @@
                     <ion-skeleton-text animated style="height: 20px; width: 100%;"></ion-skeleton-text>
                   } @else {
                     <div class="detail-item">
-                      <ion-text color="primary" class="price-text">{{ servicePrice() }}</ion-text>
-                      <ion-text color="medium" class="detail-label">Price Range</ion-text>
+                      <span class="price-text">{{ servicePrice() }}</span>
+                      <span class="detail-label">STARTING PRICE</span>
                     </div>
                   }
                 </ion-col>
@@ -70,8 +96,8 @@
                     <ion-skeleton-text animated style="height: 20px; width: 100%;"></ion-skeleton-text>
                   } @else {
                     <div class="detail-item">
-                      <ion-text color="primary" class="duration-text">{{ serviceDuration() }}</ion-text>
-                      <ion-text color="medium" class="detail-label">Duration</ion-text>
+                      <span class="duration-text">{{ serviceDuration() }}</span>
+                      <span class="detail-label">MINUTES</span>
                     </div>
                   }
                 </ion-col>

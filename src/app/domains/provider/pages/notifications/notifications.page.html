@@ -4,13 +4,18 @@
       <ion-back-button defaultHref="/p/dashboard"></ion-back-button>
     </ion-buttons>
     <ion-title>Notifications</ion-title>
-    @if (hasUnread()) {
-      <ion-buttons slot="end">
-        <ion-button (click)="markAllAsRead()">
+    <ion-buttons slot="end">
+      @if (filteredNotifications().length > 0) {
+        <ion-button (click)="confirmDeleteAll()" aria-label="Clear all">
+          <ion-icon slot="icon-only" name="trash-outline"></ion-icon>
+        </ion-button>
+      }
+      @if (hasUnread()) {
+        <ion-button (click)="markAllAsRead()" aria-label="Mark all read">
           <ion-icon slot="icon-only" name="checkmark-done-outline"></ion-icon>
         </ion-button>
-      </ion-buttons>
-    }
+      }
+    </ion-buttons>
   </ion-toolbar>
   <ion-toolbar class="filter-toolbar">
     <ion-segment [value]="selectedFilter()" (ionChange)="onFilterChange($event)" [scrollable]="true">
@@ -57,7 +62,6 @@
           <div class="notification-icon" [attr.data-color]="getNotificationColor(notification.type)">
             <ion-icon [name]="getNotificationIcon(notification.type)"></ion-icon>
           </div>
-
           <div class="notification-content">
             <div class="notification-header">
               <span class="notification-title">{{ notification.title }}</span>
@@ -71,8 +75,12 @@
               {{ formatTimeAgo(notification.created_at) }}
             </span>
           </div>
-
-          <ion-icon name="chevron-forward" class="notification-arrow"></ion-icon>
+          <div class="notification-actions">
+            <ion-button fill="clear" size="small" (click)="onDeleteClick($event, notification)" aria-label="Remove">
+              <ion-icon slot="icon-only" name="trash-outline"></ion-icon>
+            </ion-button>
+            <ion-icon name="chevron-forward" class="notification-arrow"></ion-icon>
+          </div>
         </div>
       }
     </div>

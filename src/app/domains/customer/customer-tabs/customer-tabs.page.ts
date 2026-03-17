@@ -99,6 +99,12 @@ export class CustomerTabsPage implements OnInit, OnDestroy {
     }
   }
 
+  ionViewWillEnter() {
+    if (this.userId) {
+      this.notificationService.refreshUnreadCount();
+    }
+  }
+
   ngOnDestroy() {
     if (this.unsubscribeRealTime) {
       this.unsubscribeRealTime();
@@ -114,6 +120,10 @@ export class CustomerTabsPage implements OnInit, OnDestroy {
     this.unsubscribeRealTime = this.notificationService.subscribeToUnreadUpdates(
       this.userId,
       async (notification) => {
+        // Skip toast for booking_created - booking-form shows its own toast after creation
+        if (notification.type === 'booking_created') return;
+        // Skip toast for booking_cancelled when user initiated (booking-details already shows feedback)
+        if (notification.type === 'booking_cancelled' && (notification as { data?: { cancelled_by?: string } }).data?.cancelled_by === this.userId) return;
         if (notification.id && this.notificationService.shouldShowToast(notification.id)) {
           await this.showToast(notification.title || 'New notification', notification.type);
         }
@@ -144,7 +154,9 @@ export class CustomerTabsPage implements OnInit, OnDestroy {
     // Determine color based on notification type
     let color = 'primary';
     if (type) {
-      if (type.includes('completed') || type.includes('confirmed')) {
+      if (type.includes('created')) {
+        color = 'warning';
+      } else if (type.includes('completed') || type.includes('confirmed')) {
         color = 'success';
       } else if (type.includes('cancelled') || type.includes('rejected')) {
         color = 'danger';
