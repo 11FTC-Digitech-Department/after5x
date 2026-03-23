@@ -16,6 +16,7 @@ export function initializeConfig(configService: ConfigService): () => Promise<vo
       const config: AppConfig = {
         production: environment.production,
         appUrl: environment.appUrl,
+        errorReporting: environment.errorReporting,
         supabase: environment.supabase,
       };
       configService.setConfig(config);

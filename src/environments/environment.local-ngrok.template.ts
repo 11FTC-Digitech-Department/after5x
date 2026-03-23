@@ -5,6 +5,9 @@
 export const environment = {
   production: false,
   appUrl: 'http://localhost:8100',
+  errorReporting: {
+    enabled: false,
+  },
   supabase: {
     url: '__SUPABASE_NGROK_URL__',
     key: 'sb_publishable_ACJWlzQHlZjBrEguHvfOxg_3BJgxAaH',
