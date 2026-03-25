@@ -8,6 +8,7 @@ import { SupabaseService } from './core/supabase/supabase';
 import { OAuthService } from './core/auth/oauth.service';
 import { SessionService } from './core/auth/session';
 import { AuthFlowService } from './core/auth/auth-flow.service';
+import { ErrorContextService } from './core/services/error-context.service';
 
 @Component({
   selector: 'app-root',
@@ -21,12 +22,14 @@ export class AppComponent implements OnInit {
   private oauthService = inject(OAuthService);
   private sessionService = inject(SessionService);
   private authFlowService = inject(AuthFlowService);
+  private errorContextService = inject(ErrorContextService);
 
   // Inject SupabaseService to ensure it initializes early and is not tree-shaken
   constructor(_supabaseService: SupabaseService) {}
 
   async ngOnInit() {
     this.initDeepLinkListener();
+    this.initActionTracking();
     await this.initEdgeToEdge();
   }
 
@@ -75,6 +78,51 @@ export class AppComponent implements OnInit {
         }
       });
     });
+  }
+
+  private initActionTracking() {
+    document.addEventListener('click', (event) => {
+      const target = event.target;
+      if (!(target instanceof Element)) {
+        return;
+      }
+
+      const element = target.closest('button, a, ion-button, [role=\"button\"], [data-testid], input, textarea, select');
+      if (!element) {
+        return;
+      }
+
+      const label = this.getActionLabel(element);
+      if (label) {
+        this.errorContextService.setLastAction(label);
+      }
+    });
+  }
+
+  private getActionLabel(element: Element): string | null {
+    const text = element.textContent?.trim().replace(/\s+/g, ' ');
+    const testId = element.getAttribute('data-testid');
+    const ariaLabel = element.getAttribute('aria-label');
+    const id = element.getAttribute('id');
+    const tagName = element.tagName.toLowerCase();
+
+    if (text) {
+      return `Clicked ${tagName}: ${text.slice(0, 80)}`;
+    }
+
+    if (ariaLabel) {
+      return `Clicked ${tagName}: ${ariaLabel}`;
+    }
+
+    if (testId) {
+      return `Clicked ${tagName}: ${testId}`;
+    }
+
+    if (id) {
+      return `Clicked ${tagName}: #${id}`;
+    }
+
+    return `Clicked ${tagName}`;
   }
 
   /**

@@ -3,8 +3,10 @@ import { Router } from '@angular/router';
 import { Capacitor } from '@capacitor/core';
 import { SessionService } from '../auth/session';
 import { ConfigService } from '../config/config.service';
+import { ErrorContextService } from './error-context.service';
 import { SupabaseService } from '../supabase/supabase';
 import { devError } from '../utils/logger';
+import { environment } from '../../../environments/environment';
 
 export interface ClientErrorReportPayload {
   message: string;
@@ -12,6 +14,9 @@ export interface ClientErrorReportPayload {
   route?: string;
   platform?: string;
   userId?: string;
+  environment: string;
+  lastAction?: string;
+  lastInvoke?: string;
   timestamp: string;
   source: 'global' | 'http';
 }
@@ -23,6 +28,7 @@ export class ErrorReportingService {
   private readonly configService = inject(ConfigService);
   private readonly supabaseService = inject(SupabaseService);
   private readonly sessionService = inject(SessionService);
+  private readonly errorContextService = inject(ErrorContextService);
   private readonly router = inject(Router);
 
   async reportError(
@@ -55,6 +61,7 @@ export class ErrorReportingService {
   ): ClientErrorReportPayload {
     const normalizedError = this.normalizeError(error);
     const userId = this.sessionService.profile()?.id ?? this.sessionService.session()?.user?.id ?? undefined;
+    const context = this.errorContextService.getSnapshot();
 
     return {
       message: overrides.message ?? normalizedError.message,
@@ -62,6 +69,9 @@ export class ErrorReportingService {
       route: overrides.route ?? this.router.url,
       platform: overrides.platform ?? this.getPlatformLabel(),
       userId: overrides.userId ?? userId,
+      environment: this.getEnvironmentLabel(),
+      lastAction: overrides.lastAction ?? context.lastAction,
+      lastInvoke: overrides.lastInvoke ?? context.lastInvoke,
       timestamp: new Date().toISOString(),
       source,
     };
@@ -96,5 +106,9 @@ export class ErrorReportingService {
   private getPlatformLabel(): string {
     const platform = Capacitor.getPlatform();
     return Capacitor.isNativePlatform() ? `native:${platform}` : `web:${platform}`;
+  }
+
+  private getEnvironmentLabel(): string {
+    return environment.production ? 'production' : 'local';
   }
 }

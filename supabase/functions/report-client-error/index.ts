@@ -11,6 +11,9 @@ interface ClientErrorReportPayload {
   route?: string
   platform?: string
   userId?: string
+  environment: string
+  lastAction?: string
+  lastInvoke?: string
   timestamp: string
   source: 'global' | 'http'
 }
@@ -28,6 +31,7 @@ function isValidPayload(payload: unknown): payload is ClientErrorReportPayload {
   const record = payload as Record<string, unknown>
   return (
     typeof record.message === 'string' &&
+    typeof record.environment === 'string' &&
     typeof record.timestamp === 'string' &&
     (record.source === 'global' || record.source === 'http')
   )
@@ -43,12 +47,21 @@ function loadSlackConfig(): SlackConfig {
 function formatSlackText(payload: ClientErrorReportPayload, config: SlackConfig): string {
   const lines = [
     `After5 client error (${payload.source})`,
+    `Environment: ${payload.environment}`,
     `Time: ${payload.timestamp}`,
     `Route: ${payload.route || 'unknown'}`,
     `Platform: ${payload.platform || 'unknown'}`,
     `User: ${payload.userId || 'anonymous'}`,
     `Message: ${payload.message}`,
   ]
+
+  if (payload.lastAction) {
+    lines.push(`Last action: ${payload.lastAction}`)
+  }
+
+  if (payload.lastInvoke) {
+    lines.push(`Last invoke: ${payload.lastInvoke}`)
+  }
 
   const stackPreview = payload.stack
     ?.split('\n')
