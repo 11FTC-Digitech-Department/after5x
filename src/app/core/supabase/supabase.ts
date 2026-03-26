@@ -4,6 +4,7 @@ import { Capacitor, CapacitorHttp } from '@capacitor/core';
 import { ConfigService, SupabaseConfig } from '../config/config.service';
 import { Database } from './database.types';
 import { CapacitorStorageAdapter } from '../storage/capacitor-storage.adapter';
+import { ErrorContextService } from '../services/error-context.service';
 import { devLog, devError } from '../utils/logger';
 
 export interface AuthResult {
@@ -33,6 +34,7 @@ export class SupabaseService {
   private _client: SupabaseClient<Database>;
   private configService = inject(ConfigService);
   private storage = inject(CapacitorStorageAdapter);
+  private errorContextService = inject(ErrorContextService);
   private supabaseConfig: SupabaseConfig;
   private useNativeNgrokAuth: boolean;
 
@@ -79,6 +81,8 @@ export class SupabaseService {
         schema: 'public'
       }
     });
+
+    this.wrapFunctionInvokes();
   }
 
   private async nativeNgrokFetch(input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
@@ -144,6 +148,18 @@ export class SupabaseService {
 
   get client(): SupabaseClient<Database> {
     return this._client;
+  }
+
+  private wrapFunctionInvokes(): void {
+    const functionsClient = this._client.functions as typeof this._client.functions & {
+      invoke: <T = unknown>(functionName: string, options?: Record<string, unknown>) => Promise<T>;
+    };
+    const originalInvoke = functionsClient.invoke.bind(functionsClient);
+
+    functionsClient.invoke = async <T = unknown>(functionName: string, options?: Record<string, unknown>): Promise<T> => {
+      this.errorContextService.setLastInvoke(`functions.invoke(${functionName})`);
+      return await originalInvoke<T>(functionName, options);
+    };
   }
 
   // Email and Password Authentication

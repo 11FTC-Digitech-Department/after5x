@@ -8,6 +8,9 @@ export interface SupabaseConfig {
 export interface AppConfig {
   production: boolean;
   appUrl: string;
+  errorReporting: {
+    enabled: boolean;
+  };
   supabase: SupabaseConfig;
 }
 
@@ -38,5 +41,9 @@ export class ConfigService {
 
   get appUrl(): string {
     return this.getConfig().appUrl;
+  }
+
+  get errorReporting(): AppConfig['errorReporting'] {
+    return this.getConfig().errorReporting;
   }
 }

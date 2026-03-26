@@ -1,5 +1,6 @@
 import { ErrorHandler, Injectable, Injector } from '@angular/core';
 import { ToastController } from '@ionic/angular/standalone';
+import { ErrorReportingService } from '../services/error-reporting.service';
 import { devError } from '../utils/logger';
 
 @Injectable()
@@ -16,6 +17,7 @@ export class GlobalErrorHandler implements ErrorHandler {
     }
 
     devError('[GlobalErrorHandler]', originalError);
+    void this.injector.get(ErrorReportingService).reportError('global', originalError);
 
     if (this.isChunkLoadError(originalError)) {
       this.showToast('A new version is available. Please reload the app.', 'warning', 0);
