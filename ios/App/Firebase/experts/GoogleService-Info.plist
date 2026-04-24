@@ -3,28 +3,28 @@
 <plist version="1.0">
 <dict>
 	<key>API_KEY</key>
-	<string>__PLACEHOLDER__</string>
+	<string>AIzaSyC4_A37627srabyk42zsBAnMrZc5n99Bac</string>
 	<key>GCM_SENDER_ID</key>
-	<string>__PLACEHOLDER__</string>
+	<string>476954826957</string>
 	<key>PLIST_VERSION</key>
 	<string>1</string>
 	<key>BUNDLE_ID</key>
 	<string>com.rockit.after5.experts</string>
 	<key>PROJECT_ID</key>
-	<string>__PLACEHOLDER__</string>
+	<string>after5-experts</string>
 	<key>STORAGE_BUCKET</key>
-	<string>__PLACEHOLDER__</string>
+	<string>after5-experts.firebasestorage.app</string>
 	<key>IS_ADS_ENABLED</key>
-	<false/>
+	<false></false>
 	<key>IS_ANALYTICS_ENABLED</key>
-	<false/>
+	<false></false>
 	<key>IS_APPINVITE_ENABLED</key>
-	<true/>
+	<true></true>
 	<key>IS_GCM_ENABLED</key>
-	<true/>
+	<true></true>
 	<key>IS_SIGNIN_ENABLED</key>
-	<true/>
+	<true></true>
 	<key>GOOGLE_APP_ID</key>
-	<string>__PLACEHOLDER__</string>
+	<string>1:476954826957:ios:50b303f25fb59ba482b184</string>
 </dict>
 </plist>
