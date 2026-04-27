@@ -82,3 +82,4 @@ resources/android/**/*
 
 
 ios/SourcePackages/
+ios/build/
