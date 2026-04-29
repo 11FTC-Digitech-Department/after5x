@@ -76,7 +76,7 @@ export class LoginPage implements OnInit, AfterViewChecked {
   buildNumber = signal<string>('1');
   environmentType = signal<string>('dev');
   appType = signal<'customer' | 'experts'>('customer');
-  isExpertsApp = signal<boolean>(true);
+  isExpertsApp = signal<boolean>(false);
   showSuccessModal = signal<boolean>(false);
   successModalType = signal<'customer' | 'provider'>('customer');
 
