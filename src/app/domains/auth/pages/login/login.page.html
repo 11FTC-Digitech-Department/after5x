@@ -56,7 +56,7 @@
               fill="outline"
               class="social-button google-button"
               (click)="onGoogleLogin()"
-              [disabled]="isGoogleLoading() || isLoginLoading() || isFacebookLoading() || isBiometricLoading()">
+              [disabled]="isGoogleLoading() || isLoginLoading() || isAnyOAuthLoading() || isBiometricLoading()">
               <ion-icon name="logo-google" slot="start"></ion-icon>
               @if (isGoogleLoading()) {
                 Signing in...
@@ -70,12 +70,26 @@
               fill="outline"
               class="social-button facebook-button"
               (click)="onFacebookLogin()"
-              [disabled]="isFacebookLoading() || isLoginLoading() || isGoogleLoading() || isBiometricLoading()">
+              [disabled]="isFacebookLoading() || isLoginLoading() || isAnyOAuthLoading() || isBiometricLoading()">
               <ion-icon name="logo-facebook" slot="start"></ion-icon>
               @if (isFacebookLoading()) {
                 Signing in...
               } @else {
                 Continue with Facebook
+              }
+            </ion-button>
+
+            <ion-button
+              expand="block"
+              fill="outline"
+              class="social-button apple-button"
+              (click)="onAppleLogin()"
+              [disabled]="isAppleLoading() || isLoginLoading() || isAnyOAuthLoading() || isBiometricLoading()">
+              <ion-icon name="logo-apple" slot="start"></ion-icon>
+              @if (isAppleLoading()) {
+                Signing in...
+              } @else {
+                Continue with Apple
               }
             </ion-button>
 

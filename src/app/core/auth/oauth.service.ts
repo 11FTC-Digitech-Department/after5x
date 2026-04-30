@@ -5,7 +5,7 @@ import { devLog, devError } from '../utils/logger';
 import { SupabaseService } from '../supabase/supabase';
 import { Provider, Session } from '@supabase/supabase-js';
 
-export type OAuthProvider = 'google' | 'facebook';
+export type OAuthProvider = 'google' | 'facebook' | 'apple';
 
 export interface OAuthResult {
   success: boolean;
