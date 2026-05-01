@@ -17,7 +17,7 @@ import {
   AlertController
 } from '@ionic/angular/standalone';
 import { addIcons } from 'ionicons';
-import { fingerPrintOutline, eyeOutline, logoGoogle, logoFacebook } from 'ionicons/icons';
+import { fingerPrintOutline, eyeOutline, logoGoogle, logoFacebook, logoApple } from 'ionicons/icons';
 import { LoginFormComponent, LoginFormData } from '../../components/login-form/login-form.component';
 import { SignupFormComponent, SignupFormData } from '../../components/signup-form/signup-form.component';
 import { SupabaseService } from '../../../../core/supabase/supabase';
@@ -72,6 +72,7 @@ export class LoginPage implements OnInit, AfterViewChecked {
   isBiometricLoading = signal<boolean>(false);
   isGoogleLoading = signal<boolean>(false);
   isFacebookLoading = signal<boolean>(false);
+  isAppleLoading = signal<boolean>(false);
   appVersion = signal<string>('0.0.0');
   buildNumber = signal<string>('1');
   environmentType = signal<string>('dev');
@@ -81,7 +82,7 @@ export class LoginPage implements OnInit, AfterViewChecked {
   successModalType = signal<'customer' | 'provider'>('customer');
 
   constructor() {
-    addIcons({ fingerPrintOutline, eyeOutline, logoGoogle, logoFacebook });
+    addIcons({ fingerPrintOutline, eyeOutline, logoGoogle, logoFacebook, logoApple });
   }
 
   // Ensure we always land on the Login tab when this page becomes active
@@ -374,8 +375,12 @@ export class LoginPage implements OnInit, AfterViewChecked {
     await this.signInWithOAuth('facebook');
   }
 
+  async onAppleLogin() {
+    await this.signInWithOAuth('apple');
+  }
+
   private async signInWithOAuth(provider: OAuthProvider) {
-    const loadingSignal = provider === 'google' ? this.isGoogleLoading : this.isFacebookLoading;
+    const loadingSignal = this.getOAuthLoadingSignal(provider);
     loadingSignal.set(true);
 
     try {
@@ -392,6 +397,21 @@ export class LoginPage implements OnInit, AfterViewChecked {
     } finally {
       loadingSignal.set(false);
     }
+  }
+
+  private getOAuthLoadingSignal(provider: OAuthProvider) {
+    switch (provider) {
+      case 'google':
+        return this.isGoogleLoading;
+      case 'facebook':
+        return this.isFacebookLoading;
+      case 'apple':
+        return this.isAppleLoading;
+    }
+  }
+
+  isAnyOAuthLoading(): boolean {
+    return this.isGoogleLoading() || this.isFacebookLoading() || this.isAppleLoading();
   }
 
   getBiometricIcon(): string {

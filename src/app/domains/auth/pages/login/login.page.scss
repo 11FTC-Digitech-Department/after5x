@@ -26,6 +26,11 @@ ion-content {
           --border-color: rgba(255, 255, 255, 0.6);
           --color: white;
         }
+
+        &.apple-button {
+          --border-color: rgba(255, 255, 255, 0.6);
+          --color: white;
+        }
       }
 
       .divider span {
@@ -140,6 +145,15 @@ ion-content {
 
       &:hover {
         --background: rgba(24, 119, 242, 0.05);
+      }
+    }
+
+    &.apple-button {
+      --border-color: #111111;
+      --color: #111111;
+
+      &:hover {
+        --background: rgba(17, 17, 17, 0.05);
       }
     }
   }
