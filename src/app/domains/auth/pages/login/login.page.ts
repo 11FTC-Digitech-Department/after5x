@@ -213,6 +213,13 @@ export class LoginPage implements OnInit, AfterViewChecked {
         await this.waitForProfile();
         
         const profile = this.sessionService.profile();
+
+        if (this.sessionService.isAccountClosedProfile(profile)) {
+          await this.sessionService.signOut();
+          await this.showAccountDeletedAlert();
+          this.isLoginLoading.set(false);
+          return;
+        }
         
         // Check if account is activated
         if (profile && profile.activated === false) {
@@ -343,6 +350,13 @@ export class LoginPage implements OnInit, AfterViewChecked {
         await this.waitForProfile();
         
         const profile = this.sessionService.profile();
+
+        if (this.sessionService.isAccountClosedProfile(profile)) {
+          await this.sessionService.signOut();
+          await this.showAccountDeletedAlert();
+          this.isBiometricLoading.set(false);
+          return;
+        }
         
         // Check if account is activated
         if (profile && profile.activated === false) {
@@ -469,6 +483,15 @@ export class LoginPage implements OnInit, AfterViewChecked {
       message: 'Your account is currently under review. We\'ll notify you via email once your account has been activated. Thank you for your patience!',
       buttons: ['OK'],
       cssClass: 'account-not-activated-alert'
+    });
+    await alert.present();
+  }
+
+  private async showAccountDeletedAlert() {
+    const alert = await this.alertController.create({
+      header: 'Account Deleted',
+      message: 'This account has been deleted. Contact support if you believe this is a mistake.',
+      buttons: ['OK']
     });
     await alert.present();
   }

@@ -141,6 +141,10 @@ export class ProvidersPage implements OnInit {
     return colors[status] || 'medium';
   }
 
+  isClosed(provider: AdminProvider): boolean {
+    return provider.profile?.account_status === 'closed' || !!provider.profile?.closed_at;
+  }
+
   getInitials(name: string): string {
     return name?.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase() || '?';
   }

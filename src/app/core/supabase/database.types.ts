@@ -1341,9 +1341,14 @@ export type Database = {
       profiles: {
         Row: {
           activated: boolean | null
+          account_status: string
+          anonymized_at: string | null
           avatar_url: string | null
+          closed_at: string | null
+          closed_reason: string | null
           created_at: string | null
           date_of_birth: string | null
+          deletion_requested_at: string | null
           email: string
           fcm_token: string | null
           full_name: string
@@ -1355,9 +1360,14 @@ export type Database = {
         }
         Insert: {
           activated?: boolean | null
+          account_status?: string
+          anonymized_at?: string | null
           avatar_url?: string | null
+          closed_at?: string | null
+          closed_reason?: string | null
           created_at?: string | null
           date_of_birth?: string | null
+          deletion_requested_at?: string | null
           email: string
           fcm_token?: string | null
           full_name: string
@@ -1369,9 +1379,14 @@ export type Database = {
         }
         Update: {
           activated?: boolean | null
+          account_status?: string
+          anonymized_at?: string | null
           avatar_url?: string | null
+          closed_at?: string | null
+          closed_reason?: string | null
           created_at?: string | null
           date_of_birth?: string | null
+          deletion_requested_at?: string | null
           email?: string
           fcm_token?: string | null
           full_name?: string
@@ -2710,6 +2725,10 @@ export type Database = {
       }
     }
     Functions: {
+      close_own_account: {
+        Args: { p_reason?: string }
+        Returns: Json
+      }
       _postgis_deprecate: {
         Args: { newname: string; oldname: string; version: string }
         Returns: undefined
@@ -4091,4 +4110,3 @@ export const Constants = {
     },
   },
 } as const
-

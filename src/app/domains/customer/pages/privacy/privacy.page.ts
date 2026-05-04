@@ -82,10 +82,12 @@ export class PrivacyPage {
 
       - Right to access your personal data
       - Right to correct inaccurate data
-      - Right to delete your data (subject to legal requirements)
+      - Right to delete your account from Profile when there are no active bookings, pending payments, or open support tickets
       - Right to restrict processing
       - Right to data portability
       - Right to object to processing
+
+      When you delete your account, we anonymize account identity data. We may retain booking, payment, support, audit, and legally required operational records.
 
       To exercise these rights, contact our Data Protection Officer at privacy@after5.ph`
     },

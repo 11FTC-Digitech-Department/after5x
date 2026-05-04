@@ -71,6 +71,14 @@ export class OAuthCallbackPage implements OnInit {
         const profile = this.sessionService.profile();
         devLog('OAuthCallbackPage: Profile loaded:', !!profile, 'role:', profile?.role);
 
+        if (this.sessionService.isAccountClosedProfile(profile)) {
+          await this.sessionService.signOut();
+          this.router.navigate(['/auth/login'], {
+            queryParams: { oauth_error: 'This account has been deleted. Contact support if you believe this is a mistake.' }
+          });
+          return;
+        }
+
         // Navigate to appropriate page based on user role
         await this.authFlowService.navigateAfterAuthentication(this.sessionService.userRole());
         devLog('OAuthCallbackPage: Navigation triggered');

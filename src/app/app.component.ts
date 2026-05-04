@@ -166,6 +166,15 @@ export class AppComponent implements OnInit {
         const profile = this.sessionService.profile();
         devLog('AppComponent: Profile loaded:', !!profile, 'role:', profile?.role);
 
+        if (this.sessionService.isAccountClosedProfile(profile)) {
+          await this.sessionService.signOut();
+          this.oauthService.setProcessingCallback(false);
+          this.router.navigate(['/auth/login'], {
+            queryParams: { oauth_error: 'This account has been deleted. Contact support if you believe this is a mistake.' }
+          });
+          return;
+        }
+
         // Navigate to appropriate page
         await this.authFlowService.navigateAfterAuthentication(this.sessionService.userRole());
         devLog('AppComponent: Navigation triggered');

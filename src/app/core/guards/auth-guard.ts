@@ -11,6 +11,12 @@ function checkRoleAndProceed(
   router: Router,
   route: ActivatedRouteSnapshot
 ): true | UrlTree {
+  if (sessionService.isAccountClosed()) {
+    devWarn('authGuard: Closed account attempted to access protected route');
+    sessionService.signOut();
+    return router.createUrlTree(['/auth/welcome']);
+  }
+
   const userRole = sessionService.userRole();
   const requiredRole = route.data['role'];
 
@@ -56,7 +62,7 @@ export const authGuard: CanActivateFn = async (route, state) => {
 
   // Fallback: allow session-only auth if profile load failed
   // This prevents blocking the user if only the profile fetch timed out
-  if (sessionService.isAuthenticated()) {
+  if (sessionService.isAuthenticated() && !sessionService.profile() && !sessionService.isAccountClosed()) {
     devWarn('authGuard: Proceeding with session-only auth (profile not loaded)');
     return checkRoleAndProceed(sessionService, router, route);
   }

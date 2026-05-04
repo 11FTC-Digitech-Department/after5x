@@ -24,6 +24,11 @@ export const initialRouteGuard: CanActivateFn = async () => {
     waited += checkIntervalMs;
   }
 
+  if (sessionService.isAccountClosed()) {
+    await sessionService.signOut();
+    return router.createUrlTree(['/auth/welcome']);
+  }
+
   if (sessionService.isAuthenticated()) {
     const userRole = sessionService.userRole();
     devLog('initialRouteGuard: Authenticated user, redirecting to home. Role:', userRole);

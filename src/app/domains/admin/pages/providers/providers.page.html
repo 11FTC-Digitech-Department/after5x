@@ -46,6 +46,11 @@
             </p>
           </ion-label>
           <div slot="end" class="end-slot">
+            @if (isClosed(provider)) {
+              <ion-badge color="medium">
+                closed
+              </ion-badge>
+            }
             <ion-badge [color]="getVerificationColor(provider.verification_status)">
               {{ provider.verification_status }}
             </ion-badge>

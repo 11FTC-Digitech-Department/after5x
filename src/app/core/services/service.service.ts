@@ -377,7 +377,7 @@ export class ServiceService {
           provider:providers!inner(
             id, bio, years_of_experience, service_radius_km, status, online_since,
             rating_avg, rating_count,
-            profiles!providers_id_fkey(full_name, avatar_url)
+            profiles!providers_id_fkey(full_name, avatar_url, account_status, closed_at)
           )
         `)
         .eq('service_variant_id', serviceVariantId)
@@ -414,6 +414,7 @@ export class ServiceService {
 
       // Map to ProviderOffering and sort by rating (highest first)
       const providers: ProviderOffering[] = offeringsData
+        .filter((o: any) => o.provider.profiles?.account_status !== 'closed' && !o.provider.profiles?.closed_at)
         .map((o: any) => ({
           id: o.id,
           providerId: o.provider.id,
@@ -681,7 +682,7 @@ export class ServiceService {
                 provider:providers(
                   id, bio, years_of_experience, service_radius_km, status,
                   rating_avg, rating_count, engagement_score, verification_status,
-                  profiles!providers_id_fkey(full_name, avatar_url)
+                  profiles!providers_id_fkey(full_name, avatar_url, account_status, closed_at)
                 )
               )
             `)
@@ -694,7 +695,15 @@ export class ServiceService {
             return { ...service, service_variants: [] };
           }
 
-          return { ...service, service_variants: variantsData || [] };
+          const filteredVariants = (variantsData || []).map((variant: any) => ({
+            ...variant,
+            provider_offerings: (variant.provider_offerings || []).filter((offering: any) =>
+              offering.provider?.profiles?.account_status !== 'closed' &&
+              !offering.provider?.profiles?.closed_at
+            )
+          }));
+
+          return { ...service, service_variants: filteredVariants };
         })
       );
 

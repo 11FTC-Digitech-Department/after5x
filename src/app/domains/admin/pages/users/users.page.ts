@@ -106,6 +106,10 @@ export class UsersPage implements OnInit {
     return colors[role] || 'medium';
   }
 
+  isClosed(user: AdminUser): boolean {
+    return user.account_status === 'closed' || !!user.closed_at;
+  }
+
   getInitials(name: string): string {
     return name?.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase() || '?';
   }
