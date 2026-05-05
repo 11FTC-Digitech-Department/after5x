@@ -40,13 +40,18 @@
           button
           [detail]="!item.action"
           (click)="onMenuItemClick(item)"
-          [disabled]="item.action === 'logout' && isLoggingOut()">
+          [disabled]="(item.action === 'logout' && isLoggingOut()) || (item.action === 'deleteAccount' && isDeletingAccount())">
           <ion-icon [name]="item.icon" slot="start" [color]="item.color || ''"></ion-icon>
           <ion-label [color]="item.color || ''">
             @if (item.action === 'logout' && isLoggingOut()) {
               <div class="logout-loading">
                 <ion-spinner name="crescent"></ion-spinner>
                 <span>Logging out...</span>
+              </div>
+            } @else if (item.action === 'deleteAccount' && isDeletingAccount()) {
+              <div class="logout-loading">
+                <ion-spinner name="crescent"></ion-spinner>
+                <span>Deleting account...</span>
               </div>
             } @else {
               {{ item.label }}

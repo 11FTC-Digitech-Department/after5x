@@ -363,6 +363,9 @@ verify_jwt = false
 [functions.check-invoice-status]
 verify_jwt = false
 
+[functions.delete-account]
+verify_jwt = false
+
 # Push notification - called by database triggers and internal services
 [functions.send-push-notification]
 verify_jwt = false

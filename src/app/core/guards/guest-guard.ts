@@ -24,6 +24,11 @@ export const guestGuard: CanActivateFn = async () => {
     waited += checkIntervalMs;
   }
 
+  if (sessionService.isAccountClosed()) {
+    await sessionService.signOut();
+    return true;
+  }
+
   // Redirect authenticated users to their home
   if (sessionService.isAuthenticated()) {
     devLog('guestGuard: User is authenticated, redirecting to home');

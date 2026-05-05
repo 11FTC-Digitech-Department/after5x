@@ -48,6 +48,11 @@
               <p>{{ user.phone_number }}</p>
             }
           </ion-label>
+          @if (isClosed(user)) {
+            <ion-badge slot="end" color="medium">
+              closed
+            </ion-badge>
+          }
           <ion-badge slot="end" [color]="getRoleBadgeColor(user.role)">
             {{ user.role }}
           </ion-badge>

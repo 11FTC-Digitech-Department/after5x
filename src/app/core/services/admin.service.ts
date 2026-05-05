@@ -19,6 +19,8 @@ export interface AdminUser {
   avatar_url: string | null;
   phone_number: string | null;
   role: string;
+  account_status?: string | null;
+  closed_at?: string | null;
   created_at: string;
   updated_at: string;
   last_sign_in_at: string | null;
@@ -40,6 +42,8 @@ export interface AdminProvider {
     email: string;
     avatar_url: string | null;
     phone_number: string | null;
+    account_status?: string | null;
+    closed_at?: string | null;
   };
 }
 
@@ -142,7 +146,7 @@ export class AdminService {
     const from = (page - 1) * pageSize;
     const to = from + pageSize - 1;
 
-    let query = (client.from('providers') as any).select('*, profile:profiles!providers_id_fkey(full_name, email, avatar_url, phone_number)', { count: 'exact' });
+    let query = (client.from('providers') as any).select('*, profile:profiles!providers_id_fkey(full_name, email, avatar_url, phone_number, account_status, closed_at)', { count: 'exact' });
 
     if (statusFilter) {
       query = query.eq('verification_status', statusFilter);

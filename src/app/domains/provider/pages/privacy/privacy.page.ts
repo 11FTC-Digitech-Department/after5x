@@ -85,9 +85,11 @@ export class PrivacyPage {
 
       - Access your personal data and earnings records
       - Correct inaccurate information
-      - Request deletion (subject to legal retention requirements)
+      - Delete your account from Profile when there are no active jobs, processing payouts, or open support tickets
       - Data portability for your work history
       - Object to certain processing activities
+
+      When you delete your account, we anonymize account identity data. We may retain booking, payout, payment, support, audit, and legally required operational records.
 
       Contact our Data Protection Officer at privacy@after5.ph`
     },

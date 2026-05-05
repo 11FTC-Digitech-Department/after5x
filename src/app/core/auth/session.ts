@@ -18,6 +18,8 @@ export interface UserProfile {
   role: 'customer' | 'provider' | 'admin';
   activated: boolean;
   phone_number?: string | null;
+  account_status?: 'active' | 'closed' | null;
+  closed_at?: string | null;
 }
 
 @Injectable({
@@ -47,7 +49,10 @@ export class SessionService {
   readonly isSignupInProgress = this._isSignupInProgress.asReadonly();
   
   readonly isAuthenticated = computed(() => !!this._session());
-  readonly isFullyAuthenticated = computed(() => !!this._session() && !!this._profile());
+  readonly isAccountClosed = computed(() => this.isAccountClosedProfile(this._profile()));
+  readonly isFullyAuthenticated = computed(() =>
+    !!this._session() && !!this._profile() && !this.isAccountClosed()
+  );
   readonly userRole = computed(() => this._profile()?.role);
   readonly isInitialized = this._initialized.asReadonly();
 
@@ -199,7 +204,7 @@ export class SessionService {
       // Try to fetch with activated column first
       const result = await this.supabase
         .from('profiles')
-        .select('id, email, full_name, role, activated, phone_number')
+        .select('id, email, full_name, role, activated, phone_number, account_status, closed_at')
         .eq('id', userId)
         .maybeSingle();
 
@@ -416,6 +421,10 @@ export class SessionService {
         await this.authFlowService.handleAuthRequired('', 'manual_logout');
       }
     }
+  }
+
+  isAccountClosedProfile(profile?: Pick<UserProfile, 'account_status' | 'closed_at'> | null): boolean {
+    return profile?.account_status === 'closed' || !!profile?.closed_at;
   }
 
   /**
