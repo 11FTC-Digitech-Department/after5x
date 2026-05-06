@@ -386,7 +386,11 @@
       size="large"
       (click)="bookNow()"
       class="book-now-button">
-      Book Now
+      @if (isAuthenticated()) {
+        Book Now
+      } @else {
+        Login to Book
+      }
     </ion-button>
   </ion-toolbar>
 </ion-footer>

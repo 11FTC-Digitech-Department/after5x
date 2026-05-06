@@ -107,6 +107,17 @@
             (login)="onLogin($event)"
             (forgotPassword)="navigateToForgotPassword()"
           ></app-login-form>
+          @if (!isExpertsApp()) {
+            <div class="guest-entry">
+              <ion-button
+                expand="block"
+                fill="outline"
+                class="guest-button"
+                (click)="navigateToGuest()">
+                Continue as Guest
+              </ion-button>
+            </div>
+          }
           }
 
           <!-- Sign Up Form -->

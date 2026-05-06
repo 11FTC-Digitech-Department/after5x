@@ -5,16 +5,34 @@
         <ion-icon name="business" class="logo-icon"></ion-icon>
       </ion-button>
     </ion-buttons>
-    <ion-title>Welcome, {{ userName() }}!</ion-title>
-    <ion-buttons slot="end">
-      <ion-button fill="clear" (click)="navigateToNotifications()" class="notification-button">
-        <ion-icon name="notifications" class="notification-icon"></ion-icon>
-        @if (unreadNotificationCount() > 0) {
-          <ion-badge color="danger" class="notification-badge">{{ unreadNotificationCount() > 9 ? '9+' : unreadNotificationCount() }}</ion-badge>
-        }
-      </ion-button>
-    </ion-buttons>
+    <ion-title>
+      @if (isAuthenticated()) {
+        Welcome, {{ userName() }}!
+      } @else {
+        Browse Services
+      }
+    </ion-title>
+    @if (isAuthenticated()) {
+      <ion-buttons slot="end">
+        <ion-button fill="clear" (click)="navigateToNotifications()" class="notification-button">
+          <ion-icon name="notifications" class="notification-icon"></ion-icon>
+          @if (unreadNotificationCount() > 0) {
+            <ion-badge color="danger" class="notification-badge">{{ unreadNotificationCount() > 9 ? '9+' : unreadNotificationCount() }}</ion-badge>
+          }
+        </ion-button>
+      </ion-buttons>
+    } @else {
+      <ion-buttons slot="end" class="guest-auth-buttons">
+        <ion-button fill="outline" size="small" class="home-login-button" (click)="navigateToAuth('login')">
+          Login
+        </ion-button>
+        <ion-button fill="solid" size="small" class="home-register-button" (click)="navigateToAuth('signup')">
+          Register
+        </ion-button>
+      </ion-buttons>
+    }
   </ion-toolbar>
+  @if (isAuthenticated()) {
     <ion-toolbar>
       <!-- Location Header -->
       <div class="location-header" (click)="navigateToAddresses()">
@@ -30,6 +48,7 @@
         </ion-button>
       </div>
     </ion-toolbar>
+  }
 </ion-header>
 
 <ion-content [fullscreen]="true" >

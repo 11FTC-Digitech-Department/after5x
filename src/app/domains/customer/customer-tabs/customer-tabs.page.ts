@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy, inject, signal, effect } from '@angular/core';
+import { Component, OnInit, OnDestroy, inject, signal, effect, computed } from '@angular/core';
 import { devError } from '../../../core/utils/logger';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -54,6 +54,8 @@ export class CustomerTabsPage implements OnInit, OnDestroy {
   /** Unread count from NotificationService (single source of truth). */
   unreadCount = this.notificationService.unreadCount;
   unreadChatCount = signal(0);
+  isAuthenticated = computed(() => this.sessionService.isAuthenticated());
+  isGuest = computed(() => !this.sessionService.isAuthenticated());
 
   private unsubscribeRealTime: (() => void) | null = null;
   private unsubscribeChatUpdates: (() => void) | null = null;
@@ -84,6 +86,10 @@ export class CustomerTabsPage implements OnInit, OnDestroy {
         }
       }
     });
+  }
+
+  isGuestRestrictedTab(tab: string): boolean {
+    return tab === 'bookings' || tab === 'messages' || tab === 'profile';
   }
 
   async ngOnInit() {

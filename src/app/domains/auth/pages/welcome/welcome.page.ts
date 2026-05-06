@@ -1,7 +1,8 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnInit, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
+import { App } from '@capacitor/app';
 import {
   IonContent,
   IonGrid,
@@ -28,10 +29,21 @@ import {
 })
 export class WelcomePage implements OnInit {
   private router = inject(Router);
+  isExpertsApp = signal(false);
 
   constructor() { }
 
   ngOnInit() {
+    void this.loadAppInfo();
+  }
+
+  private async loadAppInfo() {
+    try {
+      const info = await App.getInfo();
+      this.isExpertsApp.set(info.id?.includes('experts') ?? false);
+    } catch {
+      this.isExpertsApp.set(false);
+    }
   }
 
   navigateToLogin() {

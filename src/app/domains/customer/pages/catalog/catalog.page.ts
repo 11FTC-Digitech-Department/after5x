@@ -32,7 +32,6 @@ import {
 import { addIcons } from 'ionicons';
 import { optionsOutline, chevronForward, star, constructOutline, checkmarkCircle } from 'ionicons/icons';
 import { ServiceService, ServiceGroup, ServiceVariant } from '@core/services/service.service';
-import { AuthGuard } from '@core/auth/auth.guard';
 import { VariantSelectorComponent, VariantSelectionResult } from '@shared/components/variant-selector/variant-selector.component';
 
 interface CategoryInfo {
@@ -80,7 +79,6 @@ export class CatalogPage implements OnInit {
   private route = inject(ActivatedRoute);
   private router = inject(Router);
   private serviceService = inject(ServiceService);
-  private authGuard = inject(AuthGuard);
   private modalController = inject(ModalController);
 
   categorySlug = signal<string>('');
@@ -97,12 +95,6 @@ export class CatalogPage implements OnInit {
   }
 
   async ngOnInit() {
-    // Ensure authentication before loading data
-    const isAuthenticated = await this.authGuard.requireAuthentication();
-    if (!isAuthenticated) {
-      return; // Auth guard will handle navigation
-    }
-
     const categorySlug = this.route.snapshot.paramMap.get('catId');
     if (categorySlug) {
       this.categorySlug.set(categorySlug);

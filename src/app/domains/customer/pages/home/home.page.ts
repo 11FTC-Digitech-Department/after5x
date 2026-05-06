@@ -25,6 +25,7 @@ import {
 } from '@ionic/angular/standalone';
 import { AddressService } from '@core/supabase/address.service';
 import { SessionService } from '@core/auth/session';
+import { AuthFlowService } from '@core/auth/auth-flow.service';
 import { NotificationService } from '@core/services/notification.service';
 import { SupabaseService } from '@core/supabase/supabase';
 
@@ -91,6 +92,7 @@ export class HomePage implements OnInit {
   private addressService = inject(AddressService);
   private router = inject(Router);
   private sessionService = inject(SessionService);
+  private authFlowService = inject(AuthFlowService);
   private notificationService = inject(NotificationService);
   private supabaseService = inject(SupabaseService);
 
@@ -99,8 +101,10 @@ export class HomePage implements OnInit {
 
   userName = computed(() => {
     const profile = this.sessionService.profile();
-    return profile?.full_name || 'User';
+    return profile?.full_name || 'Guest';
   });
+
+  isAuthenticated = computed(() => this.sessionService.isAuthenticated());
 
   currentLocation = signal('Select your location');
 
@@ -230,6 +234,11 @@ export class HomePage implements OnInit {
   }
 
   navigateToAddresses() {
+    if (!this.isAuthenticated()) {
+      void this.authFlowService.handleAuthRequired(this.router.url, 'authentication_required');
+      return;
+    }
+
     this.router.navigate(['/c/profile/addresses']);
   }
 
@@ -241,11 +250,20 @@ export class HomePage implements OnInit {
     this.router.navigate(['/c/categories']);
   }
 
+  navigateToAuth(tab: 'login' | 'signup') {
+    this.router.navigate(['/auth/login'], { queryParams: { tab } });
+  }
+
   navigateToService(service: PopularService) {
     this.router.navigate(['/c/catalog', service.categorySlug]);
   }
 
   navigateToNotifications() {
+    if (!this.isAuthenticated()) {
+      void this.authFlowService.handleAuthRequired(this.router.url, 'authentication_required');
+      return;
+    }
+
     this.router.navigate(['/c/notifications']);
   }
 }

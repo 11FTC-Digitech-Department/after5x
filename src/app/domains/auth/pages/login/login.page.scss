@@ -179,6 +179,24 @@ ion-content {
   }
 }
 
+.guest-entry {
+  margin: 0;
+
+  .guest-button {
+    --background: transparent;
+    --background-hover: rgba(22, 16, 106, 0.05);
+    --border-color: var(--ion-color-primary);
+    --border-width: 1.5px;
+    --border-radius: 8px;
+    --color: var(--ion-color-primary);
+    font-weight: 600;
+    height: 48px;
+    letter-spacing: 0.04em;
+    margin-bottom: 12px;
+    text-transform: uppercase;
+  }
+}
+
 .app-version-info {
   position: fixed;
   bottom: 10px;

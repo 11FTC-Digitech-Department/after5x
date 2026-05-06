@@ -20,7 +20,6 @@ import {
   IonSkeletonText
 } from '@ionic/angular/standalone';
 import { ServiceService } from '@core/services/service.service';
-import { AuthGuard } from '@core/auth/auth.guard';
 import { Database } from '@core/supabase/database.types';
 
 type ServiceCategoryRow = Database['public']['Tables']['service_categories']['Row'];
@@ -64,18 +63,12 @@ const CATEGORY_DESCRIPTIONS: Record<string, string> = {
 export class CategoriesPage implements OnInit {
   private serviceService = inject(ServiceService);
   private router = inject(Router);
-  private authGuard = inject(AuthGuard);
 
   categories = signal<ExtendedCategory[]>([]);
   isLoading = signal(true);
   loadError = signal<string | null>(null);
 
   async ngOnInit() {
-    const isAuthenticated = await this.authGuard.requireAuthentication();
-    if (!isAuthenticated) {
-      return;
-    }
-
     await this.loadCategories();
   }
 
@@ -115,4 +108,3 @@ export class CategoriesPage implements OnInit {
     return `${category.name} services from trusted professionals.`;
   }
 }
-
