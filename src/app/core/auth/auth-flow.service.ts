@@ -218,4 +218,13 @@ export class AuthFlowService {
     // Navigate to login
     await this.router.navigate(['/auth/login']);
   }
+
+  /**
+   * Enter guest browsing mode from the auth flow.
+   * Clears any preserved auth redirect state so login won't route back to a blocked page.
+   */
+  async navigateToGuestBrowse(): Promise<void> {
+    await this.clearNavigationState();
+    await this.router.navigate(['/c/home']);
+  }
 }

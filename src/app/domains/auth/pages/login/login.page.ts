@@ -144,6 +144,10 @@ export class LoginPage implements OnInit, AfterViewChecked {
     this.loadAppInfo();
   }
 
+  async navigateToGuest() {
+    await this.authFlowService.navigateToGuestBrowse();
+  }
+
   ngAfterViewChecked() {
     // Reset form if flag is set and component is available
     if (this.shouldResetForm() && this.signupFormComponent) {

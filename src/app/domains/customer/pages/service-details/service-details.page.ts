@@ -42,6 +42,8 @@ import {
   ProviderService,
   Review
 } from '@core/services/service.service';
+import { SessionService } from '@core/auth/session';
+import { AuthFlowService } from '@core/auth/auth-flow.service';
 import { RealTimeService } from '@core/services/real-time.service';
 import { devLog, devError } from '../../../../core/utils/logger';
 
@@ -86,6 +88,8 @@ export class ServiceDetailsPage implements OnInit, OnDestroy {
   private route = inject(ActivatedRoute);
   private router = inject(Router);
   private serviceService = inject(ServiceService);
+  private sessionService = inject(SessionService);
+  private authFlowService = inject(AuthFlowService);
   private realTimeService = inject(RealTimeService);
 
   private providerAvailabilityUnsubscribe: (() => void) | null = null;
@@ -101,6 +105,7 @@ export class ServiceDetailsPage implements OnInit, OnDestroy {
   selectedSegment = signal<'services' | 'provider' | 'reviews'>('services');
   isFavorite = signal(false);
   providerReviews = signal<Review[]>([]);
+  isAuthenticated = computed(() => this.sessionService.isAuthenticated());
 
   isBaseLoading = signal(true);
   isProviderServicesLoading = signal(false);
@@ -487,6 +492,10 @@ export class ServiceDetailsPage implements OnInit, OnDestroy {
     const serviceId = this.serviceVariantId();
     const provider = this.selectedProvider();
     if (serviceId) {
+      if (!this.isAuthenticated()) {
+        void this.authFlowService.handleAuthRequired(this.router.url, 'authentication_required');
+        return;
+      }
       this.router.navigate(['/c/book', serviceId], {
         state: { preSelectedProviderId: provider?.providerId }
       });

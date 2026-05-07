@@ -10,12 +10,12 @@ ion-content {
 }
 
 // Custom tab bar styling with gradient
-ion-tab-bar {
-  --background: white;
-  --border: 1px solid #e9ecef;
-  --color-selected: var(--ion-color-primary);
+  ion-tab-bar {
+    --background: white;
+    --border: 1px solid #e9ecef;
+    --color-selected: var(--ion-color-primary);
 
-  ion-tab-button {
+    ion-tab-button {
     --color: #6c757d;
     --color-selected: var(--ion-color-primary);
     --background-focused: transparent;
@@ -41,6 +41,17 @@ ion-tab-bar {
         -webkit-text-fill-color: transparent;
         background-clip: text;
       }
+    }
+
+    ion-tab-button.guest-disabled-tab {
+      --color: #000000;
+      --color-selected: #000000;
+      opacity: 0.35;
+    }
+
+    ion-tab-button.guest-tab {
+      --color: #000000;
+      --color-selected: #000000;
     }
   }
 }

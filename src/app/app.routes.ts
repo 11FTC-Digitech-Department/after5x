@@ -33,7 +33,6 @@ export const routes: Routes = [
   },
   {
     path: 'c', // Customer Shell
-    canActivate: [authGuard],
     data: { role: 'customer' },
     loadChildren: () => import('./domains/customer/customer.routes').then(m => m.CUSTOMER_ROUTES),
   },
