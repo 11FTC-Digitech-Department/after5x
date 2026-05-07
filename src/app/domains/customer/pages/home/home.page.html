@@ -21,15 +21,6 @@
           }
         </ion-button>
       </ion-buttons>
-    } @else {
-      <ion-buttons slot="end" class="guest-auth-buttons">
-        <ion-button fill="outline" size="small" class="home-login-button" (click)="navigateToAuth('login')">
-          Login
-        </ion-button>
-        <ion-button fill="solid" size="small" class="home-register-button" (click)="navigateToAuth('signup')">
-          Register
-        </ion-button>
-      </ion-buttons>
     }
   </ion-toolbar>
   @if (isAuthenticated()) {
@@ -52,6 +43,23 @@
 </ion-header>
 
 <ion-content [fullscreen]="true" >
+  @if (!isAuthenticated()) {
+    <div class="guest-auth-banner">
+      <div class="guest-auth-copy">
+        <h2>Sign in to book faster</h2>
+        <p>Login or register to save addresses, track bookings, and get updates.</p>
+      </div>
+      <div class="guest-auth-buttons">
+        <ion-button fill="outline" size="small" class="home-login-button" (click)="navigateToAuth('login')">
+          Login
+        </ion-button>
+        <ion-button fill="solid" size="small" class="home-register-button" (click)="navigateToAuth('signup')">
+          Register
+        </ion-button>
+      </div>
+    </div>
+  }
+
   <ion-grid>
     <!-- Categories Section -->
     <ion-row>

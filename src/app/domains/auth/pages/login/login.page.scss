@@ -1,5 +1,6 @@
 ion-content {
   --background: white;
+  --padding-bottom: calc(16px + env(safe-area-inset-bottom));
   position: relative;
 
   // Android Edge-to-Edge Support - Full screen page without header
@@ -50,19 +51,21 @@ ion-content {
 }
 
 .full-height {
-  height: 100vh;
+  min-height: 100dvh;
+  height: auto;
+  padding: 1rem 0 calc(1.5rem + env(safe-area-inset-bottom));
 }
 
 .auth-container {
   width: 100%;
   max-width: 400px;
   margin: 0 auto;
-  padding: 0 20px;
+  padding: 0 20px calc(2.5rem + env(safe-area-inset-bottom));
 }
 
 .app-header {
   text-align: center;
-  margin-bottom: 2rem;
+  margin-bottom: 1.5rem;
   
   .app-logo {
     width: 80px;
@@ -96,7 +99,7 @@ ion-content {
 }
 
 .auth-segment {
-  margin-bottom: 2rem;
+  margin-bottom: 1.5rem;
 }
 
 .biometric-container {
@@ -107,6 +110,7 @@ ion-content {
     --border-width: 2px;
     font-weight: 600;
     height: 48px;
+    margin-bottom: 0;
 
     ion-icon {
       font-size: 22px;
@@ -116,7 +120,7 @@ ion-content {
 }
 
 .social-login-container {
-  margin-bottom: 1.5rem;
+  margin-bottom: 1.25rem;
 
   .social-button {
     --border-radius: 8px;
@@ -181,6 +185,7 @@ ion-content {
 
 .guest-entry {
   margin: 0;
+  padding-bottom: env(safe-area-inset-bottom);
 
   .guest-button {
     --background: transparent;
@@ -192,18 +197,21 @@ ion-content {
     font-weight: 600;
     height: 48px;
     letter-spacing: 0.04em;
-    margin-bottom: 12px;
+    margin-bottom: 0;
     text-transform: uppercase;
+    width: 100%;
+    max-width: 100%;
+    white-space: normal;
   }
 }
 
 .app-version-info {
   position: fixed;
-  bottom: 10px;
+  bottom: calc(8px + env(safe-area-inset-bottom));
   left: 50%;
   transform: translateX(-50%);
   opacity: 0.4;
-  font-size: 12px;
+  font-size: 11px;
   color: var(--ion-color-medium);
   text-align: center;
   pointer-events: none;
@@ -211,6 +219,79 @@ ion-content {
 
   small {
     font-weight: 400;
+  }
+}
+
+@media (max-width: 375px), (max-height: 700px) {
+  .full-height {
+    align-items: flex-start !important;
+    padding-top: 0.5rem;
+    padding-bottom: calc(1rem + env(safe-area-inset-bottom));
+  }
+
+  .auth-container {
+    padding-top: 0.35rem;
+    padding-bottom: calc(1.25rem + env(safe-area-inset-bottom));
+  }
+
+  .app-header {
+    margin-bottom: 0.75rem;
+
+    .app-logo {
+      width: 60px;
+      height: 60px;
+      margin-bottom: 0.35rem;
+    }
+
+    .app-title {
+      font-size: 1.35rem;
+    }
+
+    .app-subtitle {
+      font-size: 0.78rem;
+    }
+  }
+
+  .auth-segment {
+    margin-bottom: 0.75rem;
+
+    ion-segment-button {
+      min-height: 34px;
+      font-size: 0.88rem;
+    }
+  }
+
+  .biometric-container,
+  .social-login-container {
+    margin-bottom: 0.75rem;
+  }
+
+  .biometric-container .biometric-button,
+  .social-login-container .social-button,
+  .guest-entry .guest-button {
+    height: 36px;
+    min-height: 36px;
+    font-size: 0.82rem;
+  }
+
+  .social-login-container .divider {
+    margin: 0.75rem 0 0.5rem 0;
+
+    span {
+      font-size: 12px;
+      padding: 0 0.5rem;
+    }
+  }
+
+  .guest-entry .guest-button {
+    font-size: 0.78rem;
+    letter-spacing: 0.01em;
+  }
+
+  .app-version-info {
+    bottom: calc(4px + env(safe-area-inset-bottom));
+    font-size: 9px;
+    opacity: 0.3;
   }
 }
 
